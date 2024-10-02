@@ -1,0 +1,32 @@
+name: personal_app
+description: App Project for Personal App
+publish_to: none
+version: 0.0.1+1
+environment:
+  sdk: ">=3.2.0 <4.0.0"
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_hooks: ^0.21.1-pre.0
+
+  flood:
+    git:
+      url: "git@github.com:JLogical-Apps/flood.git"
+      ref: v4.1
+      path: packages/flood/flood
+  personal_app_core:
+    path: ../personal_app_core
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_launcher_icons: ^0.13.1
+  flutter_lints: ^2.0.1
+  flutter_native_splash: ^2.3.7
+dependency_overrides:
+  http: 0.13.5
+  vm_service: 13.0.0
+  win32: ^5.4.0
