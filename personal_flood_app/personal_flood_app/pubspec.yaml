@@ -1,5 +1,5 @@
-name: personal_app
-description: App Project for Personal App
+name: personal_flood_app
+description: App Project for Personal Flood App
 publish_to: none
 version: 0.0.1+1
 environment:
@@ -14,8 +14,8 @@ dependencies:
       url: "git@github.com:JLogical-Apps/flood.git"
       ref: v4.1
       path: packages/flood/flood
-  personal_app_core:
-    path: ../personal_app_core
+  personal_flood_app_core:
+    path: ../personal_flood_app_core
 flutter:
   uses-material-design: true
   assets:

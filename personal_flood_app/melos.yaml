@@ -1,9 +1,9 @@
-name: personal_app
+name: personal_flood_app
 repository: https://github.com/freekvandeven/freek_app
 
 packages:
-  - personal_app
-  - personal_app_core
+  - personal_flood_app
+  - personal_flood_app_core
 
 command:
   bootstrap:

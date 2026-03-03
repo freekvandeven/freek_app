@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flood/flood.dart';
 import 'package:flutter/material.dart';
-import 'package:personal_app/presentation/pages_pond_component.dart';
-import 'package:personal_app/presentation/style.dart';
-import 'package:personal_app_core/pond.dart';
+import 'package:personal_flood_app/presentation/pages_pond_component.dart';
+import 'package:personal_flood_app/presentation/style.dart';
+import 'package:personal_flood_app_core/pond.dart';
 
 // Whether to set up test data in the test suite.
 const shouldAddTestData = true;

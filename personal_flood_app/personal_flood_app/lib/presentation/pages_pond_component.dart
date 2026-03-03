@@ -1,5 +1,5 @@
 import 'package:flood/flood.dart';
-import 'package:personal_app/presentation/pages/home_page.dart';
+import 'package:personal_flood_app/presentation/pages/home_page.dart';
 
 class PagesAppPondComponent with IsAppPondComponent {
   @override

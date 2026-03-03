@@ -1,11 +1,11 @@
 import 'dart:io';
 
 import 'package:flood_cli/flood_cli.dart';
-import 'package:personal_app_core/pond.dart';
+import 'package:personal_flood_app_core/pond.dart';
 
 Future<void> main(List<String> args) async {
   final corePondContext = await getCorePondContext(
-      environmentConfig: EnvironmentConfig.static.fileAssets(projectDirectory: Directory.current.parent / 'personal_app'));
+      environmentConfig: EnvironmentConfig.static.fileAssets(projectDirectory: Directory.current.parent / 'personal_flood_app'));
   final automatePondContext = AutomatePondContext(corePondContext: corePondContext);
 
   await automatePondContext.register(NativeSetupAutomateComponent(
@@ -37,6 +37,6 @@ Future<void> main(List<String> args) async {
   await Automate.automate(
     context: automatePondContext,
     args: args,
-    appDirectoryGetter: (coreDirectory) => coreDirectory.parent / 'personal_app',
+    appDirectoryGetter: (coreDirectory) => coreDirectory.parent / 'personal_flood_app',
   );
 }
