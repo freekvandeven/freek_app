@@ -8,6 +8,8 @@ import '../features/auth/pages/signup_page.dart';
 import '../features/auth/providers/auth_providers.dart';
 import '../features/calendar/pages/calendar_page.dart';
 import '../features/dashboard/pages/dashboard_page.dart';
+import '../features/inventory/pages/inventory_edit_page.dart';
+import '../features/inventory/pages/inventory_list_page.dart';
 import '../features/finances/pages/asset_edit_page.dart';
 import '../features/finances/pages/asset_list_page.dart';
 import '../features/finances/pages/category_management_page.dart';
@@ -214,7 +216,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/inventory',
-        builder: (context, state) => _placeholder('Inventory'),
+        builder: (context, state) => const InventoryListPage(),
+        routes: [
+          GoRoute(
+            path: 'new',
+            builder: (context, state) => const InventoryEditPage(),
+          ),
+          GoRoute(
+            path: ':itemId',
+            builder: (context, state) =>
+                InventoryEditPage(itemId: state.pathParameters['itemId']),
+          ),
+        ],
       ),
       GoRoute(
         path: '/knowledge',

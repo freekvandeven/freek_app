@@ -14,9 +14,7 @@ Future<void> main(List<String> args) async {
     appPondContextGetter: buildAppPondContext,
     loadingPage: StyledLoadingPage(),
     notFoundPage: StyledPage(
-      body: Center(
-        child: StyledText.twoXl('Not Found!'),
-      ),
+      body: Center(child: StyledText.twoXl('Not Found!')),
     ),
   );
 }
@@ -25,17 +23,23 @@ Future<AppPondContext> buildAppPondContext() async {
   final corePondContext = await getCorePondContext(
     environmentConfig: EnvironmentConfig.static.flutterAssets(),
     loggerService: (corePondContext) => corePondContext.environment.isOnline
-        ? LoggerService.static.console.withFileLogHistory(corePondContext.fileSystem.tempDirectory / 'logs')
+        ? LoggerService.static.console.withFileLogHistory(
+            corePondContext.fileSystem.tempDirectory / 'logs',
+          )
         : LoggerService.static.console,
   );
 
   final appPondContext = AppPondContext(corePondContext: corePondContext);
   await appPondContext.register(FloodAppComponent(style: style));
-  await appPondContext.register(TestingSetupAppComponent(onSetup: () async {
-    if (shouldAddTestData) {
-      await _setupTesting(corePondContext);
-    }
-  }));
+  await appPondContext.register(
+    TestingSetupAppComponent(
+      onSetup: () async {
+        if (shouldAddTestData) {
+          await _setupTesting(corePondContext);
+        }
+      },
+    ),
+  );
   await appPondContext.register(PagesAppPondComponent());
 
   return appPondContext;

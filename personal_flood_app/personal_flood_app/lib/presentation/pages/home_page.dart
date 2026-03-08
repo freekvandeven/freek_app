@@ -17,9 +17,7 @@ class HomePage with IsAppPage<HomeRoute> {
     return StyledPage(
       titleText: 'Hello',
       body: StyledList.column.withScrollbar(
-        children: [
-          StyledText.body('Hello World!'),
-        ],
+        children: [StyledText.body('Hello World!')],
       ),
     );
   }
