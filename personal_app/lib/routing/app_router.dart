@@ -8,6 +8,8 @@ import '../features/auth/pages/signup_page.dart';
 import '../features/auth/providers/auth_providers.dart';
 import '../features/dashboard/pages/dashboard_page.dart';
 import '../features/more/pages/more_page.dart';
+import '../features/tasks/pages/task_edit_page.dart';
+import '../features/tasks/pages/task_list_page.dart';
 import '../presentation/shell/app_shell.dart';
 
 // Placeholder pages for features not yet built
@@ -59,7 +61,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/tasks',
-                builder: (context, state) => _placeholder('Tasks'),
+                builder: (context, state) => const TaskListPage(),
+                routes: [
+                  GoRoute(
+                    path: 'new',
+                    builder: (context, state) => const TaskEditPage(),
+                  ),
+                  GoRoute(
+                    path: ':taskId',
+                    builder: (context, state) =>
+                        TaskEditPage(taskId: state.pathParameters['taskId']),
+                  ),
+                ],
               ),
             ],
           ),
