@@ -8,6 +8,9 @@ import '../features/auth/pages/signup_page.dart';
 import '../features/auth/providers/auth_providers.dart';
 import '../features/dashboard/pages/dashboard_page.dart';
 import '../features/more/pages/more_page.dart';
+import '../features/recipes/pages/recipe_detail_page.dart';
+import '../features/recipes/pages/recipe_edit_page.dart';
+import '../features/recipes/pages/recipe_list_page.dart';
 import '../features/tasks/pages/task_edit_page.dart';
 import '../features/tasks/pages/task_list_page.dart';
 import '../presentation/shell/app_shell.dart';
@@ -109,7 +112,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Feature routes (pushed on top of shell)
       GoRoute(
         path: '/recipes',
-        builder: (context, state) => _placeholder('Recipes'),
+        builder: (context, state) => const RecipeListPage(),
+        routes: [
+          GoRoute(
+            path: 'new',
+            builder: (context, state) => const RecipeEditPage(),
+          ),
+          GoRoute(
+            path: ':recipeId',
+            builder: (context, state) =>
+                RecipeDetailPage(recipeId: state.pathParameters['recipeId']!),
+            routes: [
+              GoRoute(
+                path: 'edit',
+                builder: (context, state) =>
+                    RecipeEditPage(recipeId: state.pathParameters['recipeId']),
+              ),
+            ],
+          ),
+        ],
       ),
       GoRoute(
         path: '/passwords',
