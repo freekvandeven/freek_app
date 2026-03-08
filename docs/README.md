@@ -1,43 +1,82 @@
-# Personal Flood App — Documentation
+# Personal App — Documentation
 
-This folder contains all requirements, design decisions, and specifications for the Personal Flood App.
+This folder contains all requirements, design decisions, and specifications for the **Personal App**.
 
 ## Structure
 
 ```
 docs/
-├── README.md                          # This file
+├── README.md                                    # This file
 ├── requirements/
-│   ├── overview.md                    # App vision, goals, target users
-│   ├── user_stories.md                # User stories & use cases
-│   ├── data_model.md                  # Entities, relationships, data flow
-│   ├── screens.md                     # Screen inventory & navigation map
-│   ├── non_functional.md              # Performance, security, offline, platforms
-│   ├── tech_decisions.md              # Technology choices & rationale
+│   ├── overview.md                              # App vision, goals, platforms, constraints
+│   ├── user_stories.md                          # User stories grouped by feature
+│   ├── data_model.md                            # All entities, fields, relationships, data flow
+│   ├── screens.md                               # 32 screens, navigation map, screen details
+│   ├── non_functional.md                        # Security, performance, platforms, theming, testing
+│   ├── tech_decisions.md                        # Firebase, CI/CD, packages, config approach
 │   └── features/
-│       ├── feature_template.md        # Template for new feature specs
-│       └── F001_<feature_name>.md     # Individual feature specifications
+│       ├── feature_template.md                  # Template for new feature specs
+│       ├── F001_authentication.md               # Auth, biometric lock, per-screen guard
+│       ├── F002_tasks.md                        # Task / to-do list with repeating tasks
+│       ├── F003_recipes.md                      # Recipe management
+│       ├── F004_finances.md                     # Transactions, categories, assets, charts
+│       ├── F005_password_vault.md               # E2E encrypted password manager
+│       ├── F006_calendar.md                     # Unified calendar (tasks + finances + events)
+│       ├── F007_inventory.md                    # Places, items, expiry tracking, reminders
+│       ├── F008_feedback.md                     # Wishes & bugs with clipboard copy
+│       ├── F009_knowledge_bank.md               # Personal wiki with Markdown pages
+│       └── F010_settings_export.md              # Settings, theming, CSV data export
 └── decisions/
-    └── ADR_001_<decision_name>.md     # Architecture Decision Records
+    ├── ADR_template.md                          # Template for new ADRs
+    ├── ADR_001_security_model.md                # Hybrid encryption, multi-layer auth, secrets
+    ├── ADR_002_cicd_pipeline.md                 # GitHub Actions, conventional commits, tag deploys
+    └── ADR_003_forkability.md                   # Config-driven branding, .env approach
 ```
 
 ## How to Use
 
 1. Start with [requirements/overview.md](requirements/overview.md) for the big picture.
-2. Add features using the [feature template](requirements/features/feature_template.md).
-3. Track user-facing scenarios in [user_stories.md](requirements/user_stories.md).
-4. Define your data in [data_model.md](requirements/data_model.md).
-5. Map out screens in [screens.md](requirements/screens.md).
-6. Log architecture choices in [decisions/](decisions/).
+2. Review features in [requirements/features/](requirements/features/) — each feature has its own spec.
+3. Check user stories in [user_stories.md](requirements/user_stories.md) for all scenarios.
+4. Review the data model in [data_model.md](requirements/data_model.md) for all entities and fields.
+5. See all screens and navigation in [screens.md](requirements/screens.md).
+6. Non-functional requirements (security, platforms, theming) in [non_functional.md](requirements/non_functional.md).
+7. Technology choices in [tech_decisions.md](requirements/tech_decisions.md).
+8. Architecture decisions in [decisions/](decisions/).
+
+## Feature Summary
+
+| ID | Feature | Priority | Status |
+|----|---------|----------|--------|
+| F001 | Authentication & Biometric Lock | High | Specified |
+| F002 | Tasks / To-Do List | High | Specified |
+| F003 | Recipes | Medium | Specified |
+| F004 | Finances | High | Specified |
+| F005 | Password Vault (E2E Encrypted) | High | Specified |
+| F006 | Calendar | Medium | Specified |
+| F007 | Inventory Management | Medium | Specified |
+| F008 | Feedback (Wishes & Bugs) | Medium | Specified |
+| F009 | Knowledge Bank | Medium | Specified |
+| F010 | Settings & Data Export | Medium | Specified |
+
+## Key Decisions
+
+| ADR | Decision | Status |
+|-----|----------|--------|
+| ADR-001 | Hybrid security model (E2E for passwords, Firestore rules for rest) | Accepted |
+| ADR-002 | GitHub Actions CI/CD with tag-based deployment | Accepted |
+| ADR-003 | Config-driven forkability (`.env` + config files) | Accepted |
+| — | Framework: Plain Flutter vs. Flutter Flood | **Pending** |
 
 ## Status
 
-| Document             | Status      |
-|----------------------|-------------|
-| Overview             | Draft       |
-| Features             | Not started |
-| User Stories         | Not started |
-| Data Model           | Not started |
-| Screens              | Not started |
-| Non-Functional Reqs  | Not started |
-| Tech Decisions       | Not started |
+| Document | Status |
+|----------|--------|
+| Overview | ✅ Complete |
+| Features (10 specs) | ✅ Complete |
+| User Stories | ✅ Complete |
+| Data Model | ✅ Complete |
+| Screens & Navigation | ✅ Complete |
+| Non-Functional Reqs | ✅ Complete |
+| Tech Decisions | ✅ Complete (framework TBD) |
+| ADRs (3) | ✅ Complete |
