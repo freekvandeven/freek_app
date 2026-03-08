@@ -20,7 +20,7 @@ class TransactionListNotifier
     extends AsyncNotifier<List<FinancialTransaction>> {
   @override
   Future<List<FinancialTransaction>> build() async {
-    return ref.read(financeServiceProvider).getTransactions();
+    return ref.watch(financeServiceProvider).getTransactions();
   }
 
   Future<void> addTransaction(FinancialTransaction transaction) async {
@@ -171,7 +171,7 @@ final expenseByCategoryProvider = Provider<AsyncValue<Map<String, double>>>((
 class CategoryListNotifier extends AsyncNotifier<List<FinancialCategory>> {
   @override
   Future<List<FinancialCategory>> build() async {
-    return ref.read(financeServiceProvider).getCategories();
+    return ref.watch(financeServiceProvider).getCategories();
   }
 
   Future<void> addCategory(FinancialCategory category) async {
@@ -200,7 +200,7 @@ final categoryListProvider =
 class AssetListNotifier extends AsyncNotifier<List<FinancialAsset>> {
   @override
   Future<List<FinancialAsset>> build() async {
-    return ref.read(financeServiceProvider).getAssets();
+    return ref.watch(financeServiceProvider).getAssets();
   }
 
   Future<void> addAsset(FinancialAsset asset) async {

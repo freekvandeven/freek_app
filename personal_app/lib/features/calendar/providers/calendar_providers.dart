@@ -20,7 +20,7 @@ final calendarServiceProvider = Provider<CalendarService>((ref) {
 class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
   @override
   Future<List<CalendarEvent>> build() async {
-    final customEvents = await ref.read(calendarServiceProvider).getEvents();
+    final customEvents = await ref.watch(calendarServiceProvider).getEvents();
 
     // Pull task due dates as events
     final tasks = ref.watch(taskListProvider).valueOrNull ?? [];

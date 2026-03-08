@@ -19,7 +19,7 @@ final vaultServiceProvider = Provider<VaultService>((ref) {
 });
 
 final vaultSetupProvider = FutureProvider<bool>((ref) {
-  return ref.read(vaultServiceProvider).isVaultSetup();
+  return ref.watch(vaultServiceProvider).isVaultSetup();
 });
 
 /// Holds the derived encryption key in memory while the vault is unlocked.

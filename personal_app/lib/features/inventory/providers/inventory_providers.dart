@@ -17,7 +17,7 @@ final inventoryServiceProvider = Provider<InventoryService>((ref) {
 class InventoryListNotifier extends AsyncNotifier<List<InventoryItem>> {
   @override
   Future<List<InventoryItem>> build() async {
-    return ref.read(inventoryServiceProvider).getItems();
+    return ref.watch(inventoryServiceProvider).getItems();
   }
 
   Future<void> addItem(InventoryItem item) async {

@@ -23,7 +23,9 @@ class TaskListNotifier extends AsyncNotifier<List<Task>> {
   TaskService get _service => ref.read(taskServiceProvider);
 
   @override
-  Future<List<Task>> build() => _service.getTasks();
+  Future<List<Task>> build() {
+    return ref.watch(taskServiceProvider).getTasks();
+  }
 
   Future<void> addTask(Task task) async {
     await _service.createTask(task);

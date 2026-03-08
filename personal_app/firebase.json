@@ -1,1 +1,27 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"freek-personal-app","appId":"1:90391184253:android:fac4d1149a81b41c2a4214","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"freek-personal-app","configurations":{"android":"1:90391184253:android:fac4d1149a81b41c2a4214","ios":"1:90391184253:ios:e1584ddc3c7550312a4214","web":"1:90391184253:web:c8bfb915f2b58a7a2a4214"}}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "freek-personal-app",
+          "appId": "1:90391184253:android:fac4d1149a81b41c2a4214",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "freek-personal-app",
+          "configurations": {
+            "android": "1:90391184253:android:fac4d1149a81b41c2a4214",
+            "ios": "1:90391184253:ios:e1584ddc3c7550312a4214",
+            "web": "1:90391184253:web:c8bfb915f2b58a7a2a4214"
+          }
+        }
+      }
+    }
+  }
+}

@@ -24,7 +24,7 @@ final knowledgeListProvider =
 class KnowledgeListNotifier extends AsyncNotifier<List<KnowledgePage>> {
   @override
   FutureOr<List<KnowledgePage>> build() {
-    return ref.read(knowledgeServiceProvider).getPages();
+    return ref.watch(knowledgeServiceProvider).getPages();
   }
 
   Future<void> addPage(KnowledgePage page) async {

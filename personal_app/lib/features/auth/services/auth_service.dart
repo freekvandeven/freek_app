@@ -7,6 +7,8 @@ import 'package:uuid/uuid.dart';
 import '../models/user_profile.dart';
 
 abstract class AuthService {
+  Future<void> init();
+  void dispose();
   Stream<UserProfile?> get authStateChanges;
   UserProfile? get currentUser;
   Future<UserProfile> signUp({required String email, required String password});
@@ -26,6 +28,7 @@ class MockAuthService implements AuthService {
 
   MockAuthService(this._prefs);
 
+  @override
   Future<void> init() async {
     final currentUserId = await _prefs.getString(_currentUserKey);
     if (currentUserId != null) {
@@ -126,6 +129,7 @@ class MockAuthService implements AuthService {
     _authStateController.add(profile);
   }
 
+  @override
   void dispose() {
     _authStateController.close();
   }

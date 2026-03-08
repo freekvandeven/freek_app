@@ -24,7 +24,7 @@ final feedbackListProvider =
 class FeedbackListNotifier extends AsyncNotifier<List<FeedbackEntry>> {
   @override
   FutureOr<List<FeedbackEntry>> build() {
-    return ref.read(feedbackServiceProvider).getEntries();
+    return ref.watch(feedbackServiceProvider).getEntries();
   }
 
   Future<void> addEntry(FeedbackEntry entry) async {

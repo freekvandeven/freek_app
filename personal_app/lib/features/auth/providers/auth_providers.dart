@@ -21,11 +21,7 @@ final authServiceProvider = Provider<AuthService>((ref) {
 
 final authInitProvider = FutureProvider<void>((ref) async {
   final service = ref.watch(authServiceProvider);
-  if (service is MockAuthService) {
-    await service.init();
-  } else if (service is FirebaseAuthService) {
-    await service.init();
-  }
+  await service.init();
 });
 
 final authStateProvider = StreamProvider<UserProfile?>((ref) {

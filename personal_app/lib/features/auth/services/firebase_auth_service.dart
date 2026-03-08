@@ -17,18 +17,9 @@ class FirebaseAuthService implements AuthService {
     fb.FirebaseAuth? auth,
     FirebaseFirestore? firestore,
   })  : _auth = auth ?? fb.FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance {
-    _auth.authStateChanges().listen((fbUser) async {
-      if (fbUser == null) {
-        _currentUser = null;
-        _authStateController.add(null);
-      } else {
-        _currentUser = await _loadProfile(fbUser.uid);
-        _authStateController.add(_currentUser);
-      }
-    });
-  }
+        _firestore = firestore ?? FirebaseFirestore.instance;
 
+  @override
   Future<void> init() async {
     final fbUser = _auth.currentUser;
     if (fbUser != null) {
@@ -36,6 +27,8 @@ class FirebaseAuthService implements AuthService {
       _authStateController.add(_currentUser);
     }
   }
+
+  @override
 
   @override
   Stream<UserProfile?> get authStateChanges => _authStateController.stream;
@@ -126,6 +119,7 @@ class FirebaseAuthService implements AuthService {
     await _firestore.collection('users').doc(profile.id).set(profile.toMap());
   }
 
+  @override
   void dispose() {
     _authStateController.close();
   }

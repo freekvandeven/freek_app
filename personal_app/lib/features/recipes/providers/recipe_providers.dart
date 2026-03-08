@@ -24,7 +24,9 @@ class RecipeListNotifier extends AsyncNotifier<List<Recipe>> {
   RecipeService get _service => ref.read(recipeServiceProvider);
 
   @override
-  Future<List<Recipe>> build() => _service.getRecipes();
+  Future<List<Recipe>> build() {
+    return ref.watch(recipeServiceProvider).getRecipes();
+  }
 
   Future<void> addRecipe(Recipe recipe) async {
     await _service.createRecipe(recipe);

@@ -42,7 +42,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
-      if (mounted) context.go('/');
+      // Router redirects automatically via isAuthenticatedProvider
     } catch (e) {
       setState(() => _errorMessage = e.toString());
     } finally {
