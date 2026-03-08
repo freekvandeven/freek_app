@@ -5,6 +5,7 @@ import 'package:personal_app/presentation/theme/app_theme.dart';
 import 'package:personal_app/routing/app_router.dart';
 
 import 'features/auth/providers/auth_providers.dart';
+import 'features/settings/providers/settings_providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,7 +38,7 @@ class PersonalApp extends ConsumerWidget {
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.system,
+        themeMode: ref.watch(themeModeProvider),
         routerConfig: router,
       ),
     );

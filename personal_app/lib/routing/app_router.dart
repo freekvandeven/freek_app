@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -29,15 +28,11 @@ import '../features/passwords/pages/vault_unlock_page.dart';
 import '../features/recipes/pages/recipe_detail_page.dart';
 import '../features/recipes/pages/recipe_edit_page.dart';
 import '../features/recipes/pages/recipe_list_page.dart';
+import '../features/settings/pages/data_export_page.dart';
+import '../features/settings/pages/settings_page.dart';
 import '../features/tasks/pages/task_edit_page.dart';
 import '../features/tasks/pages/task_list_page.dart';
 import '../presentation/shell/app_shell.dart';
-
-// Placeholder pages for features not yet built
-Widget _placeholder(String title) => Scaffold(
-  appBar: AppBar(title: Text(title)),
-  body: Center(child: Text('$title — coming soon')),
-);
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final isAuthenticated = ref.watch(isAuthenticatedProvider);
@@ -273,7 +268,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/settings',
-        builder: (context, state) => _placeholder('Settings'),
+        builder: (context, state) => const SettingsPage(),
+        routes: [
+          GoRoute(
+            path: 'export',
+            builder: (context, state) => const DataExportPage(),
+          ),
+        ],
       ),
     ],
   );
