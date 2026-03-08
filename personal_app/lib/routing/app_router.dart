@@ -6,6 +6,7 @@ import '../features/auth/pages/forgot_password_page.dart';
 import '../features/auth/pages/login_page.dart';
 import '../features/auth/pages/signup_page.dart';
 import '../features/auth/providers/auth_providers.dart';
+import '../features/calendar/pages/calendar_page.dart';
 import '../features/dashboard/pages/dashboard_page.dart';
 import '../features/finances/pages/asset_edit_page.dart';
 import '../features/finances/pages/asset_list_page.dart';
@@ -94,7 +95,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/calendar',
-                builder: (context, state) => _placeholder('Calendar'),
+                builder: (context, state) => const CalendarPage(),
               ),
             ],
           ),
