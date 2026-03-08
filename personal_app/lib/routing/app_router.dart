@@ -10,6 +10,9 @@ import '../features/calendar/pages/calendar_page.dart';
 import '../features/dashboard/pages/dashboard_page.dart';
 import '../features/inventory/pages/inventory_edit_page.dart';
 import '../features/inventory/pages/inventory_list_page.dart';
+import '../features/knowledge/pages/knowledge_bank_page.dart';
+import '../features/knowledge/pages/knowledge_edit_page.dart';
+import '../features/knowledge/pages/knowledge_view_page.dart';
 import '../features/feedback/pages/feedback_edit_page.dart';
 import '../features/feedback/pages/feedback_list_page.dart';
 import '../features/finances/pages/asset_edit_page.dart';
@@ -233,7 +236,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/knowledge',
-        builder: (context, state) => _placeholder('Knowledge Bank'),
+        builder: (context, state) => const KnowledgeBankPage(),
+        routes: [
+          GoRoute(
+            path: 'new',
+            builder: (context, state) => const KnowledgeEditPage(),
+          ),
+          GoRoute(
+            path: ':pageId',
+            builder: (context, state) =>
+                KnowledgeViewPage(pageId: state.pathParameters['pageId']!),
+            routes: [
+              GoRoute(
+                path: 'edit',
+                builder: (context, state) =>
+                    KnowledgeEditPage(pageId: state.pathParameters['pageId']),
+              ),
+            ],
+          ),
+        ],
       ),
       GoRoute(
         path: '/feedback',
