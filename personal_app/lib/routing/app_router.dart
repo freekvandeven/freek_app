@@ -7,6 +7,12 @@ import '../features/auth/pages/login_page.dart';
 import '../features/auth/pages/signup_page.dart';
 import '../features/auth/providers/auth_providers.dart';
 import '../features/dashboard/pages/dashboard_page.dart';
+import '../features/finances/pages/asset_edit_page.dart';
+import '../features/finances/pages/asset_list_page.dart';
+import '../features/finances/pages/category_management_page.dart';
+import '../features/finances/pages/finance_overview_page.dart';
+import '../features/finances/pages/transaction_edit_page.dart';
+import '../features/finances/pages/transaction_list_page.dart';
 import '../features/more/pages/more_page.dart';
 import '../features/recipes/pages/recipe_detail_page.dart';
 import '../features/recipes/pages/recipe_edit_page.dart';
@@ -93,7 +99,46 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/finance',
-                builder: (context, state) => _placeholder('Finance'),
+                builder: (context, state) => const FinanceOverviewPage(),
+                routes: [
+                  GoRoute(
+                    path: 'transactions',
+                    builder: (context, state) => const TransactionListPage(),
+                    routes: [
+                      GoRoute(
+                        path: 'new',
+                        builder: (context, state) =>
+                            const TransactionEditPage(),
+                      ),
+                      GoRoute(
+                        path: ':transactionId',
+                        builder: (context, state) => TransactionEditPage(
+                          transactionId: state.pathParameters['transactionId'],
+                        ),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'assets',
+                    builder: (context, state) => const AssetListPage(),
+                    routes: [
+                      GoRoute(
+                        path: 'new',
+                        builder: (context, state) => const AssetEditPage(),
+                      ),
+                      GoRoute(
+                        path: ':assetId',
+                        builder: (context, state) => AssetEditPage(
+                          assetId: state.pathParameters['assetId'],
+                        ),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'categories',
+                    builder: (context, state) => const CategoryManagementPage(),
+                  ),
+                ],
               ),
             ],
           ),
