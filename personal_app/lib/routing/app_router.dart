@@ -14,6 +14,10 @@ import '../features/finances/pages/finance_overview_page.dart';
 import '../features/finances/pages/transaction_edit_page.dart';
 import '../features/finances/pages/transaction_list_page.dart';
 import '../features/more/pages/more_page.dart';
+import '../features/passwords/pages/password_detail_page.dart';
+import '../features/passwords/pages/password_edit_page.dart';
+import '../features/passwords/pages/password_list_page.dart';
+import '../features/passwords/pages/vault_unlock_page.dart';
 import '../features/recipes/pages/recipe_detail_page.dart';
 import '../features/recipes/pages/recipe_edit_page.dart';
 import '../features/recipes/pages/recipe_list_page.dart';
@@ -179,7 +183,33 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/passwords',
-        builder: (context, state) => _placeholder('Password Vault'),
+        builder: (context, state) => const VaultUnlockPage(),
+        routes: [
+          GoRoute(
+            path: 'list',
+            builder: (context, state) => const PasswordListPage(),
+            routes: [
+              GoRoute(
+                path: 'new',
+                builder: (context, state) => const PasswordEditPage(),
+              ),
+              GoRoute(
+                path: ':entryId',
+                builder: (context, state) => PasswordDetailPage(
+                  entryId: state.pathParameters['entryId']!,
+                ),
+                routes: [
+                  GoRoute(
+                    path: 'edit',
+                    builder: (context, state) => PasswordEditPage(
+                      entryId: state.pathParameters['entryId'],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
       ),
       GoRoute(
         path: '/inventory',

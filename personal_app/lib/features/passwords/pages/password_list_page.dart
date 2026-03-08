@@ -1,0 +1,209 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../providers/vault_providers.dart';
+
+class PasswordListPage extends ConsumerWidget {
+  const PasswordListPage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final entries = ref.watch(filteredVaultEntriesProvider);
+    final search = ref.watch(vaultSearchProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Passwords'),
+        leading: IconButton(
+          icon: const Icon(Icons.lock),
+          tooltip: 'Lock vault',
+          onPressed: () {
+            ref.read(vaultKeyProvider.notifier).state = null;
+            context.go('/passwords');
+          },
+        ),
+      ),
+      body: Column(
+        children: [
+          // Search bar
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Search passwords...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                suffixIcon: search.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () =>
+                            ref.read(vaultSearchProvider.notifier).state = '',
+                      )
+                    : null,
+              ),
+              onChanged: (v) =>
+                  ref.read(vaultSearchProvider.notifier).state = v,
+            ),
+          ),
+
+          // Category chips
+          _CategoryChips(),
+
+          // Entry list
+          Expanded(
+            child: entries.when(
+              data: (list) {
+                if (list.isEmpty) {
+                  return const Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.key, size: 64, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text('No passwords yet'),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  itemCount: list.length,
+                  itemBuilder: (context, index) {
+                    final entry = list[index];
+                    return Dismissible(
+                      key: Key(entry.id),
+                      direction: DismissDirection.endToStart,
+                      background: Container(
+                        color: Colors.red,
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.only(right: 16),
+                        child: const Icon(Icons.delete, color: Colors.white),
+                      ),
+                      confirmDismiss: (_) => showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Delete Entry'),
+                          content: Text('Delete "${entry.title}"?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: const Text('Delete'),
+                            ),
+                          ],
+                        ),
+                      ),
+                      onDismissed: (_) => ref
+                          .read(vaultEntriesProvider.notifier)
+                          .deleteEntry(entry.id),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          child: Text(
+                            entry.title.isNotEmpty
+                                ? entry.title[0].toUpperCase()
+                                : '?',
+                          ),
+                        ),
+                        title: Text(entry.title),
+                        subtitle: Text(
+                          [
+                            entry.username,
+                            entry.category,
+                          ].whereType<String>().join(' \u2022 '),
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.copy),
+                          tooltip: 'Copy password',
+                          onPressed: () =>
+                              _copyPassword(context, entry.password),
+                        ),
+                        onTap: () =>
+                            context.push('/passwords/list/${entry.id}'),
+                      ),
+                    );
+                  },
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(child: Text('Error: $e')),
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => context.push('/passwords/list/new'),
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  void _copyPassword(BuildContext context, String password) {
+    Clipboard.setData(ClipboardData(text: password));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Password copied (auto-clears in 30s)'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+    // Auto-clear clipboard after 30 seconds
+    Timer(const Duration(seconds: 30), () {
+      Clipboard.setData(const ClipboardData(text: ''));
+    });
+  }
+}
+
+class _CategoryChips extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final categories = ref.watch(vaultCategoriesProvider);
+    final selected = ref.watch(vaultCategoryFilterProvider);
+
+    return categories.when(
+      data: (cats) {
+        if (cats.isEmpty) return const SizedBox.shrink();
+        return SizedBox(
+          height: 48,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FilterChip(
+                  label: const Text('All'),
+                  selected: selected == null,
+                  onSelected: (_) =>
+                      ref.read(vaultCategoryFilterProvider.notifier).state =
+                          null,
+                ),
+              ),
+              ...cats.map(
+                (cat) => Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FilterChip(
+                    label: Text(cat),
+                    selected: selected == cat,
+                    onSelected: (_) =>
+                        ref.read(vaultCategoryFilterProvider.notifier).state =
+                            selected == cat ? null : cat,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+    );
+  }
+}
