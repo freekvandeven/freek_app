@@ -1,9 +1,9 @@
-import 'dart:io';
+import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../calendar/providers/calendar_providers.dart';
@@ -88,7 +88,6 @@ class _DataExportPageState extends ConsumerState<DataExportPage> {
 
     try {
       final files = <XFile>[];
-      final dir = await getTemporaryDirectory();
 
       if (_selected['tasks'] == true) {
         final data = ref.read(taskListProvider).valueOrNull ?? [];
@@ -113,7 +112,7 @@ class _DataExportPageState extends ConsumerState<DataExportPage> {
               t.createdAt.toIso8601String(),
             ],
         ];
-        files.add(await _writeCsv(dir, 'tasks.csv', rows));
+        files.add(_writeCsv('tasks.csv', rows));
       }
 
       if (_selected['recipes'] == true) {
@@ -141,7 +140,7 @@ class _DataExportPageState extends ConsumerState<DataExportPage> {
               r.createdAt.toIso8601String(),
             ],
         ];
-        files.add(await _writeCsv(dir, 'recipes.csv', rows));
+        files.add(_writeCsv('recipes.csv', rows));
       }
 
       if (_selected['transactions'] == true) {
@@ -167,7 +166,7 @@ class _DataExportPageState extends ConsumerState<DataExportPage> {
               t.isRecurring.toString(),
             ],
         ];
-        files.add(await _writeCsv(dir, 'transactions.csv', rows));
+        files.add(_writeCsv('transactions.csv', rows));
       }
 
       if (_selected['categories'] == true) {
@@ -176,7 +175,7 @@ class _DataExportPageState extends ConsumerState<DataExportPage> {
           ['id', 'name', 'type', 'icon'],
           for (final c in data) [c.id, c.name, c.type.name, c.icon ?? ''],
         ];
-        files.add(await _writeCsv(dir, 'categories.csv', rows));
+        files.add(_writeCsv('categories.csv', rows));
       }
 
       if (_selected['assets'] == true) {
@@ -186,7 +185,7 @@ class _DataExportPageState extends ConsumerState<DataExportPage> {
           for (final a in data)
             [a.id, a.name, a.type.name, a.currentValue.toString(), a.currency],
         ];
-        files.add(await _writeCsv(dir, 'assets.csv', rows));
+        files.add(_writeCsv('assets.csv', rows));
       }
 
       if (_selected['calendar'] == true) {
@@ -202,7 +201,7 @@ class _DataExportPageState extends ConsumerState<DataExportPage> {
               e.date.toIso8601String(),
             ],
         ];
-        files.add(await _writeCsv(dir, 'calendar_events.csv', rows));
+        files.add(_writeCsv('calendar_events.csv', rows));
       }
 
       if (_selected['inventory'] == true) {
@@ -230,7 +229,7 @@ class _DataExportPageState extends ConsumerState<DataExportPage> {
               i.purchaseDate?.toIso8601String() ?? '',
             ],
         ];
-        files.add(await _writeCsv(dir, 'inventory.csv', rows));
+        files.add(_writeCsv('inventory.csv', rows));
       }
 
       if (_selected['feedback'] == true) {
@@ -247,7 +246,7 @@ class _DataExportPageState extends ConsumerState<DataExportPage> {
               f.createdAt.toIso8601String(),
             ],
         ];
-        files.add(await _writeCsv(dir, 'feedback.csv', rows));
+        files.add(_writeCsv('feedback.csv', rows));
       }
 
       if (_selected['knowledge'] == true) {
@@ -264,7 +263,7 @@ class _DataExportPageState extends ConsumerState<DataExportPage> {
               k.createdAt.toIso8601String(),
             ],
         ];
-        files.add(await _writeCsv(dir, 'knowledge_pages.csv', rows));
+        files.add(_writeCsv('knowledge_pages.csv', rows));
       }
 
       if (files.isEmpty) {
@@ -282,15 +281,14 @@ class _DataExportPageState extends ConsumerState<DataExportPage> {
     }
   }
 
-  Future<XFile> _writeCsv(
-    Directory dir,
-    String filename,
-    List<List<dynamic>> rows,
-  ) async {
+  XFile _writeCsv(String filename, List<List<dynamic>> rows) {
     final csv = const ListToCsvConverter().convert(rows);
     // UTF-8 BOM for Excel compatibility
-    final file = File('${dir.path}/$filename');
-    await file.writeAsString('\uFEFF$csv');
-    return XFile(file.path);
+    final bytes = utf8.encode('\uFEFF$csv');
+    return XFile.fromData(
+      Uint8List.fromList(bytes),
+      name: filename,
+      mimeType: 'text/csv',
+    );
   }
 }

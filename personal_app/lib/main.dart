@@ -34,7 +34,7 @@ class PersonalApp extends ConsumerWidget {
         home: Scaffold(body: Center(child: Text('Failed to initialize: $e'))),
       ),
       data: (_) => MaterialApp.router(
-        title: 'Personal App',
+        title: 'Freek App',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,

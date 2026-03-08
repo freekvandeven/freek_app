@@ -248,7 +248,7 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: DropdownButtonFormField<RepeatType>(
-                      value: _repeatType,
+                      initialValue: _repeatType,
                       items: RepeatType.values
                           .map(
                             (t) =>
