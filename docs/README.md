@@ -66,7 +66,7 @@ docs/
 | ADR-001 | Hybrid security model (E2E for passwords, Firestore rules for rest) | Accepted |
 | ADR-002 | GitHub Actions CI/CD with tag-based deployment | Accepted |
 | ADR-003 | Config-driven forkability (`.env` + config files) | Accepted |
-| — | Framework: Plain Flutter vs. Flutter Flood | **Pending** |
+| ADR-004 | Plain Flutter (no Flood) | Accepted |
 
 ## Status
 
@@ -78,5 +78,5 @@ docs/
 | Data Model | ✅ Complete |
 | Screens & Navigation | ✅ Complete |
 | Non-Functional Reqs | ✅ Complete |
-| Tech Decisions | ✅ Complete (framework TBD) |
+| Tech Decisions | ✅ Complete |
 | ADRs (3) | ✅ Complete |

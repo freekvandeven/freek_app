@@ -4,16 +4,16 @@ Track the key technology choices for the project.
 
 ## Framework Decision
 
-**Status**: Pending — will be decided after requirements review.
+**Status**: Decided
 
 | Option | Pros | Cons |
 |--------|------|------|
-| Traditional Flutter | Full control, larger community, more resources, easier to hire/find help | More boilerplate, manual state/routing/data setup |
-| Flutter Flood | Opinionated structure, built-in patterns, less boilerplate | Smaller community, learning curve, dependency on Flood |
+| Plain Flutter | Full control, larger community, more resources, direct Firebase SDK access, standard Theme/ColorScheme | More boilerplate, manual state/routing/data setup |
+| Flutter Flood | Opinionated structure, built-in patterns, less boilerplate | Small community, limited docs, extra abstraction over Firebase, styled widgets conflict with Theme system, harder for forks to understand |
 
-**Decision**: _TBD — will be decided after requirements are complete and reviewed._
+**Decision**: **Plain Flutter** (no Flood)
 
-**Rationale**: _Pending review._
+**Rationale**: See [ADR-004](../decisions/ADR_004_framework_plain_flutter.md). The project requires deep Firebase integration, client-side encryption, biometric route guards, rich UI packages (calendar, charts, Markdown), and 6-platform support. Plain Flutter provides direct access to the Firebase SDKs, huge community support, well-documented packages, and a more approachable codebase for forks. Flood's abstractions would add complexity without proportional benefit for this feature set.
 
 ---
 
@@ -92,11 +92,13 @@ Anyone cloning the repo can:
 
 ## State Management
 
-**Status**: Pending — depends on framework decision (plain Flutter vs. Flood).
+**Status**: Decided
 
-**Options considered**: Provider, Riverpod, Bloc, Flood built-in, GetX
+**Options considered**: Provider, Riverpod, Bloc, GetX
 
-**Decision**: _TBD_
+**Decision**: **Riverpod**
+
+**Rationale**: Riverpod provides compile-safe dependency injection, fine-grained reactivity, excellent testability, and no `BuildContext` dependency for accessing state. It pairs well with `go_router` and Firebase, has an active community, and is the modern successor to Provider.
 
 ---
 
@@ -115,7 +117,8 @@ Track key third-party packages planned for the project.
 | `flutter_native_splash` | Native splash screen | Planned |
 | `encrypt` / `pointycastle` | Client-side E2E encryption | Planned |
 | `csv` | CSV export functionality | Planned |
-| `go_router` or similar | Navigation / routing | Planned |
+| `go_router` | Navigation / routing with typed routes and guards | Planned |
+| `flutter_riverpod` | State management and dependency injection | Planned |
 | `flutter_markdown` | Render markdown in knowledge bank | Planned |
 | `intl` | Date formatting, localization | Planned |
 | `share_plus` / `clipboard` | Copy feedback to clipboard | Planned |
@@ -123,7 +126,7 @@ Track key third-party packages planned for the project.
 
 ## Open Questions
 
-- Final framework decision (plain Flutter vs. Flood)
-- Which state management approach to use
 - Whether to add a linting package like `very_good_analysis`
 - Strategy for encrypted fields in Firestore (which library, key derivation)
+- Chart library choice (`fl_chart` vs. `syncfusion_flutter_charts`)
+- Calendar package choice (`table_calendar` vs. custom)
