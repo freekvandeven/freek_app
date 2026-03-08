@@ -10,6 +10,8 @@ import '../features/calendar/pages/calendar_page.dart';
 import '../features/dashboard/pages/dashboard_page.dart';
 import '../features/inventory/pages/inventory_edit_page.dart';
 import '../features/inventory/pages/inventory_list_page.dart';
+import '../features/feedback/pages/feedback_edit_page.dart';
+import '../features/feedback/pages/feedback_list_page.dart';
 import '../features/finances/pages/asset_edit_page.dart';
 import '../features/finances/pages/asset_list_page.dart';
 import '../features/finances/pages/category_management_page.dart';
@@ -235,7 +237,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/feedback',
-        builder: (context, state) => _placeholder('Feedback'),
+        builder: (context, state) => const FeedbackListPage(),
+        routes: [
+          GoRoute(
+            path: 'new',
+            builder: (context, state) => const FeedbackEditPage(),
+          ),
+          GoRoute(
+            path: ':entryId',
+            builder: (context, state) =>
+                FeedbackEditPage(entryId: state.pathParameters['entryId']),
+          ),
+        ],
       ),
       GoRoute(
         path: '/settings',
