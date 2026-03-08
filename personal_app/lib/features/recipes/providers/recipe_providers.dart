@@ -1,10 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../config/app_config.dart';
+import '../../auth/providers/auth_providers.dart';
 import '../models/recipe.dart';
+import '../services/firestore_recipe_service.dart';
 import '../services/recipe_service.dart';
 
 final recipeServiceProvider = Provider<RecipeService>((ref) {
+  if (AppConfig.useFirebase) {
+    final userId = ref.watch(currentUserProvider)?.id ?? '';
+    return FirestoreRecipeService(userId);
+  }
   return MockRecipeService(SharedPreferencesAsync());
 });
 

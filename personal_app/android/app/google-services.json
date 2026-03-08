@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "90391184253",
+    "project_id": "freek-personal-app",
+    "storage_bucket": "freek-personal-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:90391184253:android:fac4d1149a81b41c2a4214",
+        "android_client_info": {
+          "package_name": "nl.freekvandeven.personal_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAgDVo2ILFBr-6Bt8FQjJN2Qs9OBo5UMnM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

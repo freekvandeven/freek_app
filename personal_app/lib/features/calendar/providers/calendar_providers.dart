@@ -1,14 +1,21 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../config/app_config.dart';
+import '../../auth/providers/auth_providers.dart';
 import '../../tasks/providers/task_providers.dart';
 import '../../finances/providers/finance_providers.dart';
 import '../../finances/models/finance_models.dart';
 import '../models/calendar_event.dart';
 import '../services/calendar_service.dart';
+import '../services/firestore_calendar_service.dart';
 
-final calendarServiceProvider = Provider<CalendarService>(
-  (_) => MockCalendarService(),
-);
+final calendarServiceProvider = Provider<CalendarService>((ref) {
+  if (AppConfig.useFirebase) {
+    final userId = ref.watch(currentUserProvider)?.id ?? '';
+    return FirestoreCalendarService(userId);
+  }
+  return MockCalendarService();
+});
 
 class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
   @override

@@ -3,18 +3,29 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../config/app_config.dart';
 import '../models/user_profile.dart';
 import '../services/auth_service.dart';
+import '../services/firebase_auth_service.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) {
+  if (AppConfig.useFirebase) {
+    final service = FirebaseAuthService();
+    ref.onDispose(() => service.dispose());
+    return service;
+  }
   final service = MockAuthService(SharedPreferencesAsync());
   ref.onDispose(() => service.dispose());
   return service;
 });
 
 final authInitProvider = FutureProvider<void>((ref) async {
-  final service = ref.watch(authServiceProvider) as MockAuthService;
-  await service.init();
+  final service = ref.watch(authServiceProvider);
+  if (service is MockAuthService) {
+    await service.init();
+  } else if (service is FirebaseAuthService) {
+    await service.init();
+  }
 });
 
 final authStateProvider = StreamProvider<UserProfile?>((ref) {

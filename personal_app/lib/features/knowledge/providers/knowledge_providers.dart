@@ -2,12 +2,19 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../config/app_config.dart';
+import '../../auth/providers/auth_providers.dart';
 import '../models/knowledge_page.dart';
+import '../services/firestore_knowledge_service.dart';
 import '../services/knowledge_service.dart';
 
-final knowledgeServiceProvider = Provider<KnowledgeService>(
-  (_) => MockKnowledgeService(),
-);
+final knowledgeServiceProvider = Provider<KnowledgeService>((ref) {
+  if (AppConfig.useFirebase) {
+    final userId = ref.watch(currentUserProvider)?.id ?? '';
+    return FirestoreKnowledgeService(userId);
+  }
+  return MockKnowledgeService();
+});
 
 final knowledgeListProvider =
     AsyncNotifierProvider<KnowledgeListNotifier, List<KnowledgePage>>(

@@ -3,11 +3,20 @@ import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../config/app_config.dart';
+import '../../auth/providers/auth_providers.dart';
 import '../models/password_entry.dart';
+import '../services/firestore_vault_service.dart';
 import '../services/vault_crypto.dart';
 import '../services/vault_service.dart';
 
-final vaultServiceProvider = Provider<VaultService>((_) => MockVaultService());
+final vaultServiceProvider = Provider<VaultService>((ref) {
+  if (AppConfig.useFirebase) {
+    final userId = ref.watch(currentUserProvider)?.id ?? '';
+    return FirestoreVaultService(userId);
+  }
+  return MockVaultService();
+});
 
 final vaultSetupProvider = FutureProvider<bool>((ref) {
   return ref.read(vaultServiceProvider).isVaultSetup();

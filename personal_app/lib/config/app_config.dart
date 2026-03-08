@@ -5,6 +5,11 @@ class AppConfig {
 
   static String get appName => dotenv.get('APP_NAME', fallback: 'Personal App');
 
+  /// Returns true if the storage backend is set to "firebase".
+  static bool get useFirebase =>
+      dotenv.get('STORAGE_BACKEND', fallback: 'local').toLowerCase() ==
+      'firebase';
+
   static String get firebaseApiKey =>
       dotenv.get('FIREBASE_API_KEY', fallback: '');
 

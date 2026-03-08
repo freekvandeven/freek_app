@@ -1,11 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../config/app_config.dart';
+import '../../auth/providers/auth_providers.dart';
 import '../models/inventory_item.dart';
+import '../services/firestore_inventory_service.dart';
 import '../services/inventory_service.dart';
 
-final inventoryServiceProvider = Provider<InventoryService>(
-  (_) => MockInventoryService(),
-);
+final inventoryServiceProvider = Provider<InventoryService>((ref) {
+  if (AppConfig.useFirebase) {
+    final userId = ref.watch(currentUserProvider)?.id ?? '';
+    return FirestoreInventoryService(userId);
+  }
+  return MockInventoryService();
+});
 
 class InventoryListNotifier extends AsyncNotifier<List<InventoryItem>> {
   @override

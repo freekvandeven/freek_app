@@ -1,11 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../config/app_config.dart';
+import '../../auth/providers/auth_providers.dart';
 import '../models/finance_models.dart';
 import '../services/finance_service.dart';
+import '../services/firestore_finance_service.dart';
 
-final financeServiceProvider = Provider<FinanceService>(
-  (_) => MockFinanceService(),
-);
+final financeServiceProvider = Provider<FinanceService>((ref) {
+  if (AppConfig.useFirebase) {
+    final userId = ref.watch(currentUserProvider)?.id ?? '';
+    return FirestoreFinanceService(userId);
+  }
+  return MockFinanceService();
+});
 
 // === Transactions ===
 

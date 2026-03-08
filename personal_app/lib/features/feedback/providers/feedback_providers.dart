@@ -2,12 +2,19 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../config/app_config.dart';
+import '../../auth/providers/auth_providers.dart';
 import '../models/feedback_entry.dart';
 import '../services/feedback_service.dart';
+import '../services/firestore_feedback_service.dart';
 
-final feedbackServiceProvider = Provider<FeedbackService>(
-  (_) => MockFeedbackService(),
-);
+final feedbackServiceProvider = Provider<FeedbackService>((ref) {
+  if (AppConfig.useFirebase) {
+    final userId = ref.watch(currentUserProvider)?.id ?? '';
+    return FirestoreFeedbackService(userId);
+  }
+  return MockFeedbackService();
+});
 
 final feedbackListProvider =
     AsyncNotifierProvider<FeedbackListNotifier, List<FeedbackEntry>>(
