@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../services/image_upload_service.dart';
 import '../models/recipe.dart';
 import '../providers/recipe_providers.dart';
 
@@ -29,6 +30,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
   List<String> _images = [];
   int _primaryImageIndex = 0;
   bool _isEditing = false;
+  bool _isUploading = false;
 
   @override
   void initState() {
@@ -208,12 +210,27 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
               maxLines: 3,
             ),
             const SizedBox(height: 8),
-            TextField(
-              controller: imgCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Image URL (optional)',
-                hintText: 'https://...',
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: imgCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Step image (optional)',
+                      hintText: 'URL or upload',
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.upload),
+                  tooltip: 'Upload image',
+                  onPressed: () async {
+                    final service = ref.read(imageUploadServiceProvider);
+                    final url = await service.pickAndUploadImage(folder: 'recipes');
+                    if (url != null) imgCtrl.text = url;
+                  },
+                ),
+              ],
             ),
           ],
         ),
@@ -241,11 +258,74 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
   }
 
   void _addImage() {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Upload from gallery'),
+              onTap: () async {
+                Navigator.pop(ctx);
+                await _uploadImage();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Take a photo'),
+              onTap: () async {
+                Navigator.pop(ctx);
+                await _captureImage();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.link),
+              title: const Text('Enter URL'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _addImageByUrl();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _uploadImage() async {
+    setState(() => _isUploading = true);
+    try {
+      final service = ref.read(imageUploadServiceProvider);
+      final url = await service.pickAndUploadImage(folder: 'recipes');
+      if (url != null && mounted) {
+        setState(() => _images.add(url));
+      }
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
+  }
+
+  Future<void> _captureImage() async {
+    setState(() => _isUploading = true);
+    try {
+      final service = ref.read(imageUploadServiceProvider);
+      final url = await service.captureAndUploadImage(folder: 'recipes');
+      if (url != null && mounted) {
+        setState(() => _images.add(url));
+      }
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
+  }
+
+  void _addImageByUrl() {
     final ctrl = TextEditingController();
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Add Image'),
+        title: const Text('Add Image URL'),
         content: TextField(
           controller: ctrl,
           decoration: const InputDecoration(
@@ -461,11 +541,17 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Images', style: Theme.of(context).textTheme.titleMedium),
-                TextButton.icon(
-                  onPressed: _addImage,
-                  icon: const Icon(Icons.add_photo_alternate, size: 18),
-                  label: const Text('Add'),
-                ),
+                _isUploading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : TextButton.icon(
+                        onPressed: _addImage,
+                        icon: const Icon(Icons.add_photo_alternate, size: 18),
+                        label: const Text('Add'),
+                      ),
               ],
             ),
             if (_images.isNotEmpty)

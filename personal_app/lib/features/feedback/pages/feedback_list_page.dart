@@ -22,18 +22,31 @@ class FeedbackListPage extends ConsumerWidget {
         '(a Flutter personal life-management app). Each item is either a bug '
         'report or a feature wish. Please address each item listed below.');
     buffer.writeln();
-    buffer.writeln('After implementing the changes:');
+    buffer.writeln('## Instructions');
+    buffer.writeln();
     buffer.writeln(
-        '1. Update the relevant project documentation under `docs/` '
+        'For EACH individual item below, follow these steps before moving on '
+        'to the next item:');
+    buffer.writeln(
+        '1. Implement the fix or feature for that single item.');
+    buffer.writeln(
+        '2. Update the relevant project documentation under `docs/` '
         '(e.g. `docs/requirements/screens.md`, `docs/requirements/user_stories.md`, '
         '`docs/requirements/data_model.md`) to reflect any new or changed behavior.');
     buffer.writeln(
-        '2. If a new feature is added, consider whether it needs a new feature spec '
+        '3. If a new feature is added, consider whether it needs a new feature spec '
         'in `docs/requirements/features/`.');
     buffer.writeln(
-        '3. If a technical decision was made, document it in '
+        '4. If a technical decision was made, document it in '
         '`docs/requirements/tech_decisions.md` or create an ADR in `docs/decisions/`.');
-    buffer.writeln('4. Commit the changes with a descriptive commit message.');
+    buffer.writeln(
+        '5. **Commit immediately** with a descriptive conventional commit message '
+        '(e.g. `fix: resolve biometric lock not triggering at startup` or '
+        '`feat: add recipe image upload via Firebase Storage`). '
+        'Do NOT batch multiple items into a single commit.');
+    buffer.writeln();
+    buffer.writeln(
+        'Each item = one commit. Keep commits small and focused.');
     buffer.writeln();
 
     if (bugs.isNotEmpty) {
