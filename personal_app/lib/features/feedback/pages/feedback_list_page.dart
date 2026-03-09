@@ -9,6 +9,73 @@ import '../providers/feedback_providers.dart';
 class FeedbackListPage extends ConsumerWidget {
   const FeedbackListPage({super.key});
 
+  void _copyAllToClipboard(
+      BuildContext context, List<FeedbackEntry> entries) {
+    final bugs = entries.where((e) => e.type == FeedbackType.bug).toList();
+    final wishes = entries.where((e) => e.type == FeedbackType.wish).toList();
+
+    final buffer = StringBuffer();
+    buffer.writeln('# Freek App — Feedback & Improvement Instructions');
+    buffer.writeln();
+    buffer.writeln(
+        'Below is a list of user-reported feedback items for the Freek App '
+        '(a Flutter personal life-management app). Each item is either a bug '
+        'report or a feature wish. Please address each item listed below.');
+    buffer.writeln();
+    buffer.writeln('After implementing the changes:');
+    buffer.writeln(
+        '1. Update the relevant project documentation under `docs/` '
+        '(e.g. `docs/requirements/screens.md`, `docs/requirements/user_stories.md`, '
+        '`docs/requirements/data_model.md`) to reflect any new or changed behavior.');
+    buffer.writeln(
+        '2. If a new feature is added, consider whether it needs a new feature spec '
+        'in `docs/requirements/features/`.');
+    buffer.writeln(
+        '3. If a technical decision was made, document it in '
+        '`docs/requirements/tech_decisions.md` or create an ADR in `docs/decisions/`.');
+    buffer.writeln('4. Commit the changes with a descriptive commit message.');
+    buffer.writeln();
+
+    if (bugs.isNotEmpty) {
+      buffer.writeln('## Bugs (${bugs.length})');
+      buffer.writeln();
+      for (final bug in bugs) {
+        buffer.writeln('### [Bug] ${bug.title}');
+        buffer.writeln();
+        buffer.writeln(bug.description);
+        buffer.writeln();
+        buffer.writeln(
+            '- Status: ${bug.status.name[0].toUpperCase()}${bug.status.name.substring(1)}');
+        buffer.writeln(
+            '- Reported: ${bug.createdAt.toIso8601String().substring(0, 10)}');
+        buffer.writeln();
+      }
+    }
+
+    if (wishes.isNotEmpty) {
+      buffer.writeln('## Wishes (${wishes.length})');
+      buffer.writeln();
+      for (final wish in wishes) {
+        buffer.writeln('### [Wish] ${wish.title}');
+        buffer.writeln();
+        buffer.writeln(wish.description);
+        buffer.writeln();
+        buffer.writeln(
+            '- Status: ${wish.status.name[0].toUpperCase()}${wish.status.name.substring(1)}');
+        buffer.writeln(
+            '- Reported: ${wish.createdAt.toIso8601String().substring(0, 10)}');
+        buffer.writeln();
+      }
+    }
+
+    Clipboard.setData(ClipboardData(text: buffer.toString()));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+          content: Text(
+              'Copied ${entries.length} feedback item${entries.length == 1 ? '' : 's'} to clipboard')),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final entriesAsync = ref.watch(filteredFeedbackProvider);
@@ -19,6 +86,16 @@ class FeedbackListPage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Feedback'),
         actions: [
+          entriesAsync.whenOrNull(
+            data: (entries) => entries.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.copy_all),
+                    tooltip: 'Copy all to clipboard',
+                    onPressed: () =>
+                        _copyAllToClipboard(context, entries),
+                  )
+                : null,
+          ) ?? const SizedBox.shrink(),
           PopupMenuButton<String>(
             icon: const Icon(Icons.filter_list),
             onSelected: (value) {
@@ -110,55 +187,92 @@ class _FeedbackTile extends ConsumerWidget {
         ? Icons.bug_report
         : Icons.lightbulb;
 
-    return Dismissible(
-      key: ValueKey(entry.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        color: Colors.red,
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 16),
-        child: const Icon(Icons.delete, color: Colors.white),
-      ),
-      confirmDismiss: (_) async {
-        return await showDialog<bool>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Delete feedback?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Delete'),
-              ),
-            ],
-          ),
-        );
-      },
-      onDismissed: (_) {
-        ref.read(feedbackListProvider.notifier).deleteEntry(entry.id);
-      },
-      child: ListTile(
+    return ListTile(
         leading: Icon(icon, color: color),
-        title: Text(entry.title),
+        title: Text(
+          entry.title,
+          style: entry.status == FeedbackStatus.resolved
+              ? const TextStyle(decoration: TextDecoration.lineThrough)
+              : null,
+        ),
         subtitle: Text(
           '${entry.status.name[0].toUpperCase()}${entry.status.name.substring(1)}'
           ' · ${entry.createdAt.toIso8601String().substring(0, 10)}',
         ),
-        trailing: IconButton(
-          icon: const Icon(Icons.copy),
-          tooltip: 'Copy to clipboard',
-          onPressed: () {
-            Clipboard.setData(ClipboardData(text: entry.toClipboardText()));
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Copied to clipboard')),
-            );
+        trailing: PopupMenuButton<String>(
+          icon: const Icon(Icons.more_vert),
+          onSelected: (value) async {
+            switch (value) {
+              case 'copy':
+                Clipboard.setData(
+                    ClipboardData(text: entry.toClipboardText()));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Copied to clipboard')),
+                  );
+                }
+              case 'resolve':
+                await ref.read(feedbackListProvider.notifier).updateEntry(
+                      entry.copyWith(status: FeedbackStatus.resolved),
+                    );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Marked as resolved')),
+                  );
+                }
+              case 'delete':
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Delete feedback?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  await ref
+                      .read(feedbackListProvider.notifier)
+                      .deleteEntry(entry.id);
+                }
+            }
           },
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'copy',
+              child: ListTile(
+                leading: Icon(Icons.copy),
+                title: Text('Copy'),
+                dense: true,
+              ),
+            ),
+            if (entry.status != FeedbackStatus.resolved)
+              const PopupMenuItem(
+                value: 'resolve',
+                child: ListTile(
+                  leading: Icon(Icons.check_circle_outline),
+                  title: Text('Resolve'),
+                  dense: true,
+                ),
+              ),
+            const PopupMenuItem(
+              value: 'delete',
+              child: ListTile(
+                leading: Icon(Icons.delete_outline, color: Colors.red),
+                title: Text('Delete', style: TextStyle(color: Colors.red)),
+                dense: true,
+              ),
+            ),
+          ],
         ),
         onTap: () => context.push('/feedback/${entry.id}'),
-      ),
     );
   }
 }
