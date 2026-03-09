@@ -29,8 +29,6 @@ class FirebaseAuthService implements AuthService {
   }
 
   @override
-
-  @override
   Stream<UserProfile?> get authStateChanges => _authStateController.stream;
 
   @override

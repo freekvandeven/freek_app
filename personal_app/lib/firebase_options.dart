@@ -51,7 +51,7 @@ class DefaultFirebaseOptions {
     appId: '1:90391184253:web:c8bfb915f2b58a7a2a4214',
     messagingSenderId: '90391184253',
     projectId: 'freek-personal-app',
-    authDomain: 'freek-personal-app.firebaseapp.com',
+    authDomain: 'freek-personal-app.web.app',
     storageBucket: 'freek-personal-app.firebasestorage.app',
     measurementId: 'G-2QS6P87Y95',
   );

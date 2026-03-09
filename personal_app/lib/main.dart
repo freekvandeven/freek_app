@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,12 +13,33 @@ import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load();
 
-  if (AppConfig.useFirebase) {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+  try {
+    await dotenv.load();
+
+    if (AppConfig.useFirebase) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+  } catch (e, st) {
+    if (kDebugMode) {
+      debugPrint('Initialization error: $e\n$st');
+    }
+    runApp(MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              'Failed to initialize:\n$e',
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      ),
+    ));
+    return;
   }
 
   runApp(const ProviderScope(child: PersonalApp()));
