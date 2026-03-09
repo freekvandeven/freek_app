@@ -21,6 +21,8 @@ The app is designed to be self-hostable and forkable: anyone can clone the repos
 - [x] Forkable: other users can clone and configure without touching Dart code
 - [x] Data portability: all backend data exportable to CSV
 - [x] Extensible: architecture supports adding new feature modules in the future
+- [x] AI integration: Google Gemini for smart assistance across the app
+- [x] External connections: Quick links and integration hooks for Google Calendar, Kerio, and other services
 
 ## Target Users
 

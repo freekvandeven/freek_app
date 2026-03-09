@@ -6,12 +6,15 @@ import '../features/auth/pages/login_page.dart';
 import '../features/auth/pages/signup_page.dart';
 import '../features/auth/providers/auth_providers.dart';
 import '../features/calendar/pages/calendar_page.dart';
+import '../features/connections/pages/connections_page.dart';
 import '../features/dashboard/pages/dashboard_page.dart';
+import '../features/gemini/pages/gemini_chat_page.dart';
 import '../features/inventory/pages/inventory_edit_page.dart';
 import '../features/inventory/pages/inventory_list_page.dart';
 import '../features/knowledge/pages/knowledge_bank_page.dart';
 import '../features/knowledge/pages/knowledge_edit_page.dart';
 import '../features/knowledge/pages/knowledge_view_page.dart';
+import '../features/feedback/models/feedback_entry.dart';
 import '../features/feedback/pages/feedback_edit_page.dart';
 import '../features/feedback/pages/feedback_list_page.dart';
 import '../features/finances/pages/asset_edit_page.dart';
@@ -29,6 +32,7 @@ import '../features/recipes/pages/recipe_detail_page.dart';
 import '../features/recipes/pages/recipe_edit_page.dart';
 import '../features/recipes/pages/recipe_list_page.dart';
 import '../features/settings/pages/data_export_page.dart';
+import '../features/settings/pages/profile_page.dart';
 import '../features/settings/pages/settings_page.dart';
 import '../features/tasks/pages/task_edit_page.dart';
 import '../features/tasks/pages/task_list_page.dart';
@@ -252,12 +256,26 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ],
       ),
       GoRoute(
+        path: '/connections',
+        builder: (context, state) => const ConnectionsPage(),
+      ),
+      GoRoute(
+        path: '/gemini',
+        builder: (context, state) => const GeminiChatPage(),
+      ),
+      GoRoute(
         path: '/feedback',
         builder: (context, state) => const FeedbackListPage(),
         routes: [
           GoRoute(
             path: 'new',
-            builder: (context, state) => const FeedbackEditPage(),
+            builder: (context, state) {
+              final typeParam = state.uri.queryParameters['type'];
+              FeedbackType? initialType;
+              if (typeParam == 'bug') initialType = FeedbackType.bug;
+              if (typeParam == 'wish') initialType = FeedbackType.wish;
+              return FeedbackEditPage(initialType: initialType);
+            },
           ),
           GoRoute(
             path: ':entryId',
@@ -273,6 +291,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'export',
             builder: (context, state) => const DataExportPage(),
+          ),
+          GoRoute(
+            path: 'profile',
+            builder: (context, state) => const ProfilePage(),
           ),
         ],
       ),

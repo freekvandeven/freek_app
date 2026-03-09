@@ -14,7 +14,10 @@ class DashboardPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Personal App'),
+        title: GestureDetector(
+          onDoubleTap: () => _showQuickActions(context),
+          child: const Text('Personal App'),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
@@ -43,6 +46,64 @@ class DashboardPage extends ConsumerWidget {
     );
   }
 
+  void _showQuickActions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('Quick Actions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.bug_report, color: Colors.red),
+              title: const Text('Report a Bug'),
+              onTap: () {
+                Navigator.pop(ctx);
+                context.push('/feedback/new?type=bug');
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.lightbulb, color: Theme.of(context).colorScheme.primary),
+              title: const Text('Request a Feature'),
+              onTap: () {
+                Navigator.pop(ctx);
+                context.push('/feedback/new?type=wish');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.add_task),
+              title: const Text('New Task'),
+              onTap: () {
+                Navigator.pop(ctx);
+                context.push('/tasks');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.restaurant_menu),
+              title: const Text('New Recipe'),
+              onTap: () {
+                Navigator.pop(ctx);
+                context.push('/recipes/new');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.note_add),
+              title: const Text('New Knowledge Entry'),
+              onTap: () {
+                Navigator.pop(ctx);
+                context.push('/knowledge/new');
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildFeatureGrid(BuildContext context, ColorScheme colorScheme) {
     final features = [
       _FeatureTile(
@@ -50,18 +111,21 @@ class DashboardPage extends ConsumerWidget {
         label: 'Tasks',
         color: Colors.blue,
         route: '/tasks',
+        isShellBranch: true,
       ),
       _FeatureTile(
         icon: Icons.calendar_month_rounded,
         label: 'Calendar',
         color: Colors.purple,
         route: '/calendar',
+        isShellBranch: true,
       ),
       _FeatureTile(
         icon: Icons.account_balance_wallet_rounded,
         label: 'Finance',
         color: Colors.green,
         route: '/finance',
+        isShellBranch: true,
       ),
       _FeatureTile(
         icon: Icons.restaurant_menu_rounded,
@@ -93,6 +157,18 @@ class DashboardPage extends ConsumerWidget {
         color: Colors.amber,
         route: '/feedback',
       ),
+      _FeatureTile(
+        icon: Icons.link_rounded,
+        label: 'Connections',
+        color: Colors.cyan,
+        route: '/connections',
+      ),
+      _FeatureTile(
+        icon: Icons.auto_awesome_rounded,
+        label: 'Gemini AI',
+        color: Colors.deepPurple,
+        route: '/gemini',
+      ),
     ];
 
     return GridView.builder(
@@ -120,7 +196,9 @@ class DashboardPage extends ConsumerWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.go(feature.route),
+        onTap: () => feature.isShellBranch
+            ? context.go(feature.route)
+            : context.push(feature.route),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -146,11 +224,13 @@ class _FeatureTile {
   final String label;
   final Color color;
   final String route;
+  final bool isShellBranch;
 
   const _FeatureTile({
     required this.icon,
     required this.label,
     required this.color,
     required this.route,
+    this.isShellBranch = false,
   });
 }

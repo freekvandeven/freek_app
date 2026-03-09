@@ -7,7 +7,8 @@ import '../providers/feedback_providers.dart';
 
 class FeedbackEditPage extends ConsumerStatefulWidget {
   final String? entryId;
-  const FeedbackEditPage({super.key, this.entryId});
+  final FeedbackType? initialType;
+  const FeedbackEditPage({super.key, this.entryId, this.initialType});
 
   @override
   ConsumerState<FeedbackEditPage> createState() => _FeedbackEditPageState();
@@ -25,6 +26,9 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialType != null) {
+      _type = widget.initialType!;
+    }
     if (widget.entryId != null) {
       _loadEntry();
     } else {

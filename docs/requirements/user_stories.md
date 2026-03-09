@@ -126,6 +126,23 @@ Capture user-facing scenarios in the format: **As a [user], I want [capability],
 | US-091 | As a user, I want to export all my data to CSV files, so that I can back up or migrate my data. | High | F010 | TODO |
 | US-092 | As a user, I want to choose which collections to export, so that I only get the data I need. | Medium | F010 | TODO |
 | US-093 | As a user, I want to set a default currency, so that financial data uses my preferred currency. | Low | F010 | TODO |
+| US-094 | As a user, I want to edit my profile (name, phone, bio), so that I can personalize my account. | Medium | F010 | Done |
+| US-095 | As a user, I want to see currency symbols next to currency codes, so that I can quickly identify currencies. | Low | F010 | Done |
+
+## Connections (F011)
+
+| ID | User Story | Priority | Feature | Status |
+|----|-----------|----------|---------|--------|
+| US-110 | As a user, I want quick links to external apps (Google Calendar, Gmail, etc.), so that I can quickly access related services. | Medium | F011 | Done |
+| US-111 | As a user, I want to see available integrations and their connection status, so that I know what external services I can connect. | Medium | F011 | Done |
+
+## Gemini AI (F012)
+
+| ID | User Story | Priority | Feature | Status |
+|----|-----------|----------|---------|--------|
+| US-120 | As a user, I want to chat with Gemini AI, so that I can get help with tasks, recipes, budgeting, and general questions. | Medium | F012 | Done |
+| US-121 | As a user, I want suggestion chips in the Gemini chat, so that I can quickly start common conversations. | Low | F012 | Done |
+| US-122 | As a user, I want to see a banner if Gemini API key is not configured, so that I know how to enable AI features. | Low | F012 | Done |
 
 ## Cross-Cutting
 

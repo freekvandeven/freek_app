@@ -130,6 +130,23 @@ class _RecipeCard extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
+              if (recipe.primaryImageUrl != null) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    recipe.primaryImageUrl!,
+                    width: 56,
+                    height: 56,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Icon(
+                      Icons.restaurant_menu,
+                      size: 56,
+                      color: colorScheme.onSurfaceVariant.withAlpha(60),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

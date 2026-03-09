@@ -46,6 +46,8 @@ class UserProfile {
   final String id;
   final String email;
   final String? displayName;
+  final String? bio;
+  final String? phone;
   final DateTime createdAt;
   final DateTime updatedAt;
   final UserSettings settings;
@@ -54,6 +56,8 @@ class UserProfile {
     required this.id,
     required this.email,
     this.displayName,
+    this.bio,
+    this.phone,
     required this.createdAt,
     required this.updatedAt,
     this.settings = const UserSettings(),
@@ -61,13 +65,19 @@ class UserProfile {
 
   UserProfile copyWith({
     String? displayName,
+    String? bio,
+    String? phone,
     DateTime? updatedAt,
     UserSettings? settings,
+    bool clearBio = false,
+    bool clearPhone = false,
   }) {
     return UserProfile(
       id: id,
       email: email,
       displayName: displayName ?? this.displayName,
+      bio: clearBio ? null : (bio ?? this.bio),
+      phone: clearPhone ? null : (phone ?? this.phone),
       createdAt: createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
       settings: settings ?? this.settings,
@@ -78,6 +88,8 @@ class UserProfile {
     'id': id,
     'email': email,
     'displayName': displayName,
+    'bio': bio,
+    'phone': phone,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
     'settings': settings.toMap(),
@@ -88,6 +100,8 @@ class UserProfile {
       id: map['id'] as String,
       email: map['email'] as String,
       displayName: map['displayName'] as String?,
+      bio: map['bio'] as String?,
+      phone: map['phone'] as String?,
       createdAt: DateTime.parse(map['createdAt'] as String),
       updatedAt: DateTime.parse(map['updatedAt'] as String),
       settings: map['settings'] != null

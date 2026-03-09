@@ -30,4 +30,7 @@ class AppConfig {
 
   static String get firebaseMeasurementId =>
       dotenv.get('FIREBASE_MEASUREMENT_ID', fallback: '');
+
+  static String get geminiApiKey =>
+      dotenv.get('GEMINI_API_KEY', fallback: '');
 }

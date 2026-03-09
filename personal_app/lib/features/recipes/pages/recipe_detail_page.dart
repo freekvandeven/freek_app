@@ -89,6 +89,75 @@ class RecipeDetailPage extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // Images
+          if (recipe.images.isNotEmpty) ...[
+            SizedBox(
+              height: 200,
+              child: recipe.images.length == 1
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        recipe.images.first,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Center(
+                          child: Icon(Icons.broken_image, size: 48),
+                        ),
+                      ),
+                    )
+                  : ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: recipe.images.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (context, index) {
+                        final isPrimary = index == recipe.primaryImageIndex;
+                        return Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                recipe.images[index],
+                                width: 280,
+                                height: 200,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const SizedBox(
+                                  width: 280,
+                                  child: Center(
+                                    child: Icon(Icons.broken_image, size: 48),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            if (isPrimary)
+                              Positioned(
+                                top: 8,
+                                left: 8,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.primary,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    'Primary',
+                                    style: TextStyle(
+                                      color: colorScheme.onPrimary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
           if (recipe.description != null) ...[
             Text(
               recipe.description!,
@@ -170,18 +239,36 @@ class RecipeDetailPage extends ConsumerWidget {
             ...recipe.instructions.asMap().entries.map(
               (entry) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Row(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    CircleAvatar(
-                      radius: 12,
-                      child: Text(
-                        '${entry.key + 1}',
-                        style: const TextStyle(fontSize: 12),
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CircleAvatar(
+                          radius: 12,
+                          child: Text(
+                            '${entry.key + 1}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(child: Text(entry.value.text)),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(child: Text(entry.value)),
+                    if (entry.value.imageUrl != null) ...[
+                      const SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          entry.value.imageUrl!,
+                          height: 150,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

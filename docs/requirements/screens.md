@@ -36,6 +36,9 @@
 | S030 | Knowledge Page Edit | Create or edit a knowledge page (Markdown editor) | F009 | Yes |
 | S031 | Settings | User settings, theme, export, logout | F010 | Yes |
 | S032 | Data Export | Select collections and export to CSV | F010 | Yes |
+| S033 | Profile | Edit user profile (name, phone, bio) | F010 | Yes |
+| S034 | Connections | Quick links to external apps and integration management | F011 | Yes |
+| S035 | Gemini Chat | AI-powered chat assistant using Google Gemini | F012 | Yes |
 
 ## Navigation Structure
 
@@ -60,6 +63,8 @@ The app uses a primary navigation pattern with a **bottom navigation bar** (mobi
 | Inventory | S021 |
 | Knowledge Bank | S028 |
 | Feedback | S026 |
+| Connections | S034 |
+| Gemini AI | S035 |
 | Settings | S031 |
 
 ## Navigation Map

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/calendar_event.dart';
 import '../providers/calendar_providers.dart';
@@ -29,6 +30,42 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
       appBar: AppBar(
         title: const Text('Calendar'),
         actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.sync),
+            tooltip: 'Calendar integrations',
+            onSelected: (value) {
+              switch (value) {
+                case 'google':
+                  launchUrl(
+                    Uri.parse('https://calendar.google.com'),
+                    mode: LaunchMode.externalApplication,
+                  );
+                case 'kerio':
+                  launchUrl(
+                    Uri.parse('https://mail.kerio.com'),
+                    mode: LaunchMode.externalApplication,
+                  );
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'google',
+                child: ListTile(
+                  leading: Icon(Icons.calendar_month, color: Colors.blue),
+                  title: Text('Google Calendar'),
+                  dense: true,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'kerio',
+                child: ListTile(
+                  leading: Icon(Icons.mail, color: Colors.orange),
+                  title: Text('Kerio Connect'),
+                  dense: true,
+                ),
+              ),
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.today),
             tooltip: 'Today',

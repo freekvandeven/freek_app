@@ -15,6 +15,8 @@ Stored at: `users/{userId}`
 | id | String | Yes | Firebase Auth UID |
 | email | String | Yes | User email address |
 | displayName | String | No | Display name |
+| phone | String | No | Phone number |
+| bio | String | No | Short biography |
 | createdAt | Timestamp | Yes | Account creation time |
 | updatedAt | Timestamp | Yes | Last profile update |
 | settings | Map | No | User preferences (theme, notifications, etc.) |
@@ -66,9 +68,10 @@ Stored at: `users/{userId}/recipes/{recipeId}`
 | prepTimeMinutes | int | No | Preparation time in minutes |
 | cookTimeMinutes | int | No | Cooking time in minutes |
 | ingredients | List\<Map\> | Yes | List of ingredients (see below) |
-| instructions | List\<String\> | Yes | Ordered list of instruction steps |
+| instructions | List\<Map\> | Yes | Ordered list of instruction steps (see below) |
 | tags | List\<String\> | No | Tags / categories (e.g., `vegetarian`, `dessert`, `quick`) |
-| imageUrl | String | No | URL to a recipe image |
+| images | List\<String\> | No | List of image URLs |
+| primaryImageIndex | int | No | Index of primary image in images list (default: 0) |
 | isFavorite | bool | No | Whether marked as favorite (default: `false`) |
 | source | String | No | Where the recipe came from (URL, book, etc.) |
 | notes | String | No | Personal notes about the recipe |
@@ -82,6 +85,13 @@ Stored at: `users/{userId}/recipes/{recipeId}`
 | name | String | Yes | Ingredient name |
 | quantity | double | No | Amount needed |
 | unit | String | No | Unit of measurement (g, ml, cups, pieces, etc.) |
+
+#### RecipeInstruction (embedded in Recipe.instructions)
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| text | String | Yes | The instruction step text |
+| imageUrl | String | No | Optional image URL for this step |
 
 ---
 

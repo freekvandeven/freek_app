@@ -36,6 +36,16 @@ class MorePage extends StatelessWidget {
               label: 'Feedback',
               route: '/feedback',
             ),
+            _MenuItem(
+              icon: Icons.link_rounded,
+              label: 'Connections',
+              route: '/connections',
+            ),
+            _MenuItem(
+              icon: Icons.auto_awesome_rounded,
+              label: 'Gemini AI',
+              route: '/gemini',
+            ),
           ]),
           _buildSection(context, 'App', [
             _MenuItem(

@@ -10,6 +10,7 @@ import 'config/app_config.dart';
 import 'features/auth/providers/auth_providers.dart';
 import 'features/settings/providers/settings_providers.dart';
 import 'firebase_options.dart';
+import 'presentation/widgets/lock_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -65,14 +66,22 @@ class PersonalApp extends ConsumerWidget {
         debugShowCheckedModeBanner: false,
         home: Scaffold(body: Center(child: Text('Failed to initialize: $e'))),
       ),
-      data: (_) => MaterialApp.router(
-        title: 'Freek App',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ref.watch(themeModeProvider),
-        routerConfig: router,
-      ),
+      data: (_) {
+        final user = ref.watch(currentUserProvider);
+        final biometricEnabled = user?.settings.biometricEnabled ?? false;
+
+        return LockScreen(
+          enabled: biometricEnabled,
+          child: MaterialApp.router(
+            title: 'Freek App',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: ref.watch(themeModeProvider),
+            routerConfig: router,
+          ),
+        );
+      },
     );
   }
 }

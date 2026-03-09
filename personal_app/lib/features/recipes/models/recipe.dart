@@ -22,6 +22,30 @@ class Ingredient {
   }
 }
 
+class RecipeInstruction {
+  final String text;
+  final String? imageUrl;
+
+  const RecipeInstruction({required this.text, this.imageUrl});
+
+  Map<String, dynamic> toMap() => {
+    'text': text,
+    'imageUrl': imageUrl,
+  };
+
+  factory RecipeInstruction.fromMap(Map<String, dynamic> map) {
+    return RecipeInstruction(
+      text: map['text'] as String,
+      imageUrl: map['imageUrl'] as String?,
+    );
+  }
+
+  /// Parse from legacy string format for backward compatibility.
+  factory RecipeInstruction.fromString(String text) {
+    return RecipeInstruction(text: text);
+  }
+}
+
 class Recipe {
   final String id;
   final String title;
@@ -30,9 +54,10 @@ class Recipe {
   final int? prepTimeMinutes;
   final int? cookTimeMinutes;
   final List<Ingredient> ingredients;
-  final List<String> instructions;
+  final List<RecipeInstruction> instructions;
   final List<String> tags;
-  final String? imageUrl;
+  final List<String> images;
+  final int primaryImageIndex;
   final bool isFavorite;
   final String? source;
   final String? notes;
@@ -49,7 +74,8 @@ class Recipe {
     this.ingredients = const [],
     this.instructions = const [],
     this.tags = const [],
-    this.imageUrl,
+    this.images = const [],
+    this.primaryImageIndex = 0,
     this.isFavorite = false,
     this.source,
     this.notes,
@@ -59,6 +85,10 @@ class Recipe {
        createdAt = createdAt ?? DateTime.now(),
        updatedAt = updatedAt ?? DateTime.now();
 
+  /// Primary image URL (the thumbnail).
+  String? get primaryImageUrl =>
+      images.isNotEmpty ? images[primaryImageIndex.clamp(0, images.length - 1)] : null;
+
   Recipe copyWith({
     String? title,
     String? description,
@@ -66,16 +96,16 @@ class Recipe {
     int? prepTimeMinutes,
     int? cookTimeMinutes,
     List<Ingredient>? ingredients,
-    List<String>? instructions,
+    List<RecipeInstruction>? instructions,
     List<String>? tags,
-    String? imageUrl,
+    List<String>? images,
+    int? primaryImageIndex,
     bool? isFavorite,
     String? source,
     String? notes,
     bool clearDescription = false,
     bool clearSource = false,
     bool clearNotes = false,
-    bool clearImageUrl = false,
   }) {
     return Recipe(
       id: id,
@@ -87,7 +117,8 @@ class Recipe {
       ingredients: ingredients ?? this.ingredients,
       instructions: instructions ?? this.instructions,
       tags: tags ?? this.tags,
-      imageUrl: clearImageUrl ? null : (imageUrl ?? this.imageUrl),
+      images: images ?? this.images,
+      primaryImageIndex: primaryImageIndex ?? this.primaryImageIndex,
       isFavorite: isFavorite ?? this.isFavorite,
       source: clearSource ? null : (source ?? this.source),
       notes: clearNotes ? null : (notes ?? this.notes),
@@ -109,9 +140,10 @@ class Recipe {
     'prepTimeMinutes': prepTimeMinutes,
     'cookTimeMinutes': cookTimeMinutes,
     'ingredients': ingredients.map((i) => i.toMap()).toList(),
-    'instructions': instructions,
+    'instructions': instructions.map((i) => i.toMap()).toList(),
     'tags': tags,
-    'imageUrl': imageUrl,
+    'images': images,
+    'primaryImageIndex': primaryImageIndex,
     'isFavorite': isFavorite,
     'source': source,
     'notes': notes,
@@ -120,6 +152,20 @@ class Recipe {
   };
 
   factory Recipe.fromMap(Map<String, dynamic> map) {
+    // Parse instructions: support both legacy List<String> and new List<Map>
+    final rawInstructions = map['instructions'] as List? ?? [];
+    final instructions = rawInstructions.map((item) {
+      if (item is String) return RecipeInstruction.fromString(item);
+      return RecipeInstruction.fromMap(item as Map<String, dynamic>);
+    }).toList();
+
+    // Parse images: support legacy single imageUrl field
+    final imagesList = (map['images'] as List?)?.cast<String>() ?? [];
+    final legacyImageUrl = map['imageUrl'] as String?;
+    final images = imagesList.isNotEmpty
+        ? imagesList
+        : (legacyImageUrl != null ? [legacyImageUrl] : <String>[]);
+
     return Recipe(
       id: map['id'] as String,
       title: map['title'] as String,
@@ -132,11 +178,10 @@ class Recipe {
               ?.map((i) => Ingredient.fromMap(i as Map<String, dynamic>))
               .toList() ??
           [],
-      instructions:
-          (map['instructions'] as List?)?.map((s) => s as String).toList() ??
-          [],
+      instructions: instructions,
       tags: (map['tags'] as List?)?.map((s) => s as String).toList() ?? [],
-      imageUrl: map['imageUrl'] as String?,
+      images: images,
+      primaryImageIndex: map['primaryImageIndex'] as int? ?? 0,
       isFavorite: map['isFavorite'] as bool? ?? false,
       source: map['source'] as String?,
       notes: map['notes'] as String?,

@@ -123,6 +123,8 @@ Track key third-party packages planned for the project.
 | `intl` | Date formatting, localization | Planned |
 | `share_plus` / `clipboard` | Copy feedback to clipboard | Planned |
 | `cached_network_image` | Image caching for recipes | Planned |
+| `url_launcher` | Open external links (Google Calendar, Kerio, etc.) | Added |
+| `google_generative_ai` | Google Gemini AI chat integration | Added |
 
 ## Open Questions
 

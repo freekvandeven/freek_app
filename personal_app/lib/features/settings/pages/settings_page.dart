@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../auth/providers/auth_providers.dart';
+import '../../auth/services/biometric_service.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -18,6 +19,15 @@ class SettingsPage extends ConsumerWidget {
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         children: [
+          const _SectionHeader('Profile'),
+          ListTile(
+            leading: const Icon(Icons.person),
+            title: const Text('Edit Profile'),
+            subtitle: Text(user.displayName ?? user.email),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings/profile'),
+          ),
+
           const _SectionHeader('Appearance'),
           ListTile(
             leading: const Icon(Icons.palette),
@@ -33,7 +43,7 @@ class SettingsPage extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.attach_money),
             title: const Text('Default Currency'),
-            subtitle: Text(settings.defaultCurrency),
+            subtitle: Text('${settings.defaultCurrency} ${_currencySymbol(settings.defaultCurrency)}'),
             onTap: () =>
                 _showCurrencyPicker(context, ref, settings.defaultCurrency),
           ),
@@ -52,11 +62,51 @@ class SettingsPage extends ConsumerWidget {
             secondary: const Icon(Icons.fingerprint),
             title: const Text('Biometric Lock'),
             value: settings.biometricEnabled,
-            onChanged: (v) {
+            onChanged: (v) async {
+              if (v) {
+                // Test biometrics before enabling
+                final available = await BiometricService.isAvailable;
+                if (!available && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Biometrics not available on this device'),
+                    ),
+                  );
+                  return;
+                }
+              }
               final updated = user.copyWith(
                 settings: settings.copyWith(biometricEnabled: v),
               );
               ref.read(authServiceProvider).updateProfile(updated);
+            },
+          ),
+          ListTile(
+            leading: const SizedBox(width: 24),
+            title: const Text('Test Biometric Lock'),
+            trailing: const Icon(Icons.play_arrow),
+            onTap: () async {
+              final available = await BiometricService.isAvailable;
+              if (!context.mounted) return;
+              if (!available) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Biometrics not available on this device'),
+                  ),
+                );
+                return;
+              }
+              final success = await BiometricService.authenticate(
+                reason: 'Testing biometric authentication',
+              );
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    success ? 'Authentication successful!' : 'Authentication failed',
+                  ),
+                ),
+              );
             },
           ),
 
@@ -119,20 +169,53 @@ class SettingsPage extends ConsumerWidget {
     WidgetRef ref,
     String current,
   ) {
-    const currencies = ['EUR', 'USD', 'GBP', 'JPY', 'CHF', 'CAD', 'AUD'];
+    const currencies = {
+      'EUR': '€',
+      'USD': '\$',
+      'GBP': '£',
+      'JPY': '¥',
+      'CHF': 'Fr',
+      'CAD': 'CA\$',
+      'AUD': 'A\$',
+      'CNY': '¥',
+      'SEK': 'kr',
+      'NOK': 'kr',
+      'DKK': 'kr',
+      'PLN': 'zł',
+      'CZK': 'Kč',
+      'HUF': 'Ft',
+      'TRY': '₺',
+      'INR': '₹',
+      'BRL': 'R\$',
+      'KRW': '₩',
+      'SGD': 'S\$',
+      'HKD': 'HK\$',
+      'MXN': 'MX\$',
+      'ZAR': 'R',
+      'THB': '฿',
+      'NZD': 'NZ\$',
+    };
     showDialog(
       context: context,
       builder: (ctx) => SimpleDialog(
         title: const Text('Default Currency'),
         children: [
-          for (final c in currencies)
+          for (final entry in currencies.entries)
             ListTile(
-              title: Text(c),
-              trailing: current == c ? const Icon(Icons.check) : null,
+              leading: SizedBox(
+                width: 36,
+                child: Text(
+                  entry.value,
+                  style: const TextStyle(fontSize: 18),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              title: Text(entry.key),
+              trailing: current == entry.key ? const Icon(Icons.check) : null,
               onTap: () {
                 final user = ref.read(currentUserProvider)!;
                 final updated = user.copyWith(
-                  settings: user.settings.copyWith(defaultCurrency: c),
+                  settings: user.settings.copyWith(defaultCurrency: entry.key),
                 );
                 ref.read(authServiceProvider).updateProfile(updated);
                 Navigator.pop(ctx);
@@ -141,6 +224,17 @@ class SettingsPage extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  String _currencySymbol(String code) {
+    const symbols = {
+      'EUR': '€', 'USD': '\$', 'GBP': '£', 'JPY': '¥', 'CHF': 'Fr',
+      'CAD': 'CA\$', 'AUD': 'A\$', 'CNY': '¥', 'SEK': 'kr', 'NOK': 'kr',
+      'DKK': 'kr', 'PLN': 'zł', 'CZK': 'Kč', 'HUF': 'Ft', 'TRY': '₺',
+      'INR': '₹', 'BRL': 'R\$', 'KRW': '₩', 'SGD': 'S\$', 'HKD': 'HK\$',
+      'MXN': 'MX\$', 'ZAR': 'R', 'THB': '฿', 'NZD': 'NZ\$',
+    };
+    return symbols[code] ?? code;
   }
 
   void _confirmLogout(BuildContext context, WidgetRef ref) {

@@ -24,8 +24,10 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
   final _notesController = TextEditingController();
   final _tagController = TextEditingController();
   List<Ingredient> _ingredients = [];
-  List<String> _instructions = [];
+  List<RecipeInstruction> _instructions = [];
   List<String> _tags = [];
+  List<String> _images = [];
+  int _primaryImageIndex = 0;
   bool _isEditing = false;
 
   @override
@@ -52,6 +54,8 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
         _ingredients = List.from(recipe.ingredients);
         _instructions = List.from(recipe.instructions);
         _tags = List.from(recipe.tags);
+        _images = List.from(recipe.images);
+        _primaryImageIndex = recipe.primaryImageIndex;
       });
     }
   }
@@ -90,6 +94,8 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
           ingredients: _ingredients,
           instructions: _instructions,
           tags: _tags,
+          images: _images,
+          primaryImageIndex: _primaryImageIndex,
           source: source.isEmpty ? null : source,
           clearSource: source.isEmpty,
           notes: notes.isEmpty ? null : notes,
@@ -107,6 +113,8 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
         ingredients: _ingredients,
         instructions: _instructions,
         tags: _tags,
+        images: _images,
+        primaryImageIndex: _primaryImageIndex,
         source: source.isEmpty ? null : source,
         notes: notes.isEmpty ? null : notes,
       );
@@ -185,15 +193,29 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
 
   void _addInstruction() {
     final ctrl = TextEditingController();
+    final imgCtrl = TextEditingController();
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Add Step'),
-        content: TextField(
-          controller: ctrl,
-          decoration: const InputDecoration(labelText: 'Instruction'),
-          textCapitalization: TextCapitalization.sentences,
-          maxLines: 3,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: ctrl,
+              decoration: const InputDecoration(labelText: 'Instruction'),
+              textCapitalization: TextCapitalization.sentences,
+              maxLines: 3,
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: imgCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Image URL (optional)',
+                hintText: 'https://...',
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -203,7 +225,43 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
           TextButton(
             onPressed: () {
               if (ctrl.text.trim().isNotEmpty) {
-                setState(() => _instructions.add(ctrl.text.trim()));
+                final imgUrl = imgCtrl.text.trim();
+                setState(() => _instructions.add(RecipeInstruction(
+                  text: ctrl.text.trim(),
+                  imageUrl: imgUrl.isEmpty ? null : imgUrl,
+                )));
+              }
+              Navigator.pop(ctx);
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _addImage() {
+    final ctrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add Image'),
+        content: TextField(
+          controller: ctrl,
+          decoration: const InputDecoration(
+            labelText: 'Image URL',
+            hintText: 'https://...',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (ctrl.text.trim().isNotEmpty) {
+                setState(() => _images.add(ctrl.text.trim()));
               }
               Navigator.pop(ctx);
             },
@@ -382,10 +440,13 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                   ),
                 ),
                 title: Text(
-                  _instructions[index],
+                  _instructions[index].text,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
+                subtitle: _instructions[index].imageUrl != null
+                    ? Text(_instructions[index].imageUrl!, style: const TextStyle(fontSize: 11, color: Colors.grey))
+                    : null,
                 trailing: IconButton(
                   icon: const Icon(Icons.remove_circle_outline, size: 20),
                   onPressed: () =>
@@ -393,6 +454,85 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                 ),
               ),
             ),
+            const SizedBox(height: 16),
+
+            // Images
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Images', style: Theme.of(context).textTheme.titleMedium),
+                TextButton.icon(
+                  onPressed: _addImage,
+                  icon: const Icon(Icons.add_photo_alternate, size: 18),
+                  label: const Text('Add'),
+                ),
+              ],
+            ),
+            if (_images.isNotEmpty)
+              SizedBox(
+                height: 80,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _images.length,
+                  itemBuilder: (context, index) => Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Stack(
+                      children: [
+                        GestureDetector(
+                          onTap: () => setState(() => _primaryImageIndex = index),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              _images[index],
+                              width: 80,
+                              height: 80,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                width: 80,
+                                height: 80,
+                                color: Colors.grey[300],
+                                child: const Icon(Icons.broken_image),
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (index == _primaryImageIndex)
+                          Positioned(
+                            top: 2,
+                            left: 2,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text('Primary', style: TextStyle(color: Colors.white, fontSize: 9)),
+                            ),
+                          ),
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _images.removeAt(index);
+                                if (_primaryImageIndex >= _images.length) {
+                                  _primaryImageIndex = _images.isEmpty ? 0 : _images.length - 1;
+                                }
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                              child: const Icon(Icons.close, size: 14, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             const SizedBox(height: 16),
 
             TextFormField(
