@@ -5,11 +5,13 @@ class ChangelogEntry {
   final List<String> changed;
   final List<String> fixed;
 
-  const ChangelogEntry({
+  ChangelogEntry({
     required this.version,
     required this.date,
-    this.added = const [],
-    this.changed = const [],
-    this.fixed = const [],
-  });
+    List<String>? added,
+    List<String>? changed,
+    List<String>? fixed,
+  })  : added = added ?? [],
+        changed = changed ?? [],
+        fixed = fixed ?? [];
 }

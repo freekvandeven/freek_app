@@ -60,6 +60,7 @@ flutter:
   assets:
     - dotenv
     - assets/
+    - CHANGELOG.md
   #         style: italic
   #   - family: Trajan Pro
   #     fonts:

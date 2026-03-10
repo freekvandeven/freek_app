@@ -1,21 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
-import '../data/changelog_data.dart';
+import '../data/changelog_parser.dart';
 import '../models/changelog_entry.dart';
 
 class ChangelogPage extends StatelessWidget {
   const ChangelogPage({super.key});
 
+  Future<List<ChangelogEntry>> _loadChangelog() async {
+    final markdown = await rootBundle.loadString('CHANGELOG.md');
+    return parseChangelog(markdown);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Changelog')),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: changelog.length,
-        itemBuilder: (context, index) {
-          final entry = changelog[index];
-          return _VersionCard(entry: entry, isLatest: index == 0);
+      body: FutureBuilder<List<ChangelogEntry>>(
+        future: _loadChangelog(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError || !snapshot.hasData) {
+            return const Center(child: Text('Could not load changelog.'));
+          }
+          final entries = snapshot.data!;
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: entries.length,
+            itemBuilder: (context, index) {
+              final entry = entries[index];
+              return _VersionCard(entry: entry, isLatest: index == 0);
+            },
+          );
         },
       ),
     );
