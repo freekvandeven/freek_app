@@ -2,6 +2,10 @@
 cmake_minimum_required(VERSION 3.14)
 project(personal_app LANGUAGES CXX)
 
+# Suppress C4996 (strncpy deprecation) and C4005 (macro redefinition) warnings
+# from Firebase C++ SDK that are treated as errors.
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4996 /wd4005")
+
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
 set(BINARY_NAME "personal_app")
