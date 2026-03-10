@@ -122,7 +122,9 @@ class SettingsPage extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.info_outline),
             title: const Text('App Version'),
-            subtitle: const Text('0.1.0+1'),
+            subtitle: const Text('0.2.0'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings/changelog'),
           ),
           ListTile(
             leading: Icon(
