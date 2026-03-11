@@ -10,6 +10,8 @@ class FeedbackEntry {
   final String title;
   final String description;
   final FeedbackStatus status;
+  final bool isPrivate;
+  final String? userId;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -19,6 +21,8 @@ class FeedbackEntry {
     required this.title,
     required this.description,
     this.status = FeedbackStatus.open,
+    this.isPrivate = false,
+    this.userId,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) : id = id ?? const Uuid().v4(),
@@ -30,6 +34,7 @@ class FeedbackEntry {
     String? title,
     String? description,
     FeedbackStatus? status,
+    bool? isPrivate,
     DateTime? updatedAt,
   }) {
     return FeedbackEntry(
@@ -38,6 +43,8 @@ class FeedbackEntry {
       title: title ?? this.title,
       description: description ?? this.description,
       status: status ?? this.status,
+      isPrivate: isPrivate ?? this.isPrivate,
+      userId: userId,
       createdAt: createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
     );
@@ -49,6 +56,8 @@ class FeedbackEntry {
     'title': title,
     'description': description,
     'status': status.name,
+    'isPrivate': isPrivate,
+    'userId': userId,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
   };
@@ -59,6 +68,8 @@ class FeedbackEntry {
     title: map['title'] as String,
     description: map['description'] as String,
     status: FeedbackStatus.values.byName(map['status'] as String),
+    isPrivate: map['isPrivate'] as bool? ?? false,
+    userId: map['userId'] as String?,
     createdAt: DateTime.parse(map['createdAt'] as String),
     updatedAt: DateTime.parse(map['updatedAt'] as String),
   );

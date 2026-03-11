@@ -3,6 +3,7 @@ import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../auth/providers/auth_providers.dart';
 import '../models/feedback_entry.dart';
 import '../providers/feedback_providers.dart';
 
@@ -21,6 +22,7 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
   final _descriptionController = TextEditingController();
   FeedbackType _type = FeedbackType.wish;
   FeedbackStatus _status = FeedbackStatus.open;
+  bool _isPrivate = false;
   bool _isLoading = true;
   FeedbackEntry? _existing;
 
@@ -48,6 +50,7 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
         _descriptionController.text = entry.description;
         _type = entry.type;
         _status = entry.status;
+        _isPrivate = entry.isPrivate;
         _isLoading = false;
       });
     } else {
@@ -66,6 +69,7 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
     if (!_formKey.currentState!.validate()) return;
 
     final notifier = ref.read(feedbackListProvider.notifier);
+    final userId = ref.read(currentUserProvider)?.id;
     if (_existing != null) {
       await notifier.updateEntry(
         _existing!.copyWith(
@@ -73,6 +77,7 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim(),
           status: _status,
+          isPrivate: _isPrivate,
         ),
       );
     } else {
@@ -81,6 +86,8 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
           type: _type,
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim(),
+          isPrivate: _isPrivate,
+          userId: userId,
         ),
       );
     }
@@ -150,6 +157,13 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
               maxLines: 8,
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'Required' : null,
+            ),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              title: const Text('Private'),
+              subtitle: const Text('Only visible to you'),
+              value: _isPrivate,
+              onChanged: (v) => setState(() => _isPrivate = v),
             ),
             if (isEditing) ...[
               const SizedBox(height: 24),

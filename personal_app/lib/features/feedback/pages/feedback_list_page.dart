@@ -215,7 +215,8 @@ class _FeedbackTile extends ConsumerWidget {
         ),
         subtitle: Text(
           '${entry.status.name[0].toUpperCase()}${entry.status.name.substring(1)}'
-          ' · ${entry.createdAt.toIso8601String().substring(0, 10)}',
+          ' · ${entry.createdAt.toIso8601String().substring(0, 10)}'
+          '${entry.isPrivate ? ' · Private' : ''}',
         ),
         trailing: PopupMenuButton<String>(
           icon: const Icon(Icons.more_vert),

@@ -233,7 +233,7 @@ Stored at: `users/{userId}/inventoryItems/{itemId}`
 
 ### Feedback Entry
 
-Stored at: `users/{userId}/feedbackEntries/{feedbackId}`
+Stored at: `feedback/{feedbackId}` (shared collection, not per-user)
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -242,6 +242,8 @@ Stored at: `users/{userId}/feedbackEntries/{feedbackId}`
 | title | String | Yes | Short summary |
 | description | String | Yes | Detailed description |
 | status | String | Yes | `open`, `acknowledged`, `resolved` (default: `open`) |
+| isPrivate | bool | No | If true, only visible to the creator (default: `false`) |
+| userId | String | No | Creator's user ID (used for private visibility) |
 | createdAt | Timestamp | Yes | Creation timestamp |
 | updatedAt | Timestamp | Yes | Last update timestamp |
 

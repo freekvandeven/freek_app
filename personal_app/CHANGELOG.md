@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Wakelock — screen stays on while the app is active (wakelock_plus)
+- Feedback items are now shared across users with public/private toggle
 - Biometric lock — secure the app with fingerprint or face unlock
 - Profile page — edit display name and email
 - Recipe image upload via Firebase Storage (gallery, camera, or URL)
@@ -16,6 +17,7 @@ All notable changes to this project will be documented in this file.
 - Changelog screen — browse version history inside the app
 
 ### Changed
+- Feedback collection moved from per-user to shared Firestore collection
 - Quick actions menu triggers on long press (was double tap) and works on all pages with titles
 - Feedback copy-to-clipboard instructions now include CHANGELOG.md update step
 - Feedback copy-to-clipboard now instructs per-task commits
