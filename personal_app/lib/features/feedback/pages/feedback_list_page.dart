@@ -41,7 +41,11 @@ class FeedbackListPage extends ConsumerWidget {
         '4. If a technical decision was made, document it in '
         '`docs/requirements/tech_decisions.md` or create an ADR in `docs/decisions/`.');
     buffer.writeln(
-        '5. **Commit immediately** with a descriptive conventional commit message '
+        '5. Update `CHANGELOG.md` (in the personal_app directory) under the '
+        'current version\'s `### Added`, `### Changed`, or `### Fixed` section '
+        'with a brief description of what was done.');
+    buffer.writeln(
+        '6. **Commit immediately** with a descriptive conventional commit message '
         '(e.g. `fix: resolve biometric lock not triggering at startup` or '
         '`feat: add recipe image upload via Firebase Storage`). '
         'Do NOT batch multiple items into a single commit.');

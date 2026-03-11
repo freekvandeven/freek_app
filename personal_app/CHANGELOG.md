@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - Quick actions menu triggers on long press (was double tap) and works on all pages with titles
+- Feedback copy-to-clipboard instructions now include CHANGELOG.md update step
 - Feedback copy-to-clipboard now instructs per-task commits
 - Currency symbols shown throughout the finance section
 - Navigation back button behavior fixed across all screens
