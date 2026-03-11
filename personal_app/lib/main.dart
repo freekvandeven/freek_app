@@ -70,17 +70,18 @@ class PersonalApp extends ConsumerWidget {
         final user = ref.watch(currentUserProvider);
         final biometricEnabled = user?.settings.biometricEnabled ?? false;
 
-        return LockScreen(
-          enabled: biometricEnabled,
-          child: MaterialApp.router(
+        return MaterialApp.router(
             title: 'Freek App',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: ref.watch(themeModeProvider),
             routerConfig: router,
-          ),
-        );
+            builder: (context, child) => LockScreen(
+              enabled: biometricEnabled,
+              child: child!,
+            ),
+          );
       },
     );
   }

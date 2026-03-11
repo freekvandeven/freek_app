@@ -20,6 +20,7 @@ All notable changes to this project will be documented in this file.
 - Navigation back button behavior fixed across all screens
 
 ### Fixed
+- Lock screen now uses app theme background instead of default grey (moved inside MaterialApp)
 - FlutterFragmentActivity for biometric auth on Android
 - Firebase web deployment white screen and service worker issues
 

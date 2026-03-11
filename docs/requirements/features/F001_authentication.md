@@ -55,7 +55,7 @@ Certain sensitive screens (e.g., Password Vault) require an additional biometric
 
 - S001 — Splash Screen
 - S002 — Login
-- S003 — Biometric Lock
+- S003 — Biometric Lock (uses app theme, rendered inside MaterialApp for proper theming)
 
 ## Data Requirements
 
