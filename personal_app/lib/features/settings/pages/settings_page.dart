@@ -121,9 +121,15 @@ class SettingsPage extends ConsumerWidget {
 
           const _SectionHeader('Account'),
           ListTile(
+            leading: const Icon(Icons.lock_reset),
+            title: const Text('Change Password'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings/change-password'),
+          ),
+          ListTile(
             leading: const Icon(Icons.info_outline),
             title: const Text('App Version'),
-            subtitle: const Text('0.2.0'),
+            subtitle: const Text('0.3.0'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/settings/changelog'),
           ),

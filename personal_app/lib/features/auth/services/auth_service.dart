@@ -11,10 +11,18 @@ abstract class AuthService {
   void dispose();
   Stream<UserProfile?> get authStateChanges;
   UserProfile? get currentUser;
-  Future<UserProfile> signUp({required String email, required String password});
+  Future<UserProfile> signUp({
+    required String email,
+    required String password,
+    required String inviteCode,
+  });
   Future<UserProfile> signIn({required String email, required String password});
   Future<void> signOut();
   Future<void> resetPassword({required String email});
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  });
   Future<void> updateProfile(UserProfile profile);
 }
 
@@ -48,6 +56,7 @@ class MockAuthService implements AuthService {
   Future<UserProfile> signUp({
     required String email,
     required String password,
+    required String inviteCode,
   }) async {
     final users = await _loadUsers();
     final existing = users.values.where((u) => u.email == email);
@@ -93,6 +102,15 @@ class MockAuthService implements AuthService {
 
   @override
   Future<void> resetPassword({required String email}) async {
+    // Mock: no-op, just simulate success
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+  }
+
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
     // Mock: no-op, just simulate success
     await Future<void>.delayed(const Duration(milliseconds: 300));
   }

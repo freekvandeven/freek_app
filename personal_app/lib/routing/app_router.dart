@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../features/auth/pages/forgot_password_page.dart';
 import '../features/auth/pages/login_page.dart';
 import '../features/auth/pages/signup_page.dart';
+import '../features/auth/pages/change_password_page.dart';
 import '../features/auth/providers/auth_providers.dart';
 import '../features/calendar/pages/calendar_page.dart';
 import '../features/connections/pages/connections_page.dart';
@@ -300,6 +301,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'changelog',
             builder: (context, state) => const ChangelogPage(),
+          ),
+          GoRoute(
+            path: 'change-password',
+            builder: (context, state) => const ChangePasswordPage(),
           ),
         ],
       ),

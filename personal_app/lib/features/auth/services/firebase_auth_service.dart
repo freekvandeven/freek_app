@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:http/http.dart' as http;
 
+import '../../../config/app_config.dart';
 import '../models/user_profile.dart';
 import 'auth_service.dart';
 
@@ -18,6 +21,14 @@ class FirebaseAuthService implements AuthService {
     FirebaseFirestore? firestore,
   })  : _auth = auth ?? fb.FirebaseAuth.instance,
         _firestore = firestore ?? FirebaseFirestore.instance;
+
+  /// Cloud Functions callable URL base.
+  /// Gen 2 callable functions are accessible at the standard Firebase URL.
+  String get _functionsBaseUrl {
+    final projectId = AppConfig.firebaseProjectId;
+    final region = AppConfig.cloudFunctionsRegion;
+    return 'https://$region-$projectId.cloudfunctions.net';
+  }
 
   @override
   Future<void> init() async {
@@ -38,25 +49,49 @@ class FirebaseAuthService implements AuthService {
   Future<UserProfile> signUp({
     required String email,
     required String password,
+    required String inviteCode,
   }) async {
     try {
-      final credential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
+      // Call the createUserWithInvite Cloud Function via HTTP
+      // This works on all platforms (Android, iOS, Web, Windows, macOS, Linux)
+      final response = await http.post(
+        Uri.parse('$_functionsBaseUrl/createUserWithInvite'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'data': {
+            'email': email,
+            'password': password,
+            'inviteCode': inviteCode,
+          },
+        }),
       );
-      final now = DateTime.now();
-      final profile = UserProfile(
-        id: credential.user!.uid,
-        email: email,
-        createdAt: now,
-        updatedAt: now,
-      );
-      await _saveProfile(profile);
-      _currentUser = profile;
-      _authStateController.add(profile);
-      return profile;
-    } on fb.FirebaseAuthException catch (e) {
-      throw AuthException(_mapFirebaseError(e.code));
+
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode != 200) {
+        final error = body['error'] as Map<String, dynamic>?;
+        final message =
+            error?['message'] as String? ?? 'Registration failed.';
+        throw AuthException(message);
+      }
+
+      final result = body['result'] as Map<String, dynamic>;
+      final token = result['token'] as String;
+
+      // Sign in with the custom token returned by the Cloud Function
+      await _auth.signInWithCustomToken(token);
+
+      final fbUser = _auth.currentUser!;
+      _currentUser = await _loadProfile(fbUser.uid);
+      if (_currentUser == null) {
+        throw const AuthException('User profile not found after signup.');
+      }
+      _authStateController.add(_currentUser);
+      return _currentUser!;
+    } on AuthException {
+      rethrow;
+    } catch (e) {
+      throw AuthException('Registration failed: $e');
     }
   }
 
@@ -93,6 +128,31 @@ class FirebaseAuthService implements AuthService {
   Future<void> resetPassword({required String email}) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
+    } on fb.FirebaseAuthException catch (e) {
+      throw AuthException(_mapFirebaseError(e.code));
+    }
+  }
+
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final fbUser = _auth.currentUser;
+      if (fbUser == null || fbUser.email == null) {
+        throw const AuthException('No user is signed in.');
+      }
+
+      // Re-authenticate before changing password (Firebase requirement)
+      final credential = fb.EmailAuthProvider.credential(
+        email: fbUser.email!,
+        password: currentPassword,
+      );
+      await fbUser.reauthenticateWithCredential(credential);
+
+      // Update the password
+      await fbUser.updatePassword(newPassword);
     } on fb.FirebaseAuthException catch (e) {
       throw AuthException(_mapFirebaseError(e.code));
     }

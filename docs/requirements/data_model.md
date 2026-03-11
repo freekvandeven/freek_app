@@ -1,6 +1,23 @@
 # Data Model
 
-All data is stored in Cloud Firestore under per-user document paths: `users/{userId}/...`. This ensures strict data isolation between users via Firestore security rules.
+All data is stored in Cloud Firestore under per-user document paths: `users/{userId}/...`. This ensures strict data isolation between users via Firestore security rules. Access requires the `inviteVerified` custom claim, set during invite-code registration.
+
+---
+
+## Security Collections
+
+### Invite Codes
+
+Stored at: `inviteCodes/{code}`
+
+Client access: **denied** (read/write: false). Only Cloud Functions (Admin SDK) and Firebase console administrators can manage this collection.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| (document ID) | String | Yes | The invite code itself (used as doc ID) |
+| createdAt | Timestamp | No | When the code was created |
+
+Invite codes are single-use: deleted by the `createUserWithInvite` Cloud Function after successful user creation.
 
 ---
 

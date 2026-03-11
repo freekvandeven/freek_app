@@ -1,37 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
 import '../providers/auth_providers.dart';
+import '../services/auth_service.dart';
 
-class SignupPage extends ConsumerStatefulWidget {
-  const SignupPage({super.key});
+class ChangePasswordPage extends ConsumerStatefulWidget {
+  const ChangePasswordPage({super.key});
 
   @override
-  ConsumerState<SignupPage> createState() => _SignupPageState();
+  ConsumerState<ChangePasswordPage> createState() => _ChangePasswordPageState();
 }
 
-class _SignupPageState extends ConsumerState<SignupPage> {
+class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _currentPasswordController = TextEditingController();
+  final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _inviteCodeController = TextEditingController();
   bool _isLoading = false;
-  bool _obscurePassword = true;
+  bool _obscureCurrent = true;
+  bool _obscureNew = true;
   bool _obscureConfirm = true;
   String? _errorMessage;
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
     _confirmPasswordController.dispose();
-    _inviteCodeController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleSignup() async {
+  Future<void> _handleChangePassword() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() {
       _isLoading = true;
@@ -40,14 +41,20 @@ class _SignupPageState extends ConsumerState<SignupPage> {
 
     try {
       final authService = ref.read(authServiceProvider);
-      await authService.signUp(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-        inviteCode: _inviteCodeController.text.trim(),
+      await authService.changePassword(
+        currentPassword: _currentPasswordController.text,
+        newPassword: _newPasswordController.text,
       );
-      // Router redirects automatically via isAuthenticatedProvider
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Password changed successfully')),
+        );
+        context.pop();
+      }
+    } on AuthException catch (e) {
+      setState(() => _errorMessage = e.message);
     } catch (e) {
-      setState(() => _errorMessage = e.toString());
+      setState(() => _errorMessage = 'Failed to change password.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -58,7 +65,9 @@ class _SignupPageState extends ConsumerState<SignupPage> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Account')),
+      appBar: AppBar(
+        title: const QuickActionsTitle(child: Text('Change Password')),
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -71,22 +80,23 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Icon(
-                      Icons.person_add_rounded,
+                      Icons.lock_reset_rounded,
                       size: 72,
                       color: colorScheme.primary,
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Get Started',
+                      'Change Password',
                       style: Theme.of(context).textTheme.headlineMedium,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Create a new account',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
+                      'Enter your current password and choose a new one.',
+                      style:
+                          Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 32),
@@ -99,51 +109,59 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                         ),
                         child: Text(
                           _errorMessage!,
-                          style: TextStyle(color: colorScheme.onErrorContainer),
+                          style: TextStyle(
+                              color: colorScheme.onErrorContainer),
                         ),
                       ),
                       const SizedBox(height: 16),
                     ],
                     TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
+                      controller: _currentPasswordController,
+                      obscureText: _obscureCurrent,
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: Icon(Icons.email_outlined),
+                      decoration: InputDecoration(
+                        labelText: 'Current Password',
+                        prefixIcon: const Icon(Icons.lock_outlined),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureCurrent
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                          ),
+                          onPressed: () => setState(
+                            () => _obscureCurrent = !_obscureCurrent,
+                          ),
+                        ),
                       ),
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your email';
-                        }
-                        if (!value.contains('@')) {
-                          return 'Please enter a valid email';
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your current password';
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
-                      controller: _passwordController,
-                      obscureText: _obscurePassword,
+                      controller: _newPasswordController,
+                      obscureText: _obscureNew,
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
-                        labelText: 'Password',
+                        labelText: 'New Password',
                         prefixIcon: const Icon(Icons.lock_outlined),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscurePassword
+                            _obscureNew
                                 ? Icons.visibility_outlined
                                 : Icons.visibility_off_outlined,
                           ),
                           onPressed: () => setState(
-                            () => _obscurePassword = !_obscurePassword,
+                            () => _obscureNew = !_obscureNew,
                           ),
                         ),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter a password';
+                          return 'Please enter a new password';
                         }
                         if (value.length < 6) {
                           return 'Password must be at least 6 characters';
@@ -155,9 +173,10 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                     TextFormField(
                       controller: _confirmPasswordController,
                       obscureText: _obscureConfirm,
-                      textInputAction: TextInputAction.next,
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: (_) => _handleChangePassword(),
                       decoration: InputDecoration(
-                        labelText: 'Confirm Password',
+                        labelText: 'Confirm New Password',
                         prefixIcon: const Icon(Icons.lock_outlined),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -171,50 +190,24 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                         ),
                       ),
                       validator: (value) {
-                        if (value != _passwordController.text) {
+                        if (value != _newPasswordController.text) {
                           return 'Passwords do not match';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _inviteCodeController,
-                      textInputAction: TextInputAction.done,
-                      onFieldSubmitted: (_) => _handleSignup(),
-                      decoration: const InputDecoration(
-                        labelText: 'Invite Code',
-                        prefixIcon: Icon(Icons.vpn_key_outlined),
-                        hintText: 'Enter your invite code',
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'An invite code is required';
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: 24),
                     FilledButton(
-                      onPressed: _isLoading ? null : _handleSignup,
+                      onPressed:
+                          _isLoading ? null : _handleChangePassword,
                       child: _isLoading
                           ? const SizedBox(
                               height: 20,
                               width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2),
                             )
-                          : const Text('Create Account'),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text('Already have an account?'),
-                        TextButton(
-                          onPressed: () => context.pop(),
-                          child: const Text('Sign In'),
-                        ),
-                      ],
+                          : const Text('Change Password'),
                     ),
                   ],
                 ),

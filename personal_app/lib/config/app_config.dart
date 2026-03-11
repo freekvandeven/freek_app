@@ -33,4 +33,7 @@ class AppConfig {
 
   static String get geminiApiKey =>
       dotenv.get('GEMINI_API_KEY', fallback: '');
+
+  static String get cloudFunctionsRegion =>
+      dotenv.get('CLOUD_FUNCTIONS_REGION', fallback: 'us-central1');
 }

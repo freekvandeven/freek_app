@@ -1,7 +1,7 @@
 name: personal_app
 description: "Personal App — an all-in-one personal life management application."
 publish_to: 'none'
-version: 0.2.0+2
+version: 0.3.0+3
 
 environment:
   sdk: ^3.11.1
@@ -35,6 +35,7 @@ dependencies:
   firebase_storage: ^13.1.0
   image_picker: ^1.2.1
   wakelock_plus: ^1.4.0
+  http: ^1.2.0
 
 dev_dependencies:
   flutter_test:

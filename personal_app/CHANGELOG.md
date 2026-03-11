@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2026-03-11
+
+### Added
+- Invite-code registration — signup requires a valid single-use invite code
+- Cloud Functions backend (`createUserWithInvite`, `blockDirectSignup`, `setInviteVerifiedClaim`)
+- Firestore `inviteCodes` collection (admin-only, no client access)
+- `inviteVerified` custom claim on users — required by all Firestore security rules
+- Blocking function prevents direct client-side user creation via Firebase API key
+- Change password page (Settings → Change Password)
+- Cross-platform cloud function calls via HTTP (works on Android, iOS, Web, Windows)
+
+### Changed
+- Signup page now has an invite code field
+- Firestore security rules require `inviteVerified` claim for all data access
+- Auth service uses Cloud Function instead of client-side `createUserWithEmailAndPassword`
+
+### Security
+- Client-side user creation blocked by `beforeUserCreated` Cloud Function
+- Even if a user is created directly with the API key, they cannot access any Firestore data without `inviteVerified` claim
+- Invite codes collection completely inaccessible from client
+- Password change requires re-authentication with current password
+
 ## [0.2.0] - 2026-03-10
 
 ### Added
