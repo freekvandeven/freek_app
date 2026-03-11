@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [0.2.0] - 2026-03-10
 
 ### Added
+- Wakelock — screen stays on while the app is active (wakelock_plus)
 - Biometric lock — secure the app with fingerprint or face unlock
 - Profile page — edit display name and email
 - Recipe image upload via Firebase Storage (gallery, camera, or URL)

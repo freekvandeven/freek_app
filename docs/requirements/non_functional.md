@@ -19,6 +19,7 @@ Requirements that define *how* the app should behave, not *what* it does.
 - Screen transitions: 60fps target, no jank
 - Firestore queries: < 1 second for typical data sets (< 10,000 documents per collection per user)
 - Splash screen displayed during initialization
+- Wakelock enabled — screen stays on while the app is in the foreground (using `wakelock_plus`)
 
 ## Splash Screen
 

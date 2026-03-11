@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_app/presentation/theme/app_theme.dart';
 import 'package:personal_app/routing/app_router.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'config/app_config.dart';
 import 'features/auth/providers/auth_providers.dart';
@@ -14,6 +15,7 @@ import 'presentation/widgets/lock_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  WakelockPlus.enable();
 
   try {
     await dotenv.load(fileName: 'dotenv');
