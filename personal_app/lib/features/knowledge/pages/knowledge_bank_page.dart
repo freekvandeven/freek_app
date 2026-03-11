@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -14,7 +15,7 @@ class KnowledgeBankPage extends ConsumerWidget {
     final isSearching = search.isNotEmpty;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Knowledge Bank')),
+      appBar: AppBar(title: const QuickActionsTitle(child: Text('Knowledge Bank'))),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/knowledge/new'),
         child: const Icon(Icons.add),

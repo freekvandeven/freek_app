@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -106,7 +107,7 @@ class _TransactionEditPageState extends ConsumerState<TransactionEditPage> {
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(
-          title: Text(isEditing ? 'Edit Transaction' : 'New Transaction'),
+          title: QuickActionsTitle(child: Text(isEditing ? 'Edit Transaction' : 'New Transaction')),
         ),
         body: const Center(child: CircularProgressIndicator()),
       );
@@ -114,7 +115,7 @@ class _TransactionEditPageState extends ConsumerState<TransactionEditPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEditing ? 'Edit Transaction' : 'New Transaction'),
+        title: QuickActionsTitle(child: Text(isEditing ? 'Edit Transaction' : 'New Transaction')),
         actions: [TextButton(onPressed: _save, child: const Text('Save'))],
       ),
       body: Form(

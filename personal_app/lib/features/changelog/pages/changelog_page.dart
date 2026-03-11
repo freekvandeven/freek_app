@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 import '../data/changelog_parser.dart';
@@ -15,7 +16,7 @@ class ChangelogPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Changelog')),
+      appBar: AppBar(title: const QuickActionsTitle(child: Text('Changelog'))),
       body: FutureBuilder<List<ChangelogEntry>>(
         future: _loadChangelog(),
         builder: (context, snapshot) {

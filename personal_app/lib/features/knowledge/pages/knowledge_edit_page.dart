@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -104,7 +105,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
 
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: Text(isEditing ? 'Edit Page' : 'New Page')),
+        appBar: AppBar(title: QuickActionsTitle(child: Text(isEditing ? 'Edit Page' : 'New Page'))),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -116,7 +117,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEditing ? 'Edit Page' : 'New Page'),
+        title: QuickActionsTitle(child: Text(isEditing ? 'Edit Page' : 'New Page')),
         actions: [TextButton(onPressed: _save, child: const Text('Save'))],
       ),
       body: Form(

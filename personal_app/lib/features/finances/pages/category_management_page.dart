@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/finance_models.dart';
@@ -15,7 +16,7 @@ class CategoryManagementPage extends ConsumerWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Categories'),
+          title: const QuickActionsTitle(child: Text('Categories')),
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Expense'),

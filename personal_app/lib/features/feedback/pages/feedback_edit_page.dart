@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -94,7 +95,7 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(
-          title: Text(isEditing ? 'Edit Feedback' : 'New Feedback'),
+          title: QuickActionsTitle(child: Text(isEditing ? 'Edit Feedback' : 'New Feedback')),
         ),
         body: const Center(child: CircularProgressIndicator()),
       );
@@ -102,7 +103,7 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEditing ? 'Edit Feedback' : 'New Feedback'),
+        title: QuickActionsTitle(child: Text(isEditing ? 'Edit Feedback' : 'New Feedback')),
         actions: [TextButton(onPressed: _save, child: const Text('Save'))],
       ),
       body: Form(

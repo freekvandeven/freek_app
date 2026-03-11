@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:personal_app/features/auth/providers/auth_providers.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
@@ -14,10 +15,7 @@ class DashboardPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: GestureDetector(
-          onDoubleTap: () => _showQuickActions(context),
-          child: const Text('Personal App'),
-        ),
+        title: QuickActionsTitle(child: Text('Personal App')),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
@@ -42,64 +40,6 @@ class DashboardPage extends ConsumerWidget {
           const SizedBox(height: 24),
           _buildFeatureGrid(context, colorScheme),
         ],
-      ),
-    );
-  }
-
-  void _showQuickActions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('Quick Actions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            ),
-            ListTile(
-              leading: const Icon(Icons.bug_report, color: Colors.red),
-              title: const Text('Report a Bug'),
-              onTap: () {
-                Navigator.pop(ctx);
-                context.push('/feedback/new?type=bug');
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.lightbulb, color: Theme.of(context).colorScheme.primary),
-              title: const Text('Request a Feature'),
-              onTap: () {
-                Navigator.pop(ctx);
-                context.push('/feedback/new?type=wish');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.add_task),
-              title: const Text('New Task'),
-              onTap: () {
-                Navigator.pop(ctx);
-                context.push('/tasks');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.restaurant_menu),
-              title: const Text('New Recipe'),
-              onTap: () {
-                Navigator.pop(ctx);
-                context.push('/recipes/new');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.note_add),
-              title: const Text('New Knowledge Entry'),
-              onTap: () {
-                Navigator.pop(ctx);
-                context.push('/knowledge/new');
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
       ),
     );
   }

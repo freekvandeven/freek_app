@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -127,7 +128,7 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Task' : 'New Task'),
+        title: QuickActionsTitle(child: Text(_isEditing ? 'Edit Task' : 'New Task')),
         actions: [TextButton(onPressed: _save, child: const Text('Save'))],
       ),
       body: Form(

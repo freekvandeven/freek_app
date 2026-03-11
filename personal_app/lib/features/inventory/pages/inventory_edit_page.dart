@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -113,14 +114,14 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
 
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: Text(isEditing ? 'Edit Item' : 'New Item')),
+        appBar: AppBar(title: QuickActionsTitle(child: Text(isEditing ? 'Edit Item' : 'New Item'))),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEditing ? 'Edit Item' : 'New Item'),
+        title: QuickActionsTitle(child: Text(isEditing ? 'Edit Item' : 'New Item')),
         actions: [TextButton(onPressed: _save, child: const Text('Save'))],
       ),
       body: Form(

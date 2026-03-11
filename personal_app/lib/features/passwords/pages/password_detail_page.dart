@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -36,7 +37,7 @@ class _PasswordDetailPageState extends ConsumerState<PasswordDetailPage> {
 
         return Scaffold(
           appBar: AppBar(
-            title: Text(entry.title),
+            title: QuickActionsTitle(child: Text(entry.title)),
             actions: [
               IconButton(
                 icon: const Icon(Icons.edit),

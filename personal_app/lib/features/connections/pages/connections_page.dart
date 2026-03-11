@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ConnectionsPage extends StatelessWidget {
@@ -7,7 +8,7 @@ class ConnectionsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Connections')),
+      appBar: AppBar(title: const QuickActionsTitle(child: Text('Connections'))),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

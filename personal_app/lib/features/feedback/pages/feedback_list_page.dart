@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -97,7 +98,7 @@ class FeedbackListPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Feedback'),
+        title: const QuickActionsTitle(child: Text('Feedback')),
         actions: [
           entriesAsync.whenOrNull(
             data: (entries) => entries.isNotEmpty

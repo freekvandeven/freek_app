@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -35,7 +36,7 @@ class KnowledgeViewPage extends ConsumerWidget {
 
         return Scaffold(
           appBar: AppBar(
-            title: Text(page.title),
+            title: QuickActionsTitle(child: Text(page.title)),
             actions: [
               IconButton(
                 icon: const Icon(Icons.edit),

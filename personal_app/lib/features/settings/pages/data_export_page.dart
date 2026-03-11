@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -38,7 +39,7 @@ class _DataExportPageState extends ConsumerState<DataExportPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Export Data')),
+      appBar: AppBar(title: const QuickActionsTitle(child: Text('Export Data'))),
       body: Column(
         children: [
           Expanded(

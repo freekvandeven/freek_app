@@ -47,6 +47,10 @@ The app uses a primary navigation pattern with a **bottom navigation bar** (mobi
 ### Primary Navigation Tabs
 
 | Tab | Icon | Destination | Description |
+
+### Quick Actions (Global)
+
+Long-pressing any AppBar title across the entire app brings up a Quick Actions bottom sheet with shortcuts to: Report a Bug, Request a Feature, New Task, New Recipe, and New Knowledge Entry. This is implemented via the shared `QuickActionsTitle` widget wrapping every AppBar title.
 |-----|------|-------------|-------------|
 | Home | `home` | S004 | Dashboard overview |
 | Tasks | `check_circle` | S005 | Task management |

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:go_router/go_router.dart';
 
 class MorePage extends StatelessWidget {
@@ -7,7 +8,7 @@ class MorePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('More')),
+      appBar: AppBar(title: const QuickActionsTitle(child: Text('More'))),
       body: ListView(
         children: [
           _buildSection(context, 'Features', [

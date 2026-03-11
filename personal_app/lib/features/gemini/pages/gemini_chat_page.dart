@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -56,7 +57,7 @@ class _GeminiChatPageState extends ConsumerState<GeminiChatPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gemini AI'),
+        title: const QuickActionsTitle(child: Text('Gemini AI')),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

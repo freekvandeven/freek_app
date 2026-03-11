@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -31,7 +32,7 @@ class _VaultUnlockPageState extends ConsumerState<VaultUnlockPage> {
     final isSetup = ref.watch(vaultSetupProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Password Vault')),
+      appBar: AppBar(title: const QuickActionsTitle(child: Text('Password Vault'))),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(32),

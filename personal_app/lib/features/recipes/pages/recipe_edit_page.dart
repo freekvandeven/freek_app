@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -364,7 +365,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Recipe' : 'New Recipe'),
+        title: QuickActionsTitle(child: Text(_isEditing ? 'Edit Recipe' : 'New Recipe')),
         actions: [TextButton(onPressed: _save, child: const Text('Save'))],
       ),
       body: Form(

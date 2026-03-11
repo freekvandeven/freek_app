@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -17,7 +18,7 @@ class TaskListPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tasks'),
+        title: const QuickActionsTitle(child: Text('Tasks')),
         actions: [
           PopupMenuButton<TaskSort>(
             icon: const Icon(Icons.sort),

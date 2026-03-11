@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -42,7 +43,7 @@ class RecipeDetailPage extends ConsumerWidget {
   ) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(recipe.title),
+        title: QuickActionsTitle(child: Text(recipe.title)),
         actions: [
           IconButton(
             icon: Icon(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -120,14 +121,14 @@ class _PasswordEditPageState extends ConsumerState<PasswordEditPage> {
 
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: Text(isEditing ? 'Edit Entry' : 'New Entry')),
+        appBar: AppBar(title: QuickActionsTitle(child: Text(isEditing ? 'Edit Entry' : 'New Entry'))),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEditing ? 'Edit Entry' : 'New Entry'),
+        title: QuickActionsTitle(child: Text(isEditing ? 'Edit Entry' : 'New Entry')),
         actions: [TextButton(onPressed: _save, child: const Text('Save'))],
       ),
       body: Form(
