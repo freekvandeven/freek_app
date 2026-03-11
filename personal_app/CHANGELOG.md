@@ -17,7 +17,7 @@ All notable changes to this project will be documented in this file.
 - Changelog screen — browse version history inside the app
 
 ### Changed
-- Feedback collection moved from per-user to shared Firestore collection
+- Feedback split into dual collections: public at `feedback/` (shared) and private at `users/{userId}/feedback/` (per-user), merged client-side
 - Quick actions menu triggers on long press (was double tap) and works on all pages with titles
 - Feedback copy-to-clipboard instructions now include CHANGELOG.md update step
 - Feedback copy-to-clipboard now instructs per-task commits
@@ -25,7 +25,7 @@ All notable changes to this project will be documented in this file.
 - Navigation back button behavior fixed across all screens
 
 ### Fixed
-- Firestore security rules updated for shared feedback collection
+- Firestore security rules simplified for dual feedback collections
 - Lock screen now uses app theme background instead of default grey (moved inside MaterialApp)
 - FlutterFragmentActivity for biometric auth on Android
 - Firebase web deployment white screen and service worker issues

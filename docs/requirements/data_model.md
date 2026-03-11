@@ -233,7 +233,10 @@ Stored at: `users/{userId}/inventoryItems/{itemId}`
 
 ### Feedback Entry
 
-Stored at: `feedback/{feedbackId}` (shared collection, not per-user)
+Public feedback stored at: `feedback/{feedbackId}` (shared collection, readable/writable by all authenticated users)
+Private feedback stored at: `users/{userId}/feedback/{feedbackId}` (per-user collection, only accessible by the owning user)
+
+The app merges both collections into a single list on the feedback screen.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -242,8 +245,8 @@ Stored at: `feedback/{feedbackId}` (shared collection, not per-user)
 | title | String | Yes | Short summary |
 | description | String | Yes | Detailed description |
 | status | String | Yes | `open`, `acknowledged`, `resolved` (default: `open`) |
-| isPrivate | bool | No | If true, only visible to the creator (default: `false`) |
-| userId | String | No | Creator's user ID (used for private visibility) |
+| isPrivate | bool | No | Determines storage location: `true` → per-user collection, `false` → shared collection (default: `false`) |
+| userId | String | No | Creator's user ID |
 | createdAt | Timestamp | Yes | Creation timestamp |
 | updatedAt | Timestamp | Yes | Last update timestamp |
 

@@ -10,40 +10,61 @@ class FirestoreFeedbackService implements FeedbackService {
   FirestoreFeedbackService(this._userId, {FirebaseFirestore? firestore})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
-  CollectionReference<Map<String, dynamic>> get _collection =>
+  /// Public feedback shared across all users.
+  CollectionReference<Map<String, dynamic>> get _publicCollection =>
       _firestore.collection('feedback');
+
+  /// Private feedback scoped to the current user.
+  CollectionReference<Map<String, dynamic>> get _privateCollection =>
+      _firestore.collection('users').doc(_userId).collection('feedback');
+
+  CollectionReference<Map<String, dynamic>> _collectionFor(FeedbackEntry entry) =>
+      entry.isPrivate ? _privateCollection : _publicCollection;
 
   @override
   Future<List<FeedbackEntry>> getEntries() async {
-    final snapshot = await _collection.get();
-    return snapshot.docs
-        .map((doc) => FeedbackEntry.fromMap(doc.data()))
-        .where((e) => !e.isPrivate || e.userId == _userId)
-        .toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final results = await Future.wait([
+      _publicCollection.get(),
+      _privateCollection.get(),
+    ]);
+    final entries = [
+      ...results[0].docs.map((d) => FeedbackEntry.fromMap(d.data())),
+      ...results[1].docs.map((d) => FeedbackEntry.fromMap(d.data())),
+    ];
+    entries.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return entries;
   }
 
   @override
   Future<FeedbackEntry?> getEntry(String id) async {
-    final doc = await _collection.doc(id).get();
-    if (!doc.exists || doc.data() == null) return null;
-    final entry = FeedbackEntry.fromMap(doc.data()!);
-    if (entry.isPrivate && entry.userId != _userId) return null;
-    return entry;
+    // Try public first, then private.
+    var doc = await _publicCollection.doc(id).get();
+    if (doc.exists && doc.data() != null) {
+      return FeedbackEntry.fromMap(doc.data()!);
+    }
+    doc = await _privateCollection.doc(id).get();
+    if (doc.exists && doc.data() != null) {
+      return FeedbackEntry.fromMap(doc.data()!);
+    }
+    return null;
   }
 
   @override
   Future<void> addEntry(FeedbackEntry entry) async {
-    await _collection.doc(entry.id).set(entry.toMap());
+    await _collectionFor(entry).doc(entry.id).set(entry.toMap());
   }
 
   @override
   Future<void> updateEntry(FeedbackEntry entry) async {
-    await _collection.doc(entry.id).set(entry.toMap());
+    await _collectionFor(entry).doc(entry.id).set(entry.toMap());
   }
 
   @override
   Future<void> deleteEntry(String id) async {
-    await _collection.doc(id).delete();
+    // Delete from whichever collection it exists in.
+    await Future.wait([
+      _publicCollection.doc(id).delete(),
+      _privateCollection.doc(id).delete(),
+    ]);
   }
 }
