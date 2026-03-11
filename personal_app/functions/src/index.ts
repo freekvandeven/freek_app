@@ -1,5 +1,4 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
-import { beforeUserCreated } from "firebase-functions/v2/identity";
 import { initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
@@ -7,17 +6,11 @@ import { getFirestore } from "firebase-admin/firestore";
 initializeApp();
 
 /**
- * Block all direct client-side user creation.
- * Only the Admin SDK (used by createUserWithInvite) bypasses this,
- * so anyone trying to call createUserWithEmailAndPassword from the
- * client SDK or REST API will be rejected.
+ * NOTE: blockDirectSignup (beforeUserCreated) requires Firebase Identity
+ * Platform (GCIP), a paid upgrade. Security is still enforced because all
+ * Firestore rules require the `inviteVerified` custom claim — users created
+ * outside this flow have no claim and can't access any data.
  */
-export const blockDirectSignup = beforeUserCreated(() => {
-  throw new HttpsError(
-    "permission-denied",
-    "Direct user creation is not allowed. Use an invite code."
-  );
-});
 
 /**
  * Callable function: creates a new user with a valid invite code.
