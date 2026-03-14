@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../gemini/providers/gemini_providers.dart';
 import '../models/inventory_item.dart';
 import '../providers/inventory_providers.dart';
 
@@ -27,6 +29,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
 
   DateTime? _purchaseDate;
   bool _isLoading = true;
+  bool _isScanning = false;
 
   @override
   void initState() {
@@ -106,6 +109,65 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
     if (mounted) context.pop();
   }
 
+  Future<void> _scanWithAi() async {
+    final service = ref.read(geminiServiceProvider);
+    if (!service.isConfigured) {
+      final apiKey = await ref.read(geminiApiKeyServiceProvider).getApiKey();
+      service.configure(apiKey);
+    }
+    if (!service.isConfigured) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Configure a Gemini API key in Settings first')),
+        );
+      }
+      return;
+    }
+
+    final picker = ImagePicker();
+    final image = await picker.pickImage(source: ImageSource.camera);
+    if (image == null) return;
+
+    setState(() => _isScanning = true);
+    try {
+      final bytes = await image.readAsBytes();
+      final mimeType = image.mimeType ?? 'image/jpeg';
+      final result = await service.analyzeInventoryImage(bytes, mimeType);
+
+      if (result != null && mounted) {
+        setState(() {
+          if (result['name'] is String && _nameController.text.isEmpty) {
+            _nameController.text = result['name'] as String;
+          }
+          if (result['description'] is String && _descriptionController.text.isEmpty) {
+            _descriptionController.text = result['description'] as String;
+          }
+          if (result['category'] is String && _categoryController.text.isEmpty) {
+            _categoryController.text = result['category'] as String;
+          }
+          if (result['quantity'] is int) {
+            _quantityController.text = (result['quantity'] as int).toString();
+          }
+          if (result['purchasePrice'] is num && _priceController.text.isEmpty) {
+            _priceController.text = (result['purchasePrice'] as num).toStringAsFixed(2);
+          }
+          if (result['barcode'] is String && _barcodeController.text.isEmpty) {
+            _barcodeController.text = result['barcode'] as String;
+          }
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Fields filled from image analysis')),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not extract item details from image')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isScanning = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.itemId != null;
@@ -122,7 +184,20 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
     return Scaffold(
       appBar: AppBar(
         title: QuickActionsTitle(child: Text(isEditing ? 'Edit Item' : 'New Item')),
-        actions: [TextButton(onPressed: _save, child: const Text('Save'))],
+        actions: [
+          IconButton(
+            icon: _isScanning
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.document_scanner),
+            tooltip: 'Scan with AI',
+            onPressed: _isScanning ? null : _scanWithAi,
+          ),
+          TextButton(onPressed: _save, child: const Text('Save')),
+        ],
       ),
       body: Form(
         key: _formKey,

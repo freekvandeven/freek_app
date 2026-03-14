@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 class GeminiService {
@@ -44,6 +47,39 @@ class GeminiService {
       return response.text ?? 'No response received.';
     } catch (e) {
       return 'Error: $e';
+    }
+  }
+
+  /// Analyze an image and return structured inventory data as JSON.
+  Future<Map<String, dynamic>?> analyzeInventoryImage(
+    Uint8List imageBytes,
+    String mimeType,
+  ) async {
+    if (!isConfigured) return null;
+    try {
+      final response = await _getModel().generateContent([
+        Content.multi([
+          TextPart(
+            'Analyze this image for an inventory management app. '
+            'Return ONLY a JSON object with these fields (omit fields you cannot determine):\n'
+            '- "name": product/item name (string)\n'
+            '- "description": brief description (string)\n'
+            '- "category": item category (string)\n'
+            '- "quantity": number of items visible (int)\n'
+            '- "purchasePrice": estimated price in EUR if visible (number)\n'
+            '- "barcode": barcode number if visible (string)\n'
+            'Respond with ONLY the JSON object, no markdown fences.',
+          ),
+          DataPart(mimeType, imageBytes),
+        ]),
+      ]);
+      final text = response.text?.trim();
+      if (text == null || text.isEmpty) return null;
+      // Strip markdown fences if present
+      final cleaned = text.replaceAll(RegExp(r'^```json?\s*|\s*```$'), '').trim();
+      return jsonDecode(cleaned) as Map<String, dynamic>;
+    } catch (e) {
+      return null;
     }
   }
 

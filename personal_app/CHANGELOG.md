@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Gemini API key can now be stored securely on-device via Settings → AI → Gemini API Key, using `flutter_secure_storage`
+- AI image scanning for inventory — take a photo of an item and Gemini auto-fills name, description, category, quantity, price, and barcode
 
 ## [0.3.0] - 2026-03-11
 
