@@ -1,17 +1,24 @@
 import 'package:google_generative_ai/google_generative_ai.dart';
 
-import '../../../config/app_config.dart';
-
 class GeminiService {
   GenerativeModel? _model;
   ChatSession? _chat;
+  String? _apiKey;
 
-  bool get isConfigured => AppConfig.geminiApiKey.isNotEmpty;
+  bool get isConfigured => _apiKey != null && _apiKey!.isNotEmpty;
+
+  void configure(String apiKey) {
+    if (apiKey != _apiKey) {
+      _apiKey = apiKey;
+      _model = null;
+      _chat = null;
+    }
+  }
 
   GenerativeModel _getModel() {
     _model ??= GenerativeModel(
       model: 'gemini-2.0-flash',
-      apiKey: AppConfig.geminiApiKey,
+      apiKey: _apiKey!,
     );
     return _model!;
   }

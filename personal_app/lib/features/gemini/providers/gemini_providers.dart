@@ -1,9 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../services/gemini_api_key_service.dart';
 import '../services/gemini_service.dart';
+
+final geminiApiKeyServiceProvider = Provider<GeminiApiKeyService>((ref) {
+  return GeminiApiKeyService();
+});
 
 final geminiServiceProvider = Provider<GeminiService>((ref) {
   return GeminiService();
+});
+
+/// Whether an API key is available (from secure storage or dotenv).
+final geminiApiKeyAvailableProvider = FutureProvider<bool>((ref) async {
+  final key = await ref.watch(geminiApiKeyServiceProvider).getApiKey();
+  return key.isNotEmpty;
 });
 
 class ChatMessage {
@@ -28,6 +39,10 @@ class GeminiChatNotifier extends Notifier<List<ChatMessage>> {
     state = [...state, ChatMessage(text: message, isUser: true)];
 
     final service = ref.read(geminiServiceProvider);
+    if (!service.isConfigured) {
+      final apiKey = await ref.read(geminiApiKeyServiceProvider).getApiKey();
+      service.configure(apiKey);
+    }
     final response = await service.sendMessage(message);
 
     state = [...state, ChatMessage(text: response, isUser: false)];

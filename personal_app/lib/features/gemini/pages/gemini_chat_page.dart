@@ -52,7 +52,6 @@ class _GeminiChatPageState extends ConsumerState<GeminiChatPage> {
   @override
   Widget build(BuildContext context) {
     final messages = ref.watch(geminiChatProvider);
-    final service = ref.watch(geminiServiceProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -69,10 +68,10 @@ class _GeminiChatPageState extends ConsumerState<GeminiChatPage> {
       ),
       body: Column(
         children: [
-          if (!service.isConfigured)
+          if (ref.watch(geminiApiKeyAvailableProvider).valueOrNull == false)
             MaterialBanner(
               content: const Text(
-                'Add GEMINI_API_KEY to your dotenv file to enable AI features.',
+                'No Gemini API key configured. Add one in Settings or in your dotenv file.',
               ),
               leading: const Icon(Icons.warning_amber, color: Colors.orange),
               actions: [

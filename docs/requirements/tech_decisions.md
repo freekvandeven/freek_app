@@ -140,6 +140,7 @@ Track key third-party packages planned for the project.
 | `cached_network_image` | Image caching for recipes | Planned |
 | `url_launcher` | Open external links (Google Calendar, Kerio, etc.) | Added |
 | `google_generative_ai` | Google Gemini AI chat integration | Added |
+| `flutter_secure_storage` | Secure on-device storage for API keys and secrets | Added |
 
 ## Open Questions
 

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../auth/providers/auth_providers.dart';
 import '../../auth/services/biometric_service.dart';
+import '../../gemini/providers/gemini_providers.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -118,6 +119,9 @@ class SettingsPage extends ConsumerWidget {
             subtitle: const Text('Export your data to CSV'),
             onTap: () => context.push('/settings/export'),
           ),
+
+          const _SectionHeader('AI'),
+          _GeminiApiKeyTile(),
 
           const _SectionHeader('Account'),
           ListTile(
@@ -285,5 +289,73 @@ class _SectionHeader extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _GeminiApiKeyTile extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hasKey = ref.watch(geminiApiKeyAvailableProvider);
+
+    return ListTile(
+      leading: const Icon(Icons.key),
+      title: const Text('Gemini API Key'),
+      subtitle: Text(
+        hasKey.when(
+          data: (available) => available ? 'Key configured' : 'Not set',
+          loading: () => 'Checking...',
+          error: (_, _) => 'Error',
+        ),
+      ),
+      trailing: hasKey.valueOrNull == true
+          ? IconButton(
+              icon: Icon(Icons.delete_outline,
+                  color: Theme.of(context).colorScheme.error),
+              tooltip: 'Remove key',
+              onPressed: () async {
+                await ref.read(geminiApiKeyServiceProvider).clearApiKey();
+                ref.invalidate(geminiApiKeyAvailableProvider);
+                ref.read(geminiServiceProvider).configure('');
+              },
+            )
+          : null,
+      onTap: () => _showApiKeyDialog(context, ref),
+    );
+  }
+
+  void _showApiKeyDialog(BuildContext context, WidgetRef ref) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Gemini API Key'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'API Key',
+            hintText: 'Enter your Gemini API key',
+          ),
+          obscureText: true,
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final key = controller.text.trim();
+              if (key.isEmpty) return;
+              await ref.read(geminiApiKeyServiceProvider).setApiKey(key);
+              ref.invalidate(geminiApiKeyAvailableProvider);
+              ref.read(geminiServiceProvider).configure(key);
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    ).then((_) => controller.dispose());
   }
 }

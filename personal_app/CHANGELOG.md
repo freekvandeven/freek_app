@@ -9,6 +9,9 @@ All notable changes to this project will be documented in this file.
 - Connections quick links now open native apps (Google Calendar, Gmail, Google Drive, Google Keep, GitHub, ChatGPT) when installed, with web fallback
 - Feedback entries no longer duplicate when marking as resolved or changing privacy — old document is cleaned up from the opposite collection
 
+### Added
+- Gemini API key can now be stored securely on-device via Settings → AI → Gemini API Key, using `flutter_secure_storage`
+
 ## [0.3.0] - 2026-03-11
 
 ### Added
