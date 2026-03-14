@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Password autofill now works on all platforms — login and signup forms support password manager suggestions via `AutofillGroup` and `autofillHints`, with Digital Asset Links (Android) and Apple App Site Association (iOS/macOS) hosted on Firebase
 - Connections quick links now open native apps (Google Calendar, Gmail, Google Drive, Google Keep, GitHub, ChatGPT) when installed, with web fallback
+- Feedback entries no longer duplicate when marking as resolved or changing privacy — old document is cleaned up from the opposite collection
 
 ## [0.3.0] - 2026-03-11
 

@@ -56,7 +56,12 @@ class FirestoreFeedbackService implements FeedbackService {
 
   @override
   Future<void> updateEntry(FeedbackEntry entry) async {
-    await _collectionFor(entry).doc(entry.id).set(entry.toMap());
+    final target = _collectionFor(entry);
+    final opposite = entry.isPrivate ? _publicCollection : _privateCollection;
+    await Future.wait([
+      target.doc(entry.id).set(entry.toMap()),
+      opposite.doc(entry.id).delete(),
+    ]);
   }
 
   @override
