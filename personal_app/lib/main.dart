@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_app/presentation/theme/app_theme.dart';
 import 'package:personal_app/routing/app_router.dart';
@@ -14,7 +15,8 @@ import 'firebase_options.dart';
 import 'presentation/widgets/lock_screen.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   WakelockPlus.enable();
 
   try {
@@ -64,11 +66,15 @@ class PersonalApp extends ConsumerWidget {
         themeMode: ThemeMode.system,
         home: const Scaffold(body: Center(child: CircularProgressIndicator())),
       ),
-      error: (e, _) => MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: Scaffold(body: Center(child: Text('Failed to initialize: $e'))),
-      ),
+      error: (e, _) {
+        FlutterNativeSplash.remove();
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          home: Scaffold(body: Center(child: Text('Failed to initialize: $e'))),
+        );
+      },
       data: (_) {
+        FlutterNativeSplash.remove();
         final user = ref.watch(currentUserProvider);
         final biometricEnabled = user?.settings.biometricEnabled ?? false;
         final seedColor = ref.watch(customSeedColorProvider);

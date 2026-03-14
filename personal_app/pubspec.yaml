@@ -37,6 +37,7 @@ dependencies:
   wakelock_plus: ^1.4.0
   http: ^1.2.0
   flutter_secure_storage: ^10.0.0
+  flutter_native_splash: ^2.4.7
 
 dev_dependencies:
   flutter_test:
@@ -57,6 +58,16 @@ flutter_launcher_icons:
   adaptive_icon_background: "#2D77BB"
   adaptive_icon_foreground: "assets/app_icon.png"
   remove_alpha_ios: true
+
+flutter_native_splash:
+  color: "#2D77BB"
+  image: "assets/app_icon.png"
+  android_12:
+    color: "#2D77BB"
+    image: "assets/app_icon.png"
+  web: true
+  ios: true
+  android: true
 
 flutter:
   uses-material-design: true

@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - Gemini API key can now be stored securely on-device via Settings → AI → Gemini API Key, using `flutter_secure_storage`
 - AI image scanning for inventory — take a photo of an item and Gemini auto-fills name, description, category, quantity, price, and barcode
 - Custom accent color picker in Settings → Appearance with 12 preset colors, stored per-user in Firestore
+- Native splash screen with app icon on brand-color background (Android, iOS, Web) via `flutter_native_splash`
 
 ## [0.3.0] - 2026-03-11
 

@@ -129,7 +129,7 @@ Track key third-party packages planned for the project.
 | `cloud_functions` | Cloud Functions client | Planned |
 | `flutter_dotenv` | Load `.env` configuration | Planned |
 | `local_auth` | Biometric / device authentication | Planned |
-| `flutter_native_splash` | Native splash screen | Planned |
+| `flutter_native_splash` | Native splash screen | In use |
 | `encrypt` / `pointycastle` | Client-side E2E encryption | Planned |
 | `csv` | CSV export functionality | Planned |
 | `go_router` | Navigation / routing with typed routes and guards | Planned |
