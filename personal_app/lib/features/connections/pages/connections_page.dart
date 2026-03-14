@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -34,12 +35,14 @@ class ConnectionsPage extends StatelessWidget {
 class _QuickLink {
   final String label;
   final String url;
+  final String? appUrl;
   final IconData icon;
   final Color color;
 
   const _QuickLink({
     required this.label,
     required this.url,
+    this.appUrl,
     required this.icon,
     required this.color,
   });
@@ -63,36 +66,42 @@ const _quickLinks = [
   _QuickLink(
     label: 'Google Calendar',
     url: 'https://calendar.google.com',
+    appUrl: 'googlecalendar://',
     icon: Icons.calendar_month,
     color: Colors.blue,
   ),
   _QuickLink(
     label: 'Gmail',
     url: 'https://mail.google.com',
+    appUrl: 'googlegmail://',
     icon: Icons.email,
     color: Colors.red,
   ),
   _QuickLink(
     label: 'Google Drive',
     url: 'https://drive.google.com',
+    appUrl: 'googledrive://',
     icon: Icons.cloud,
     color: Colors.green,
   ),
   _QuickLink(
     label: 'Google Keep',
     url: 'https://keep.google.com',
+    appUrl: 'comgooglekeep://',
     icon: Icons.sticky_note_2,
     color: Colors.amber,
   ),
   _QuickLink(
     label: 'GitHub',
     url: 'https://github.com',
+    appUrl: 'github://',
     icon: Icons.code,
     color: Colors.grey,
   ),
   _QuickLink(
     label: 'ChatGPT',
     url: 'https://chat.openai.com',
+    appUrl: 'chatgpt://',
     icon: Icons.smart_toy,
     color: Colors.teal,
   ),
@@ -123,6 +132,10 @@ class _LinkTile extends StatelessWidget {
   final _QuickLink link;
   const _LinkTile({required this.link});
 
+  Future<void> _launch(String url) async {
+    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -130,10 +143,18 @@ class _LinkTile extends StatelessWidget {
         leading: Icon(link.icon, color: link.color),
         title: Text(link.label),
         trailing: const Icon(Icons.open_in_new, size: 18),
-        onTap: () => launchUrl(
-          Uri.parse(link.url),
-          mode: LaunchMode.externalApplication,
-        ),
+        onTap: () async {
+          if (!kIsWeb && link.appUrl != null) {
+            try {
+              final launched = await launchUrl(
+                Uri.parse(link.appUrl!),
+                mode: LaunchMode.externalApplication,
+              );
+              if (launched) return;
+            } catch (_) {}
+          }
+          await _launch(link.url);
+        },
       ),
     );
   }

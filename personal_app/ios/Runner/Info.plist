@@ -66,5 +66,14 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>googlecalendar</string>
+		<string>googlegmail</string>
+		<string>googledrive</string>
+		<string>comgooglekeep</string>
+		<string>github</string>
+		<string>chatgpt</string>
+	</array>
 </dict>
 </plist>

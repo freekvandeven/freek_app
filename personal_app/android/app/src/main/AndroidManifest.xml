@@ -49,5 +49,30 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- App deeplink schemes for Connections quick links -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="googlecalendar"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="googlegmail"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="googledrive"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="comgooglekeep"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="github"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="chatgpt"/>
+        </intent>
     </queries>
 </manifest>
