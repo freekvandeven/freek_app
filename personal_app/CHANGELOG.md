@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 - AI image scanning for inventory — take a photo of an item and Gemini auto-fills name, description, category, quantity, price, and barcode
 - Custom accent color picker in Settings → Appearance with 12 preset colors, stored per-user in Firestore
 - Native splash screen with app icon on brand-color background (Android, iOS, Web) via `flutter_native_splash`
+- New app icon — gradient brand-color rounded square with stylized "F" monogram, generated for all platforms
 
 ## [0.3.0] - 2026-03-11
 
