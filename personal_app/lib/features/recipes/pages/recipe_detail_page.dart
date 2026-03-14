@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 import '../models/recipe.dart';
 import '../providers/recipe_providers.dart';
+import '../utils/video_link_parser.dart';
 
 class RecipeDetailPage extends ConsumerWidget {
   final String recipeId;
@@ -276,6 +279,19 @@ class RecipeDetailPage extends ConsumerWidget {
             ),
           ],
 
+          // Videos
+          if (recipe.videoLinks.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            Text('Videos', style: Theme.of(context).textTheme.titleMedium),
+            const Divider(),
+            ...recipe.videoLinks.map(
+              (url) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _VideoLinkCard(url: url),
+              ),
+            ),
+          ],
+
           // Notes
           if (recipe.notes != null) ...[
             const SizedBox(height: 24),
@@ -308,5 +324,104 @@ class RecipeDetailPage extends ConsumerWidget {
 
   String _formatQuantity(double q) {
     return q == q.roundToDouble() ? q.toInt().toString() : q.toString();
+  }
+}
+
+/// Displays a video link: embedded YouTube player for YouTube URLs,
+/// or a tappable card that opens in browser for other platforms.
+class _VideoLinkCard extends StatefulWidget {
+  final String url;
+  const _VideoLinkCard({required this.url});
+
+  @override
+  State<_VideoLinkCard> createState() => _VideoLinkCardState();
+}
+
+class _VideoLinkCardState extends State<_VideoLinkCard> {
+  YoutubePlayerController? _ytController;
+  late final VideoLinkInfo _info;
+
+  @override
+  void initState() {
+    super.initState();
+    _info = VideoLinkParser.parse(widget.url);
+    if (_info.platform == VideoPlatform.youtube && _info.videoId != null) {
+      _ytController = YoutubePlayerController.fromVideoId(
+        videoId: _info.videoId!,
+        autoPlay: false,
+        params: const YoutubePlayerParams(
+          showFullscreenButton: true,
+          strictRelatedVideos: true,
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _ytController?.close();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_ytController != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: YoutubePlayer(controller: _ytController!),
+      );
+    }
+
+    // Non-YouTube: show a tappable card with thumbnail/icon
+    final colorScheme = Theme.of(context).colorScheme;
+    final label = VideoLinkParser.platformLabel(_info.platform);
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => launchUrl(
+          Uri.parse(widget.url),
+          mode: LaunchMode.externalApplication,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Icon(
+                Icons.ondemand_video,
+                size: 32,
+                color: colorScheme.primary,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Watch on $label',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      widget.url,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.open_in_new,
+                size: 18,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../services/image_upload_service.dart';
 import '../models/recipe.dart';
 import '../providers/recipe_providers.dart';
+import '../utils/video_link_parser.dart';
 
 class RecipeEditPage extends ConsumerStatefulWidget {
   final String? recipeId;
@@ -30,6 +31,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
   List<String> _tags = [];
   List<String> _images = [];
   int _primaryImageIndex = 0;
+  List<String> _videoLinks = [];
   bool _isEditing = false;
   bool _isUploading = false;
 
@@ -59,6 +61,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
         _tags = List.from(recipe.tags);
         _images = List.from(recipe.images);
         _primaryImageIndex = recipe.primaryImageIndex;
+        _videoLinks = List.from(recipe.videoLinks);
       });
     }
   }
@@ -99,6 +102,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
           tags: _tags,
           images: _images,
           primaryImageIndex: _primaryImageIndex,
+          videoLinks: _videoLinks,
           source: source.isEmpty ? null : source,
           clearSource: source.isEmpty,
           notes: notes.isEmpty ? null : notes,
@@ -118,6 +122,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
         tags: _tags,
         images: _images,
         primaryImageIndex: _primaryImageIndex,
+        videoLinks: _videoLinks,
         source: source.isEmpty ? null : source,
         notes: notes.isEmpty ? null : notes,
       );
@@ -359,6 +364,40 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
       setState(() => _tags.add(text));
       _tagController.clear();
     }
+  }
+
+  void _addVideoLink() {
+    final ctrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add Video Link'),
+        content: TextField(
+          controller: ctrl,
+          decoration: const InputDecoration(
+            labelText: 'Video URL',
+            hintText: 'https://youtube.com/watch?v=...',
+          ),
+          keyboardType: TextInputType.url,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              final url = ctrl.text.trim();
+              if (url.isNotEmpty) {
+                setState(() => _videoLinks.add(url));
+              }
+              Navigator.pop(ctx);
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -620,6 +659,53 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                   ),
                 ),
               ),
+            const SizedBox(height: 16),
+
+            // Video Links
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Videos', style: Theme.of(context).textTheme.titleMedium),
+                TextButton.icon(
+                  onPressed: _addVideoLink,
+                  icon: const Icon(Icons.video_library, size: 18),
+                  label: const Text('Add'),
+                ),
+              ],
+            ),
+            ..._videoLinks.asMap().entries.map(
+              (entry) {
+                final info = VideoLinkParser.parse(entry.value);
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  leading: Icon(
+                    info.platform == VideoPlatform.youtube
+                        ? Icons.play_circle_fill
+                        : Icons.ondemand_video,
+                    color: info.platform == VideoPlatform.youtube
+                        ? Colors.red
+                        : null,
+                  ),
+                  title: Text(
+                    VideoLinkParser.platformLabel(info.platform),
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  subtitle: Text(
+                    entry.value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.remove_circle_outline, size: 20),
+                    onPressed: () =>
+                        setState(() => _videoLinks.removeAt(entry.key)),
+                  ),
+                );
+              },
+            ),
+
             const SizedBox(height: 16),
 
             TextFormField(

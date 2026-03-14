@@ -32,6 +32,7 @@ Users can maintain a personal digital cookbook. Each recipe has structured data 
 - Image (optional, upload or URL)
 - Source (optional, URL or text reference)
 - Notes (optional, personal annotations)
+- Video links (optional, list of URLs — YouTube, Vimeo, TikTok, Instagram, etc.)
 - Favorite toggle
 
 ### Recipe List View
@@ -48,6 +49,7 @@ Users can maintain a personal digital cookbook. Each recipe has structured data 
 - Instructions shown as numbered steps
 - Metadata: servings, prep time, cook time
 - Tags shown as chips
+- Video links section: YouTube embedded player, other platforms as tappable cards
 - Edit and delete buttons
 
 ## Acceptance Criteria
@@ -63,6 +65,9 @@ Users can maintain a personal digital cookbook. Each recipe has structured data 
 - [ ] Ingredients and instructions are dynamic lists (add/remove)
 - [ ] Recipes are synced to Firestore
 - [ ] Recipes are exportable to CSV
+- [ ] User can add video links (YouTube, Vimeo, etc.) to a recipe
+- [ ] YouTube videos are embedded inline in recipe detail view
+- [ ] Non-YouTube video links open in external browser
 
 ## UI / Screens
 

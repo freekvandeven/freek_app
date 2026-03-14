@@ -58,6 +58,7 @@ class Recipe {
   final List<String> tags;
   final List<String> images;
   final int primaryImageIndex;
+  final List<String> videoLinks;
   final bool isFavorite;
   final String? source;
   final String? notes;
@@ -76,6 +77,7 @@ class Recipe {
     this.tags = const [],
     this.images = const [],
     this.primaryImageIndex = 0,
+    this.videoLinks = const [],
     this.isFavorite = false,
     this.source,
     this.notes,
@@ -100,6 +102,7 @@ class Recipe {
     List<String>? tags,
     List<String>? images,
     int? primaryImageIndex,
+    List<String>? videoLinks,
     bool? isFavorite,
     String? source,
     String? notes,
@@ -119,6 +122,7 @@ class Recipe {
       tags: tags ?? this.tags,
       images: images ?? this.images,
       primaryImageIndex: primaryImageIndex ?? this.primaryImageIndex,
+      videoLinks: videoLinks ?? this.videoLinks,
       isFavorite: isFavorite ?? this.isFavorite,
       source: clearSource ? null : (source ?? this.source),
       notes: clearNotes ? null : (notes ?? this.notes),
@@ -144,6 +148,7 @@ class Recipe {
     'tags': tags,
     'images': images,
     'primaryImageIndex': primaryImageIndex,
+    'videoLinks': videoLinks,
     'isFavorite': isFavorite,
     'source': source,
     'notes': notes,
@@ -182,6 +187,7 @@ class Recipe {
       tags: (map['tags'] as List?)?.map((s) => s as String).toList() ?? [],
       images: images,
       primaryImageIndex: map['primaryImageIndex'] as int? ?? 0,
+      videoLinks: (map['videoLinks'] as List?)?.map((s) => s as String).toList() ?? [],
       isFavorite: map['isFavorite'] as bool? ?? false,
       source: map['source'] as String?,
       notes: map['notes'] as String?,
