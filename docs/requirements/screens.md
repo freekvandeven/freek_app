@@ -159,7 +159,7 @@ S004 Home/Dashboard
 **Purpose**: Firebase authentication screen.
 
 **Key Elements**:
-- Email/password fields
+- Email/password fields with autofill support (password manager integration)
 - Sign in button
 - Sign up option
 - "Forgot password" link

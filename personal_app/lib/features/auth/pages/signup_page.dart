@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -45,6 +46,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
         password: _passwordController.text,
         inviteCode: _inviteCodeController.text.trim(),
       );
+      TextInput.finishAutofillContext();
       // Router redirects automatically via isAuthenticatedProvider
     } catch (e) {
       setState(() => _errorMessage = e.toString());
@@ -65,7 +67,8 @@ class _SignupPageState extends ConsumerState<SignupPage> {
             padding: const EdgeInsets.all(24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 400),
-              child: Form(
+              child: AutofillGroup(
+                child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -108,6 +111,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.email],
                       decoration: const InputDecoration(
                         labelText: 'Email',
                         prefixIcon: Icon(Icons.email_outlined),
@@ -127,6 +131,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                       controller: _passwordController,
                       obscureText: _obscurePassword,
                       textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.newPassword],
                       decoration: InputDecoration(
                         labelText: 'Password',
                         prefixIcon: const Icon(Icons.lock_outlined),
@@ -156,6 +161,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                       controller: _confirmPasswordController,
                       obscureText: _obscureConfirm,
                       textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.newPassword],
                       decoration: InputDecoration(
                         labelText: 'Confirm Password',
                         prefixIcon: const Icon(Icons.lock_outlined),
@@ -218,6 +224,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                     ),
                   ],
                 ),
+              ),
               ),
             ),
           ),

@@ -102,6 +102,21 @@ Anyone cloning the repo can:
 
 ---
 
+## Password Autofill & Associated Domains
+
+**Status**: Decided
+
+**Decision**: Use platform-native autofill with Firebase Hosting as the association domain.
+
+**How it works**:
+- Flutter's `AutofillGroup` and `autofillHints` enable password manager suggestions on all platforms.
+- **Android**: Digital Asset Links (`/.well-known/assetlinks.json`) hosted on `freek-personal-app.web.app` associates the Android app (package `nl.freekvandeven.personal_app`) with the domain. The `AndroidManifest.xml` has an `autoVerify` intent-filter for the same domain.
+- **iOS/macOS**: Apple App Site Association (`/.well-known/apple-app-site-association`) hosted on the same domain associates the iOS app (bundle `nl.freekvandeven.personalApp`). The `Runner.entitlements` file declares `webcredentials` and `applinks` for the domain.
+- **Web**: Autofill works natively via browser password managers.
+- **Windows/Linux/Desktop**: Autofill hints are provided; behavior depends on the installed password manager.
+
+---
+
 ## Packages (Planned)
 
 Track key third-party packages planned for the project.

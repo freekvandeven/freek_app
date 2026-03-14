@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls", "delegate_permission/common.get_login_creds"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "nl.freekvandeven.personal_app",
+      "sha256_cert_fingerprints": [
+        "40:95:72:29:A3:1B:A3:33:D1:C7:A5:90:D8:79:40:5A:11:81:E3:89:6D:A2:9B:57:FC:C9:6C:B5:9A:B1:DD:97"
+      ]
+    }
+  }
+]

@@ -1,0 +1,16 @@
+{
+  "webcredentials": {
+    "apps": [
+      "TEAMID.nl.freekvandeven.personalApp"
+    ]
+  },
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAMID.nl.freekvandeven.personalApp",
+        "paths": ["*"]
+      }
+    ]
+  }
+}
