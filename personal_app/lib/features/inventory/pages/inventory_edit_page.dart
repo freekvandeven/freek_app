@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../gemini/providers/gemini_providers.dart';
+import '../../settings/providers/settings_providers.dart';
 import '../models/inventory_item.dart';
 import '../providers/inventory_providers.dart';
 
@@ -111,9 +112,12 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
 
   Future<void> _scanWithAi() async {
     final service = ref.read(geminiServiceProvider);
+    final model = ref.read(geminiModelProvider);
     if (!service.isConfigured) {
       final apiKey = await ref.read(geminiApiKeyServiceProvider).getApiKey();
-      service.configure(apiKey);
+      service.configure(apiKey, model: model);
+    } else {
+      service.setModel(model);
     }
     if (!service.isConfigured) {
       if (mounted) {

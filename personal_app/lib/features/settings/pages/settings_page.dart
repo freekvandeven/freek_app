@@ -6,7 +6,9 @@ import 'package:go_router/go_router.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../auth/services/biometric_service.dart';
 import '../../gemini/providers/gemini_providers.dart';
+import '../../gemini/services/gemini_service.dart';
 import '../../../presentation/theme/app_theme.dart';
+import '../providers/settings_providers.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -147,6 +149,7 @@ class SettingsPage extends ConsumerWidget {
 
           const _SectionHeader('AI'),
           _GeminiApiKeyTile(),
+          _GeminiModelTile(),
 
           const _SectionHeader('Account'),
           ListTile(
@@ -444,5 +447,56 @@ class _GeminiApiKeyTile extends ConsumerWidget {
         ],
       ),
     ).then((_) => controller.dispose());
+  }
+}
+
+class _GeminiModelTile extends ConsumerWidget {
+  static const _models = [
+    ('gemini-2.5-flash', 'Gemini 2.5 Flash', 'Latest, fast & capable'),
+    ('gemini-2.0-flash', 'Gemini 2.0 Flash', 'Fast & versatile'),
+    ('gemini-1.5-flash', 'Gemini 1.5 Flash', 'Lightweight & widely available'),
+    ('gemini-1.5-pro', 'Gemini 1.5 Pro', 'Advanced reasoning'),
+  ];
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentModel = ref.watch(geminiModelProvider);
+    final label = _models
+        .where((m) => m.$1 == currentModel)
+        .map((m) => m.$2)
+        .firstOrNull ?? currentModel;
+
+    return ListTile(
+      leading: const Icon(Icons.smart_toy),
+      title: const Text('Gemini Model'),
+      subtitle: Text(label),
+      onTap: () => _showModelPicker(context, ref, currentModel),
+    );
+  }
+
+  void _showModelPicker(BuildContext context, WidgetRef ref, String current) {
+    showDialog(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Gemini Model'),
+        children: [
+          for (final (id, name, desc) in _models)
+            ListTile(
+              title: Text(name),
+              subtitle: Text(desc),
+              trailing: current == id ? const Icon(Icons.check) : null,
+              onTap: () {
+                final user = ref.read(currentUserProvider)!;
+                final updated = user.copyWith(
+                  settings: user.settings.copyWith(geminiModel: id),
+                );
+                ref.read(authServiceProvider).updateProfile(updated);
+                ref.read(geminiServiceProvider).setModel(id);
+                Navigator.pop(ctx);
+              },
+            ),
+        ],
+      ),
+    );
   }
 }

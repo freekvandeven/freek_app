@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - Custom accent color picker in Settings → Appearance with 12 preset colors, stored per-user in Firestore
 - Native splash screen with app icon on brand-color background (Android, iOS, Web) via `flutter_native_splash`
 - New app icon — gradient brand-color rounded square with stylized "F" monogram, generated for all platforms\n- Video links on recipes — add YouTube, Vimeo, TikTok, and Instagram video URLs; YouTube videos play inline via embedded player, other platforms open in browser
+- Gemini model selection — choose between Gemini 2.5 Flash, 2.0 Flash, 1.5 Flash, and 1.5 Pro in Settings → AI → Gemini Model
 
 ## [0.3.0] - 2026-03-11
 

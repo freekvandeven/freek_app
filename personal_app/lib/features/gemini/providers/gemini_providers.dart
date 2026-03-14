@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../settings/providers/settings_providers.dart';
 import '../services/gemini_api_key_service.dart';
 import '../services/gemini_service.dart';
 
@@ -39,9 +40,12 @@ class GeminiChatNotifier extends Notifier<List<ChatMessage>> {
     state = [...state, ChatMessage(text: message, isUser: true)];
 
     final service = ref.read(geminiServiceProvider);
+    final model = ref.read(geminiModelProvider);
     if (!service.isConfigured) {
       final apiKey = await ref.read(geminiApiKeyServiceProvider).getApiKey();
-      service.configure(apiKey);
+      service.configure(apiKey, model: model);
+    } else {
+      service.setModel(model);
     }
     final response = await service.sendMessage(message);
 

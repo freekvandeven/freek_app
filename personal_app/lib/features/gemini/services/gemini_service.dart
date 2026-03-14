@@ -4,15 +4,28 @@ import 'dart:typed_data';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 class GeminiService {
+  static const defaultModel = 'gemini-2.0-flash';
+
   GenerativeModel? _model;
   ChatSession? _chat;
   String? _apiKey;
+  String _modelName = defaultModel;
 
   bool get isConfigured => _apiKey != null && _apiKey!.isNotEmpty;
 
-  void configure(String apiKey) {
-    if (apiKey != _apiKey) {
+  void configure(String apiKey, {String? model}) {
+    final newModel = model ?? _modelName;
+    if (apiKey != _apiKey || newModel != _modelName) {
       _apiKey = apiKey;
+      _modelName = newModel;
+      _model = null;
+      _chat = null;
+    }
+  }
+
+  void setModel(String model) {
+    if (model != _modelName) {
+      _modelName = model;
       _model = null;
       _chat = null;
     }
@@ -20,7 +33,7 @@ class GeminiService {
 
   GenerativeModel _getModel() {
     _model ??= GenerativeModel(
-      model: 'gemini-2.0-flash',
+      model: _modelName,
       apiKey: _apiKey!,
     );
     return _model!;
