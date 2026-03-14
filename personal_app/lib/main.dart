@@ -59,8 +59,8 @@ class PersonalApp extends ConsumerWidget {
     return authInit.when(
       loading: () => MaterialApp(
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
+        theme: AppTheme.lightTheme(),
+        darkTheme: AppTheme.darkTheme(),
         themeMode: ThemeMode.system,
         home: const Scaffold(body: Center(child: CircularProgressIndicator())),
       ),
@@ -71,12 +71,13 @@ class PersonalApp extends ConsumerWidget {
       data: (_) {
         final user = ref.watch(currentUserProvider);
         final biometricEnabled = user?.settings.biometricEnabled ?? false;
+        final seedColor = ref.watch(customSeedColorProvider);
 
         return MaterialApp.router(
             title: 'Freek App',
             debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
+            theme: AppTheme.lightTheme(seedColor),
+            darkTheme: AppTheme.darkTheme(seedColor),
             themeMode: ref.watch(themeModeProvider),
             routerConfig: router,
             builder: (context, child) => LockScreen(

@@ -3,12 +3,14 @@ class UserSettings {
   final bool notificationsEnabled;
   final String defaultCurrency;
   final bool biometricEnabled;
+  final String? customSeedColor;
 
   const UserSettings({
     this.themeMode = 'system',
     this.notificationsEnabled = true,
     this.defaultCurrency = 'EUR',
     this.biometricEnabled = true,
+    this.customSeedColor,
   });
 
   UserSettings copyWith({
@@ -16,12 +18,15 @@ class UserSettings {
     bool? notificationsEnabled,
     String? defaultCurrency,
     bool? biometricEnabled,
+    String? customSeedColor,
+    bool clearCustomSeedColor = false,
   }) {
     return UserSettings(
       themeMode: themeMode ?? this.themeMode,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       defaultCurrency: defaultCurrency ?? this.defaultCurrency,
       biometricEnabled: biometricEnabled ?? this.biometricEnabled,
+      customSeedColor: clearCustomSeedColor ? null : (customSeedColor ?? this.customSeedColor),
     );
   }
 
@@ -30,6 +35,7 @@ class UserSettings {
     'notificationsEnabled': notificationsEnabled,
     'defaultCurrency': defaultCurrency,
     'biometricEnabled': biometricEnabled,
+    'customSeedColor': customSeedColor,
   };
 
   factory UserSettings.fromMap(Map<String, dynamic> map) {
@@ -38,6 +44,7 @@ class UserSettings {
       notificationsEnabled: map['notificationsEnabled'] as bool? ?? true,
       defaultCurrency: map['defaultCurrency'] as String? ?? 'EUR',
       biometricEnabled: map['biometricEnabled'] as bool? ?? true,
+      customSeedColor: map['customSeedColor'] as String?,
     );
   }
 }

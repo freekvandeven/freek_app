@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../presentation/theme/app_theme.dart';
 import '../../auth/providers/auth_providers.dart';
 
 /// Derives the Flutter ThemeMode from the user's stored preference
@@ -15,4 +16,11 @@ final themeModeProvider = Provider<ThemeMode>((ref) {
     default:
       return ThemeMode.system;
   }
+});
+
+/// Custom seed color from user settings, or null for the default.
+final customSeedColorProvider = Provider<Color?>((ref) {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return null;
+  return AppTheme.parseHex(user.settings.customSeedColor);
 });

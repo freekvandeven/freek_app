@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../auth/services/biometric_service.dart';
 import '../../gemini/providers/gemini_providers.dart';
+import '../../../presentation/theme/app_theme.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -39,6 +40,30 @@ class SettingsPage extends ConsumerWidget {
                   settings.themeMode.substring(1),
             ),
             onTap: () => _showThemePicker(context, ref, settings.themeMode),
+          ),
+          ListTile(
+            leading: Icon(
+              Icons.color_lens,
+              color: AppTheme.parseHex(settings.customSeedColor) ??
+                  AppTheme.defaultSeedColor,
+            ),
+            title: const Text('Accent Color'),
+            subtitle: Text(settings.customSeedColor != null
+                ? '#${settings.customSeedColor}'
+                : 'Default'),
+            trailing: settings.customSeedColor != null
+                ? IconButton(
+                    icon: const Icon(Icons.restart_alt),
+                    tooltip: 'Reset to default',
+                    onPressed: () {
+                      final updated = user.copyWith(
+                        settings: settings.copyWith(clearCustomSeedColor: true),
+                      );
+                      ref.read(authServiceProvider).updateProfile(updated);
+                    },
+                  )
+                : null,
+            onTap: () => _showColorPicker(context, ref),
           ),
 
           const _SectionHeader('Preferences'),
@@ -267,6 +292,68 @@ class SettingsPage extends ConsumerWidget {
               ref.read(authServiceProvider).signOut();
             },
             child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static const _presetColors = [
+    Color(0xFF2D77BB), // Default blue
+    Color(0xFFE53935), // Red
+    Color(0xFF43A047), // Green
+    Color(0xFFFB8C00), // Orange
+    Color(0xFF8E24AA), // Purple
+    Color(0xFF00ACC1), // Cyan
+    Color(0xFFD81B60), // Pink
+    Color(0xFF3949AB), // Indigo
+    Color(0xFF00897B), // Teal
+    Color(0xFF6D4C41), // Brown
+    Color(0xFF546E7A), // Blue Grey
+    Color(0xFFFFB300), // Amber
+  ];
+
+  void _showColorPicker(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Accent Color'),
+        content: SizedBox(
+          width: 280,
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: _presetColors.map((color) {
+              return GestureDetector(
+                onTap: () {
+                  final user = ref.read(currentUserProvider)!;
+                  final hex = AppTheme.toHex(color);
+                  final updated = user.copyWith(
+                    settings: user.settings.copyWith(customSeedColor: hex),
+                  );
+                  ref.read(authServiceProvider).updateProfile(updated);
+                  Navigator.pop(ctx);
+                },
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outline,
+                      width: 2,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
           ),
         ],
       ),
