@@ -29,6 +29,7 @@ import '../features/passwords/pages/password_detail_page.dart';
 import '../features/passwords/pages/password_edit_page.dart';
 import '../features/passwords/pages/password_list_page.dart';
 import '../features/passwords/pages/vault_unlock_page.dart';
+import '../features/passwords/providers/vault_providers.dart';
 import '../features/recipes/pages/recipe_detail_page.dart';
 import '../features/recipes/pages/recipe_edit_page.dart';
 import '../features/recipes/pages/recipe_list_page.dart';
@@ -196,6 +197,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: 'list',
+            redirect: (context, state) {
+              final isLocked = ref.read(vaultLockedProvider);
+              if (isLocked) return '/passwords';
+              return null;
+            },
             builder: (context, state) => const PasswordListPage(),
             routes: [
               GoRoute(

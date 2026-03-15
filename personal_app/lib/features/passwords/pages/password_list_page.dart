@@ -19,14 +19,20 @@ class PasswordListPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const QuickActionsTitle(child: Text('Passwords')),
-        leading: IconButton(
-          icon: const Icon(Icons.lock),
-          tooltip: 'Lock vault',
-          onPressed: () {
-            ref.read(vaultKeyProvider.notifier).state = null;
-            context.go('/passwords');
-          },
-        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.lock),
+            tooltip: 'Lock vault',
+            onPressed: () {
+              ref.read(vaultKeyProvider.notifier).state = null;
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/');
+              }
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [

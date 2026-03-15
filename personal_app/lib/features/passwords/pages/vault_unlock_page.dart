@@ -178,7 +178,7 @@ class _VaultUnlockPageState extends ConsumerState<VaultUnlockPage> {
       final key = await ref.read(vaultServiceProvider).unlockVault(password);
       if (key != null && mounted) {
         ref.read(vaultKeyProvider.notifier).state = key;
-        context.go('/passwords/list');
+        context.pushReplacement('/passwords/list');
       }
     } finally {
       if (mounted) setState(() => _isUnlocking = false);
@@ -201,7 +201,7 @@ class _VaultUnlockPageState extends ConsumerState<VaultUnlockPage> {
       final key = await ref.read(vaultServiceProvider).unlockVault(password);
       if (key != null && mounted) {
         ref.read(vaultKeyProvider.notifier).state = key;
-        context.go('/passwords/list');
+        context.pushReplacement('/passwords/list');
       } else {
         setState(() => _error = 'Incorrect master password.');
       }

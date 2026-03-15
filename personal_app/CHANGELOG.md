@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2026-03-15
+
+### Fixed
+- Password vault navigation — switching apps and returning no longer breaks back navigation; vault pages now preserve the navigation stack and redirect to unlock when vault key is lost
+
 ## [0.4.0] - 2026-03-14
 
 ### Fixed
