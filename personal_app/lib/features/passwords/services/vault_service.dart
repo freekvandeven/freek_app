@@ -14,6 +14,10 @@ abstract class VaultService {
   Future<void> addEntry(PasswordEntry entry);
   Future<void> updateEntry(PasswordEntry entry);
   Future<void> deleteEntry(String id);
+
+  /// Re-encrypts all vault entries with a new master password.
+  /// Returns the new derived key, or null if the old password is wrong.
+  Future<Uint8List?> reEncryptVault(String oldPassword, String newPassword);
 }
 
 class MockVaultService implements VaultService {
@@ -93,5 +97,46 @@ class MockVaultService implements VaultService {
       _entriesKey,
       jsonEncode(entries.map((e) => e.toMap()).toList()),
     );
+  }
+
+  @override
+  Future<Uint8List?> reEncryptVault(String oldPassword, String newPassword) async {
+    final oldKey = await unlockVault(oldPassword);
+    if (oldKey == null) return null;
+
+    // Generate new salt & verification hash
+    final newSalt = VaultCrypto.generateSalt();
+    final newVerificationHash = VaultCrypto.createVerificationHash(newPassword, newSalt);
+    final newKey = VaultCrypto.deriveKey(newPassword, newSalt);
+
+    // Re-encrypt all entries
+    final entries = await getEntries();
+    final reEncrypted = entries.map((entry) {
+      final plainPassword = VaultCrypto.decryptField(entry.encryptedPassword, oldKey);
+      final newEncPassword = VaultCrypto.encryptField(plainPassword, newKey);
+      String? newEncNotes;
+      if (entry.encryptedNotes != null) {
+        final plainNotes = VaultCrypto.decryptField(entry.encryptedNotes!, oldKey);
+        newEncNotes = VaultCrypto.encryptField(plainNotes, newKey);
+      }
+      return PasswordEntry(
+        id: entry.id,
+        title: entry.title,
+        username: entry.username,
+        encryptedPassword: newEncPassword,
+        url: entry.url,
+        encryptedNotes: newEncNotes,
+        category: entry.category,
+        createdAt: entry.createdAt,
+        updatedAt: entry.updatedAt,
+      );
+    }).toList();
+
+    // Save new vault config & entries
+    await _prefs.setString(_saltKey, newSalt);
+    await _prefs.setString(_verificationKey, newVerificationHash);
+    await _saveEntries(reEncrypted);
+
+    return newKey;
   }
 }

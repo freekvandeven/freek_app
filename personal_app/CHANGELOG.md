@@ -7,6 +7,9 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Password vault navigation — switching apps and returning no longer breaks back navigation; vault pages now preserve the navigation stack and redirect to unlock when vault key is lost
 
+### Added
+- Vault re-encryption on password change — after changing your account password, the app offers to re-encrypt your password vault with a new master password matching your new account password
+
 ## [0.4.0] - 2026-03-14
 
 ### Fixed

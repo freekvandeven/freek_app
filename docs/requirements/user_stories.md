@@ -69,6 +69,7 @@ Capture user-facing scenarios in the format: **As a [user], I want [capability],
 | US-045 | As a user, I want to edit or delete password entries, so that I can keep my vault up to date. | High | F005 | TODO |
 | US-046 | As a user, I want to search / filter password entries, so that I can find a specific entry quickly. | Medium | F005 | TODO |
 | US-047 | As a user, I want to categorize password entries, so that I can organize them (Social, Finance, Work, etc.). | Low | F005 | TODO |
+| US-048 | As a user, I want to re-encrypt my vault with a new master password when I change my account password, so that my vault password stays in sync. | Medium | F005 | TODO |
 
 ## Calendar (F006)
 

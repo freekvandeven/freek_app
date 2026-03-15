@@ -77,4 +77,50 @@ class FirestoreVaultService implements VaultService {
   Future<void> deleteEntry(String id) async {
     await _entries.doc(id).delete();
   }
+
+  @override
+  Future<Uint8List?> reEncryptVault(String oldPassword, String newPassword) async {
+    final oldKey = await unlockVault(oldPassword);
+    if (oldKey == null) return null;
+
+    // Generate new salt & verification hash
+    final newSalt = VaultCrypto.generateSalt();
+    final newVerificationHash = VaultCrypto.createVerificationHash(newPassword, newSalt);
+    final newKey = VaultCrypto.deriveKey(newPassword, newSalt);
+
+    // Re-encrypt all entries
+    final entries = await getEntries();
+    final batch = _firestore.batch();
+
+    for (final entry in entries) {
+      final plainPassword = VaultCrypto.decryptField(entry.encryptedPassword, oldKey);
+      final newEncPassword = VaultCrypto.encryptField(plainPassword, newKey);
+      String? newEncNotes;
+      if (entry.encryptedNotes != null) {
+        final plainNotes = VaultCrypto.decryptField(entry.encryptedNotes!, oldKey);
+        newEncNotes = VaultCrypto.encryptField(plainNotes, newKey);
+      }
+      final reEncrypted = PasswordEntry(
+        id: entry.id,
+        title: entry.title,
+        username: entry.username,
+        encryptedPassword: newEncPassword,
+        url: entry.url,
+        encryptedNotes: newEncNotes,
+        category: entry.category,
+        createdAt: entry.createdAt,
+        updatedAt: entry.updatedAt,
+      );
+      batch.set(_entries.doc(entry.id), reEncrypted.toMap());
+    }
+
+    // Update vault config
+    batch.set(_vaultDoc, {
+      'salt': newSalt,
+      'verificationHash': newVerificationHash,
+    });
+
+    await batch.commit();
+    return newKey;
+  }
 }

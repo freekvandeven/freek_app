@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
+import '../../passwords/providers/vault_providers.dart';
 import '../providers/auth_providers.dart';
 import '../services/auth_service.dart';
 
@@ -49,7 +50,8 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Password changed successfully')),
         );
-        context.pop();
+        await _offerVaultReEncryption();
+        if (mounted) context.pop();
       }
     } on AuthException catch (e) {
       setState(() => _errorMessage = e.message);
@@ -57,6 +59,85 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
       setState(() => _errorMessage = 'Failed to change password.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _offerVaultReEncryption() async {
+    final vaultService = ref.read(vaultServiceProvider);
+    final isSetup = await vaultService.isVaultSetup();
+    if (!isSetup || !mounted) return;
+
+    final shouldReEncrypt = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Re-encrypt Vault?'),
+        content: const Text(
+          'Your password vault uses a separate master password for encryption. '
+          'Would you like to change your vault master password to match your '
+          'new account password?\n\n'
+          'You will need to enter your current vault master password.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Skip'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Re-encrypt'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldReEncrypt != true || !mounted) return;
+
+    // Ask for old vault master password
+    final vaultPasswordController = TextEditingController();
+    final oldVaultPassword = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Vault Master Password'),
+        content: TextField(
+          controller: vaultPasswordController,
+          obscureText: true,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Current vault master password',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, vaultPasswordController.text),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+    vaultPasswordController.dispose();
+
+    if (oldVaultPassword == null || oldVaultPassword.isEmpty || !mounted) return;
+
+    final newKey = await vaultService.reEncryptVault(
+      oldVaultPassword,
+      _newPasswordController.text,
+    );
+
+    if (!mounted) return;
+    if (newKey != null) {
+      ref.read(vaultKeyProvider.notifier).state = newKey;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vault re-encrypted with new password')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vault re-encryption failed — wrong master password')),
+      );
     }
   }
 
