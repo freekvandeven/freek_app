@@ -8,6 +8,8 @@ import '../features/auth/pages/change_password_page.dart';
 import '../features/auth/providers/auth_providers.dart';
 import '../features/calendar/pages/calendar_page.dart';
 import '../features/connections/pages/connections_page.dart';
+import '../features/conversations/pages/conversation_edit_page.dart';
+import '../features/conversations/pages/conversation_list_page.dart';
 import '../features/dashboard/pages/dashboard_page.dart';
 import '../features/gemini/pages/gemini_chat_page.dart';
 import '../features/inventory/pages/inventory_edit_page.dart';
@@ -289,6 +291,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: ':entryId',
             builder: (context, state) =>
                 FeedbackEditPage(entryId: state.pathParameters['entryId']),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/conversations',
+        builder: (context, state) => const ConversationListPage(),
+        routes: [
+          GoRoute(
+            path: 'new',
+            builder: (context, state) => const ConversationEditPage(),
+          ),
+          GoRoute(
+            path: ':topicId',
+            builder: (context, state) => ConversationEditPage(
+              topicId: state.pathParameters['topicId'],
+            ),
           ),
         ],
       ),

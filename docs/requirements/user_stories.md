@@ -78,6 +78,17 @@ Capture user-facing scenarios in the format: **As a [user], I want [capability],
 | US-049 | As a user, I want to attach captured app logs to a feedback entry, so that developers can diagnose issues from the logs. | Medium | F009 | TODO |
 | US-050-fb | As a user, I want to attach images to a feedback entry from gallery or camera, so that I can visually illustrate bugs or wishes. | Medium | F009 | TODO |
 
+## Conversation Topics (F013)
+
+| ID | User Story | Priority | Feature | Status |
+|----|-----------|----------|---------|--------|
+| US-070 | As a user, I want to create a conversation topic with a title, description, person/group, and priority, so that I can remember what to discuss with someone. | High | F013 | TODO |
+| US-071 | As a user, I want to mark a conversation topic as resolved, so that I know it has been discussed. | High | F013 | TODO |
+| US-072 | As a user, I want to filter conversation topics by person/group and status, so that I can focus on topics for a specific person. | Medium | F013 | TODO |
+| US-073 | As a user, I want to sort conversation topics by priority or date, so that I see the most important topics first. | Medium | F013 | TODO |
+| US-074 | As a user, I want to attach images to a conversation topic, so that I can add visual context. | Low | F013 | TODO |
+| US-075 | As a user, I want to reopen a resolved conversation topic, so that I can re-discuss it if needed. | Low | F013 | TODO |
+
 ## Calendar (F006)
 
 | ID | User Story | Priority | Feature | Status |

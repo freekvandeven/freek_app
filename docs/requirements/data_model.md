@@ -288,6 +288,25 @@ Stored at: `users/{userId}/knowledgePages/{pageId}`
 
 ---
 
+### Conversation Topic
+
+Stored at: `users/{userId}/conversations/{topicId}` (private per-user collection)
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| id | String | Yes | Unique topic identifier |
+| title | String | Yes | Short conversation topic summary |
+| description | String | Yes | Detailed description of what to discuss |
+| personOrGroup | String | Yes | Name of the person or group this topic is for |
+| priority | String | Yes | `low`, `medium`, `high` (default: `medium`) |
+| status | String | Yes | `open`, `resolved` (default: `open`) |
+| imageUrls | List\<String\> | No | Download URLs of attached images (stored in Firebase Storage) |
+| createdAt | Timestamp | Yes | Creation timestamp |
+| resolvedAt | Timestamp | No | When the topic was marked as resolved |
+| updatedAt | Timestamp | Yes | Last update timestamp |
+
+---
+
 ## Relationships
 
 ```
@@ -302,7 +321,8 @@ User (users/{userId})
  ├── 1:N ──▶ InventoryPlace
  │            └── 1:N ──▶ InventoryItem (via placeId)
  ├── 1:N ──▶ FeedbackEntry
- └── 1:N ──▶ KnowledgePage ──▶ self-referencing hierarchy (parentPageId)
+ ├── 1:N ──▶ KnowledgePage ──▶ self-referencing hierarchy (parentPageId)
+ └── 1:N ──▶ ConversationTopic
 ```
 
 ## Data Flow

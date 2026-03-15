@@ -39,6 +39,8 @@
 | S033 | Profile | Edit user profile (name, phone, bio) | F010 | Yes |
 | S034 | Connections | Quick links to external apps and integration management | F011 | Yes |
 | S035 | Gemini Chat | AI-powered chat assistant using Google Gemini | F012 | Yes |
+| S036 | Conversation List | List of conversation topics with filters by person/status and sorting by priority/date | F013 | Yes |
+| S037 | Conversation Edit | Create or edit a conversation topic with priority, person/group, images | F013 | Yes |
 
 ## Navigation Structure
 
@@ -67,6 +69,7 @@ Long-pressing any AppBar title across the entire app brings up a Quick Actions b
 | Inventory | S021 |
 | Knowledge Bank | S028 |
 | Feedback | S026 |
+| Conversations | S036 |
 | Connections | S034 |
 | Gemini AI | S035 |
 | Settings | S031 |
@@ -128,6 +131,11 @@ S004 Home/Dashboard
   │                         ├── + ──▶ S027 Feedback Edit (create)
   │                         ├── Tap ──▶ S027 Feedback Edit
   │                         └── Copy button ──▶ copies entry to clipboard
+  │
+  ├── [More: Conversations] ──▶ S036 Conversation List
+  │                               ├── + ──▶ S037 Conversation Edit (create)
+  │                               ├── Tap ──▶ S037 Conversation Edit
+  │                               └── Filter / Sort buttons
   │
   └── [More: Settings] ──▶ S031 Settings
                              ├── Theme toggle

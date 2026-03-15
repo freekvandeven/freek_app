@@ -38,6 +38,11 @@ class MorePage extends StatelessWidget {
               route: '/feedback',
             ),
             _MenuItem(
+              icon: Icons.forum_rounded,
+              label: 'Conversations',
+              route: '/conversations',
+            ),
+            _MenuItem(
               icon: Icons.link_rounded,
               label: 'Connections',
               route: '/connections',
