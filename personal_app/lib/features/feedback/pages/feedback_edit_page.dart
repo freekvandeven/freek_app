@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../models/feedback_entry.dart';
 import '../providers/feedback_providers.dart';
+import 'log_selection_page.dart';
 
 class FeedbackEditPage extends ConsumerStatefulWidget {
   final String? entryId;
@@ -24,6 +25,7 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
   FeedbackStatus _status = FeedbackStatus.open;
   bool _isPrivate = false;
   bool _isLoading = true;
+  String? _attachedLogs;
   FeedbackEntry? _existing;
 
   @override
@@ -51,6 +53,7 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
         _type = entry.type;
         _status = entry.status;
         _isPrivate = entry.isPrivate;
+        _attachedLogs = entry.attachedLogs;
         _isLoading = false;
       });
     } else {
@@ -78,6 +81,8 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
           description: _descriptionController.text.trim(),
           status: _status,
           isPrivate: _isPrivate,
+          attachedLogs: _attachedLogs,
+          clearAttachedLogs: _attachedLogs == null,
         ),
       );
     } else {
@@ -88,11 +93,46 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
           description: _descriptionController.text.trim(),
           isPrivate: _isPrivate,
           userId: userId,
+          attachedLogs: _attachedLogs,
         ),
       );
     }
 
     if (mounted) context.pop();
+  }
+
+  Future<void> _pickLogs() async {
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const LogSelectionPage()),
+    );
+    if (result != null && result.isNotEmpty && mounted) {
+      setState(() => _attachedLogs = result);
+    }
+  }
+
+  void _showAttachedLogs() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Attached Logs'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: SelectableText(
+              _attachedLogs ?? '',
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -164,6 +204,34 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
               subtitle: const Text('Only visible to you'),
               value: _isPrivate,
               onChanged: (v) => setState(() => _isPrivate = v),
+            ),
+            const SizedBox(height: 8),
+            ListTile(
+              leading: const Icon(Icons.description),
+              title: const Text('Attached Logs'),
+              subtitle: Text(
+                _attachedLogs != null
+                    ? '${_attachedLogs!.split('\n').length} lines attached'
+                    : 'None',
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_attachedLogs != null)
+                    IconButton(
+                      icon: const Icon(Icons.visibility),
+                      tooltip: 'View logs',
+                      onPressed: () => _showAttachedLogs(),
+                    ),
+                  if (_attachedLogs != null)
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      tooltip: 'Remove logs',
+                      onPressed: () => setState(() => _attachedLogs = null),
+                    ),
+                ],
+              ),
+              onTap: () => _pickLogs(),
             ),
             if (isEditing) ...[
               const SizedBox(height: 24),

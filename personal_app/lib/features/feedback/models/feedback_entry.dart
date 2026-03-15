@@ -12,6 +12,7 @@ class FeedbackEntry {
   final FeedbackStatus status;
   final bool isPrivate;
   final String? userId;
+  final String? attachedLogs;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -23,6 +24,7 @@ class FeedbackEntry {
     this.status = FeedbackStatus.open,
     this.isPrivate = false,
     this.userId,
+    this.attachedLogs,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) : id = id ?? const Uuid().v4(),
@@ -35,6 +37,8 @@ class FeedbackEntry {
     String? description,
     FeedbackStatus? status,
     bool? isPrivate,
+    String? attachedLogs,
+    bool clearAttachedLogs = false,
     DateTime? updatedAt,
   }) {
     return FeedbackEntry(
@@ -45,6 +49,7 @@ class FeedbackEntry {
       status: status ?? this.status,
       isPrivate: isPrivate ?? this.isPrivate,
       userId: userId,
+      attachedLogs: clearAttachedLogs ? null : (attachedLogs ?? this.attachedLogs),
       createdAt: createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
     );
@@ -58,6 +63,7 @@ class FeedbackEntry {
     'status': status.name,
     'isPrivate': isPrivate,
     'userId': userId,
+    'attachedLogs': attachedLogs,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
   };
@@ -70,15 +76,20 @@ class FeedbackEntry {
     status: FeedbackStatus.values.byName(map['status'] as String),
     isPrivate: map['isPrivate'] as bool? ?? false,
     userId: map['userId'] as String?,
+    attachedLogs: map['attachedLogs'] as String?,
     createdAt: DateTime.parse(map['createdAt'] as String),
     updatedAt: DateTime.parse(map['updatedAt'] as String),
   );
 
   String toClipboardText() {
     final typeLabel = type == FeedbackType.bug ? 'Bug' : 'Wish';
-    return '**[$typeLabel] $title**\n\n'
+    final buf = StringBuffer('**[$typeLabel] $title**\n\n'
         '$description\n\n'
         'Status: ${status.name[0].toUpperCase()}${status.name.substring(1)}\n'
-        'Created: ${createdAt.toIso8601String().substring(0, 10)}';
+        'Created: ${createdAt.toIso8601String().substring(0, 10)}');
+    if (attachedLogs != null && attachedLogs!.isNotEmpty) {
+      buf.write('\n\n**Attached Logs:**\n```\n$attachedLogs\n```');
+    }
+    return buf.toString();
   }
 }

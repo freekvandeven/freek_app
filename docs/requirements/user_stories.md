@@ -71,6 +71,12 @@ Capture user-facing scenarios in the format: **As a [user], I want [capability],
 | US-047 | As a user, I want to categorize password entries, so that I can organize them (Social, Finance, Work, etc.). | Low | F005 | TODO |
 | US-048 | As a user, I want to re-encrypt my vault with a new master password when I change my account password, so that my vault password stays in sync. | Medium | F005 | TODO |
 
+## Feedback (F009)
+
+| ID | User Story | Priority | Feature | Status |
+|----|-----------|----------|---------|--------|
+| US-049 | As a user, I want to attach captured app logs to a feedback entry, so that developers can diagnose issues from the logs. | Medium | F009 | TODO |
+
 ## Calendar (F006)
 
 | ID | User Story | Priority | Feature | Status |

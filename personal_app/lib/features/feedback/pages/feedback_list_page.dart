@@ -66,6 +66,14 @@ class FeedbackListPage extends ConsumerWidget {
             '- Status: ${bug.status.name[0].toUpperCase()}${bug.status.name.substring(1)}');
         buffer.writeln(
             '- Reported: ${bug.createdAt.toIso8601String().substring(0, 10)}');
+        if (bug.attachedLogs != null && bug.attachedLogs!.isNotEmpty) {
+          buffer.writeln();
+          buffer.writeln('#### Attached Logs');
+          buffer.writeln();
+          buffer.writeln('```');
+          buffer.writeln(bug.attachedLogs);
+          buffer.writeln('```');
+        }
         buffer.writeln();
       }
     }
@@ -82,6 +90,14 @@ class FeedbackListPage extends ConsumerWidget {
             '- Status: ${wish.status.name[0].toUpperCase()}${wish.status.name.substring(1)}');
         buffer.writeln(
             '- Reported: ${wish.createdAt.toIso8601String().substring(0, 10)}');
+        if (wish.attachedLogs != null && wish.attachedLogs!.isNotEmpty) {
+          buffer.writeln();
+          buffer.writeln('#### Attached Logs');
+          buffer.writeln();
+          buffer.writeln('```');
+          buffer.writeln(wish.attachedLogs);
+          buffer.writeln('```');
+        }
         buffer.writeln();
       }
     }
@@ -218,7 +234,12 @@ class _FeedbackTile extends ConsumerWidget {
           ' · ${entry.createdAt.toIso8601String().substring(0, 10)}'
           '${entry.isPrivate ? ' · Private' : ''}',
         ),
-        trailing: PopupMenuButton<String>(
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (entry.attachedLogs != null && entry.attachedLogs!.isNotEmpty)
+              const Icon(Icons.attach_file, size: 18, color: Colors.grey),
+            PopupMenuButton<String>(
           icon: const Icon(Icons.more_vert),
           onSelected: (value) async {
             switch (value) {
@@ -289,6 +310,8 @@ class _FeedbackTile extends ConsumerWidget {
                 dense: true,
               ),
             ),
+          ],
+        ),
           ],
         ),
         onTap: () => context.push('/feedback/${entry.id}'),

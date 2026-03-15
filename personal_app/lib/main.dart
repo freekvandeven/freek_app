@@ -13,11 +13,13 @@ import 'features/auth/providers/auth_providers.dart';
 import 'features/settings/providers/settings_providers.dart';
 import 'firebase_options.dart';
 import 'presentation/widgets/lock_screen.dart';
+import 'services/log_service.dart';
 
 Future<void> main() async {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   WakelockPlus.enable();
+  LogService.instance.install();
 
   try {
     await dotenv.load(fileName: 'dotenv');
