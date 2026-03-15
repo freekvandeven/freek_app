@@ -74,6 +74,14 @@ class FeedbackListPage extends ConsumerWidget {
           buffer.writeln(bug.attachedLogs);
           buffer.writeln('```');
         }
+        if (bug.imageUrls.isNotEmpty) {
+          buffer.writeln();
+          buffer.writeln('#### Attached Images (${bug.imageUrls.length})');
+          buffer.writeln();
+          for (final url in bug.imageUrls) {
+            buffer.writeln('- $url');
+          }
+        }
         buffer.writeln();
       }
     }
@@ -97,6 +105,14 @@ class FeedbackListPage extends ConsumerWidget {
           buffer.writeln('```');
           buffer.writeln(wish.attachedLogs);
           buffer.writeln('```');
+        }
+        if (wish.imageUrls.isNotEmpty) {
+          buffer.writeln();
+          buffer.writeln('#### Attached Images (${wish.imageUrls.length})');
+          buffer.writeln();
+          for (final url in wish.imageUrls) {
+            buffer.writeln('- $url');
+          }
         }
         buffer.writeln();
       }
@@ -239,6 +255,8 @@ class _FeedbackTile extends ConsumerWidget {
           children: [
             if (entry.attachedLogs != null && entry.attachedLogs!.isNotEmpty)
               const Icon(Icons.attach_file, size: 18, color: Colors.grey),
+            if (entry.imageUrls.isNotEmpty)
+              const Icon(Icons.image, size: 18, color: Colors.grey),
             PopupMenuButton<String>(
           icon: const Icon(Icons.more_vert),
           onSelected: (value) async {

@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - Vault re-encryption on password change — after changing your account password, the app offers to re-encrypt your password vault with a new master password matching your new account password
 - Attach app logs to feedback entries — capture Flutter errors and app logs in-memory, select and attach them when creating or editing bug reports and wishes; attached logs are included in clipboard export
+- Image attachments on feedback — add photos from gallery or camera to bug reports and wishes; images are uploaded to Firebase Storage and displayed as thumbnails on the edit page
 
 ## [0.4.0] - 2026-03-14
 

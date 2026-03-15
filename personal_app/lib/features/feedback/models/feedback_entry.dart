@@ -13,6 +13,7 @@ class FeedbackEntry {
   final bool isPrivate;
   final String? userId;
   final String? attachedLogs;
+  final List<String> imageUrls;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -25,6 +26,7 @@ class FeedbackEntry {
     this.isPrivate = false,
     this.userId,
     this.attachedLogs,
+    this.imageUrls = const [],
     DateTime? createdAt,
     DateTime? updatedAt,
   }) : id = id ?? const Uuid().v4(),
@@ -39,6 +41,7 @@ class FeedbackEntry {
     bool? isPrivate,
     String? attachedLogs,
     bool clearAttachedLogs = false,
+    List<String>? imageUrls,
     DateTime? updatedAt,
   }) {
     return FeedbackEntry(
@@ -50,6 +53,7 @@ class FeedbackEntry {
       isPrivate: isPrivate ?? this.isPrivate,
       userId: userId,
       attachedLogs: clearAttachedLogs ? null : (attachedLogs ?? this.attachedLogs),
+      imageUrls: imageUrls ?? this.imageUrls,
       createdAt: createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
     );
@@ -64,6 +68,7 @@ class FeedbackEntry {
     'isPrivate': isPrivate,
     'userId': userId,
     'attachedLogs': attachedLogs,
+    'imageUrls': imageUrls,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
   };
@@ -77,6 +82,7 @@ class FeedbackEntry {
     isPrivate: map['isPrivate'] as bool? ?? false,
     userId: map['userId'] as String?,
     attachedLogs: map['attachedLogs'] as String?,
+    imageUrls: (map['imageUrls'] as List<dynamic>?)?.cast<String>() ?? const [],
     createdAt: DateTime.parse(map['createdAt'] as String),
     updatedAt: DateTime.parse(map['updatedAt'] as String),
   );
@@ -89,6 +95,12 @@ class FeedbackEntry {
         'Created: ${createdAt.toIso8601String().substring(0, 10)}');
     if (attachedLogs != null && attachedLogs!.isNotEmpty) {
       buf.write('\n\n**Attached Logs:**\n```\n$attachedLogs\n```');
+    }
+    if (imageUrls.isNotEmpty) {
+      buf.write('\n\n**Attached Images (${imageUrls.length}):**');
+      for (final url in imageUrls) {
+        buf.write('\n- $url');
+      }
     }
     return buf.toString();
   }

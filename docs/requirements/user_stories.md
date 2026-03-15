@@ -76,6 +76,7 @@ Capture user-facing scenarios in the format: **As a [user], I want [capability],
 | ID | User Story | Priority | Feature | Status |
 |----|-----------|----------|---------|--------|
 | US-049 | As a user, I want to attach captured app logs to a feedback entry, so that developers can diagnose issues from the logs. | Medium | F009 | TODO |
+| US-050-fb | As a user, I want to attach images to a feedback entry from gallery or camera, so that I can visually illustrate bugs or wishes. | Medium | F009 | TODO |
 
 ## Calendar (F006)
 

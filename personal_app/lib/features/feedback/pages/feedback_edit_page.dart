@@ -3,6 +3,7 @@ import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../services/image_upload_service.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../models/feedback_entry.dart';
 import '../providers/feedback_providers.dart';
@@ -26,6 +27,8 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
   bool _isPrivate = false;
   bool _isLoading = true;
   String? _attachedLogs;
+  List<String> _imageUrls = [];
+  bool _isUploading = false;
   FeedbackEntry? _existing;
 
   @override
@@ -54,6 +57,7 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
         _status = entry.status;
         _isPrivate = entry.isPrivate;
         _attachedLogs = entry.attachedLogs;
+        _imageUrls = List<String>.from(entry.imageUrls);
         _isLoading = false;
       });
     } else {
@@ -83,6 +87,7 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
           isPrivate: _isPrivate,
           attachedLogs: _attachedLogs,
           clearAttachedLogs: _attachedLogs == null,
+          imageUrls: _imageUrls,
         ),
       );
     } else {
@@ -94,6 +99,7 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
           isPrivate: _isPrivate,
           userId: userId,
           attachedLogs: _attachedLogs,
+          imageUrls: _imageUrls,
         ),
       );
     }
@@ -133,6 +139,49 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _addImage() async {
+    final source = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Gallery'),
+              onTap: () => Navigator.pop(ctx, 'gallery'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Camera'),
+              onTap: () => Navigator.pop(ctx, 'camera'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null || !mounted) return;
+
+    setState(() => _isUploading = true);
+    try {
+      final uploader = ref.read(imageUploadServiceProvider);
+      final url = source == 'gallery'
+          ? await uploader.pickAndUploadImage(folder: 'feedback')
+          : await uploader.captureAndUploadImage(folder: 'feedback');
+      if (url != null && mounted) {
+        setState(() => _imageUrls = [..._imageUrls, url]);
+      }
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
+  }
+
+  Future<void> _removeImage(int index) async {
+    final url = _imageUrls[index];
+    setState(() => _imageUrls = List.from(_imageUrls)..removeAt(index));
+    ref.read(imageUploadServiceProvider).deleteImage(url);
   }
 
   @override
@@ -233,6 +282,75 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
               ),
               onTap: () => _pickLogs(),
             ),
+            const SizedBox(height: 8),
+            ListTile(
+              leading: const Icon(Icons.image),
+              title: const Text('Images'),
+              subtitle: Text(
+                _imageUrls.isEmpty
+                    ? 'None'
+                    : '${_imageUrls.length} image${_imageUrls.length == 1 ? '' : 's'} attached',
+              ),
+              trailing: _isUploading
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : IconButton(
+                      icon: const Icon(Icons.add_photo_alternate),
+                      tooltip: 'Add image',
+                      onPressed: _addImage,
+                    ),
+            ),
+            if (_imageUrls.isNotEmpty)
+              SizedBox(
+                height: 120,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: _imageUrls.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (context, index) => Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          _imageUrls[index],
+                          width: 120,
+                          height: 120,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            width: 120,
+                            height: 120,
+                            color: Colors.grey[300],
+                            child: const Icon(Icons.broken_image),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: GestureDetector(
+                          onTap: () => _removeImage(index),
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              color: Colors.black54,
+                              shape: BoxShape.circle,
+                            ),
+                            padding: const EdgeInsets.all(4),
+                            child: const Icon(
+                              Icons.close,
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             if (isEditing) ...[
               const SizedBox(height: 24),
               const Text(

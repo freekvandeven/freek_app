@@ -265,6 +265,7 @@ The app merges both collections into a single list on the feedback screen.
 | isPrivate | bool | No | Determines storage location: `true` → per-user collection, `false` → shared collection (default: `false`) |
 | userId | String | No | Creator's user ID |
 | attachedLogs | String | No | App logs attached by the user (captured from in-memory log buffer) |
+| imageUrls | List\<String\> | No | Download URLs of images attached via gallery or camera (stored in Firebase Storage) |
 | createdAt | Timestamp | Yes | Creation timestamp |
 | updatedAt | Timestamp | Yes | Last update timestamp |
 
