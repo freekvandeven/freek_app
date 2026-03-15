@@ -71,7 +71,8 @@ class _ConversationEditPageState extends ConsumerState<ConversationEditPage> {
 
     final notifier = ref.read(conversationListProvider.notifier);
     if (_existing != null) {
-      final resolvedAt = _status == TopicStatus.resolved &&
+      final resolvedAt =
+          _status == TopicStatus.resolved &&
               _existing!.status != TopicStatus.resolved
           ? DateTime.now()
           : _existing!.resolvedAt;
@@ -154,7 +155,8 @@ class _ConversationEditPageState extends ConsumerState<ConversationEditPage> {
       return Scaffold(
         appBar: AppBar(
           title: QuickActionsTitle(
-              child: Text(isEditing ? 'Edit Topic' : 'New Topic')),
+            child: Text(isEditing ? 'Edit Topic' : 'New Topic'),
+          ),
         ),
         body: const Center(child: CircularProgressIndicator()),
       );
@@ -163,7 +165,8 @@ class _ConversationEditPageState extends ConsumerState<ConversationEditPage> {
     return Scaffold(
       appBar: AppBar(
         title: QuickActionsTitle(
-            child: Text(isEditing ? 'Edit Topic' : 'New Topic')),
+          child: Text(isEditing ? 'Edit Topic' : 'New Topic'),
+        ),
         actions: [TextButton(onPressed: _save, child: const Text('Save'))],
       ),
       body: Form(
@@ -186,28 +189,30 @@ class _ConversationEditPageState extends ConsumerState<ConversationEditPage> {
               optionsBuilder: (textEditingValue) {
                 final persons = personsAsync.valueOrNull ?? [];
                 if (textEditingValue.text.isEmpty) return persons;
-                return persons.where((p) => p
-                    .toLowerCase()
-                    .contains(textEditingValue.text.toLowerCase()));
+                return persons.where(
+                  (p) => p.toLowerCase().contains(
+                    textEditingValue.text.toLowerCase(),
+                  ),
+                );
               },
               onSelected: (value) => _personController.text = value,
               fieldViewBuilder:
                   (context, controller, focusNode, onFieldSubmitted) {
-                // Sync with our own controller
-                controller.addListener(() {
-                  _personController.text = controller.text;
-                });
-                return TextFormField(
-                  controller: controller,
-                  focusNode: focusNode,
-                  decoration: const InputDecoration(
-                    labelText: 'Person / Group',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Required' : null,
-                );
-              },
+                    // Sync with our own controller
+                    controller.addListener(() {
+                      _personController.text = controller.text;
+                    });
+                    return TextFormField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      decoration: const InputDecoration(
+                        labelText: 'Person / Group',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (v) =>
+                          v == null || v.trim().isEmpty ? 'Required' : null,
+                    );
+                  },
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -222,8 +227,10 @@ class _ConversationEditPageState extends ConsumerState<ConversationEditPage> {
                   v == null || v.trim().isEmpty ? 'Required' : null,
             ),
             const SizedBox(height: 16),
-            const Text('Priority',
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text(
+              'Priority',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             SegmentedButton<TopicPriority>(
               segments: const [
@@ -319,15 +326,14 @@ class _ConversationEditPageState extends ConsumerState<ConversationEditPage> {
               ),
             if (isEditing) ...[
               const SizedBox(height: 24),
-              const Text('Status',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                'Status',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 8),
               SegmentedButton<TopicStatus>(
                 segments: const [
-                  ButtonSegment(
-                    value: TopicStatus.open,
-                    label: Text('Open'),
-                  ),
+                  ButtonSegment(value: TopicStatus.open, label: Text('Open')),
                   ButtonSegment(
                     value: TopicStatus.resolved,
                     label: Text('Resolved'),

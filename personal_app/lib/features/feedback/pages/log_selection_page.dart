@@ -23,23 +23,25 @@ class _LogSelectionPageState extends ConsumerState<LogSelectionPage> {
   }
 
   void _selectAll() => setState(() {
-        for (var i = 0; i < _selected.length; i++) {
-          _selected[i] = true;
-        }
-      });
+    for (var i = 0; i < _selected.length; i++) {
+      _selected[i] = true;
+    }
+  });
 
   void _deselectAll() => setState(() {
-        for (var i = 0; i < _selected.length; i++) {
-          _selected[i] = false;
-        }
-      });
+    for (var i = 0; i < _selected.length; i++) {
+      _selected[i] = false;
+    }
+  });
 
   void _selectErrors() => setState(() {
-        for (var i = 0; i < _logs.length; i++) {
-          _selected[i] =
-              _logs[i].level == 'ERROR' || _logs[i].level == 'PLATFORM_ERROR' || _logs[i].level == 'STACK';
-        }
-      });
+    for (var i = 0; i < _logs.length; i++) {
+      _selected[i] =
+          _logs[i].level == 'ERROR' ||
+          _logs[i].level == 'PLATFORM_ERROR' ||
+          _logs[i].level == 'STACK';
+    }
+  });
 
   void _confirm() {
     final selectedLogs = <LogEntry>[];
@@ -96,8 +98,8 @@ class _LogSelectionPageState extends ConsumerState<LogSelectionPage> {
                     itemCount: _logs.length,
                     itemBuilder: (context, index) {
                       final log = _logs[index];
-                      final isError = log.level == 'ERROR' ||
-                          log.level == 'PLATFORM_ERROR';
+                      final isError =
+                          log.level == 'ERROR' || log.level == 'PLATFORM_ERROR';
                       return CheckboxListTile(
                         dense: true,
                         value: _selected[index],
@@ -108,9 +110,7 @@ class _LogSelectionPageState extends ConsumerState<LogSelectionPage> {
                           style: TextStyle(
                             fontFamily: 'monospace',
                             fontSize: 11,
-                            color: isError
-                                ? theme.colorScheme.error
-                                : null,
+                            color: isError ? theme.colorScheme.error : null,
                           ),
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,

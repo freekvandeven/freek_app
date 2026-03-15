@@ -15,7 +15,9 @@ class KnowledgeBankPage extends ConsumerWidget {
     final isSearching = search.isNotEmpty;
 
     return Scaffold(
-      appBar: AppBar(title: const QuickActionsTitle(child: Text('Knowledge Bank'))),
+      appBar: AppBar(
+        title: const QuickActionsTitle(child: Text('Knowledge Bank')),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/knowledge/new'),
         child: const Icon(Icons.add),

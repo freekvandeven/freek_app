@@ -16,3 +16,8 @@ FIREBASE_MEASUREMENT_ID=G-0000000000
 
 # Cloud Functions region (default: us-central1)
 CLOUD_FUNCTIONS_REGION=us-central1
+
+# Emulator settings — set USE_EMULATORS=true to connect to Firebase emulators
+# See dotenv.emulator for a ready-to-use emulator config
+USE_EMULATORS=false
+EMULATOR_HOST=localhost

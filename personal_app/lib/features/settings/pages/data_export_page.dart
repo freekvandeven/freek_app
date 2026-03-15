@@ -39,7 +39,9 @@ class _DataExportPageState extends ConsumerState<DataExportPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const QuickActionsTitle(child: Text('Export Data'))),
+      appBar: AppBar(
+        title: const QuickActionsTitle(child: Text('Export Data')),
+      ),
       body: Column(
         children: [
           Expanded(

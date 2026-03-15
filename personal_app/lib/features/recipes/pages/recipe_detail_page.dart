@@ -387,11 +387,7 @@ class _VideoLinkCardState extends State<_VideoLinkCard> {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              Icon(
-                Icons.ondemand_video,
-                size: 32,
-                color: colorScheme.primary,
-              ),
+              Icon(Icons.ondemand_video, size: 32, color: colorScheme.primary),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

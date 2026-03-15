@@ -30,11 +30,9 @@ class LogService {
   List<LogEntry> get entries => List.unmodifiable(_entries);
 
   void _add(String level, String message) {
-    _entries.addLast(LogEntry(
-      timestamp: DateTime.now(),
-      level: level,
-      message: message,
-    ));
+    _entries.addLast(
+      LogEntry(timestamp: DateTime.now(), level: level, message: message),
+    );
     while (_entries.length > _maxEntries) {
       _entries.removeFirst();
     }

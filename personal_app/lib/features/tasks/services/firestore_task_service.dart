@@ -8,7 +8,7 @@ class FirestoreTaskService implements TaskService {
   final String _userId;
 
   FirestoreTaskService(this._userId, {FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   CollectionReference<Map<String, dynamic>> get _collection =>
       _firestore.collection('users').doc(_userId).collection('tasks');
@@ -16,9 +16,7 @@ class FirestoreTaskService implements TaskService {
   @override
   Future<List<Task>> getTasks() async {
     final snapshot = await _collection.get();
-    return snapshot.docs
-        .map((doc) => Task.fromMap(doc.data()))
-        .toList();
+    return snapshot.docs.map((doc) => Task.fromMap(doc.data())).toList();
   }
 
   @override

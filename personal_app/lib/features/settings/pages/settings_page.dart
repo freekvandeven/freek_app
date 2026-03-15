@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../auth/services/biometric_service.dart';
 import '../../gemini/providers/gemini_providers.dart';
-import '../../gemini/services/gemini_service.dart';
 import '../../../presentation/theme/app_theme.dart';
 import '../providers/settings_providers.dart';
 
@@ -46,13 +45,16 @@ class SettingsPage extends ConsumerWidget {
           ListTile(
             leading: Icon(
               Icons.color_lens,
-              color: AppTheme.parseHex(settings.customSeedColor) ??
+              color:
+                  AppTheme.parseHex(settings.customSeedColor) ??
                   AppTheme.defaultSeedColor,
             ),
             title: const Text('Accent Color'),
-            subtitle: Text(settings.customSeedColor != null
-                ? '#${settings.customSeedColor}'
-                : 'Default'),
+            subtitle: Text(
+              settings.customSeedColor != null
+                  ? '#${settings.customSeedColor}'
+                  : 'Default',
+            ),
             trailing: settings.customSeedColor != null
                 ? IconButton(
                     icon: const Icon(Icons.restart_alt),
@@ -72,7 +74,9 @@ class SettingsPage extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.attach_money),
             title: const Text('Default Currency'),
-            subtitle: Text('${settings.defaultCurrency} ${_currencySymbol(settings.defaultCurrency)}'),
+            subtitle: Text(
+              '${settings.defaultCurrency} ${_currencySymbol(settings.defaultCurrency)}',
+            ),
             onTap: () =>
                 _showCurrencyPicker(context, ref, settings.defaultCurrency),
           ),
@@ -132,7 +136,9 @@ class SettingsPage extends ConsumerWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    success ? 'Authentication successful!' : 'Authentication failed',
+                    success
+                        ? 'Authentication successful!'
+                        : 'Authentication failed',
                   ),
                 ),
               );
@@ -269,11 +275,30 @@ class SettingsPage extends ConsumerWidget {
 
   String _currencySymbol(String code) {
     const symbols = {
-      'EUR': '€', 'USD': '\$', 'GBP': '£', 'JPY': '¥', 'CHF': 'Fr',
-      'CAD': 'CA\$', 'AUD': 'A\$', 'CNY': '¥', 'SEK': 'kr', 'NOK': 'kr',
-      'DKK': 'kr', 'PLN': 'zł', 'CZK': 'Kč', 'HUF': 'Ft', 'TRY': '₺',
-      'INR': '₹', 'BRL': 'R\$', 'KRW': '₩', 'SGD': 'S\$', 'HKD': 'HK\$',
-      'MXN': 'MX\$', 'ZAR': 'R', 'THB': '฿', 'NZD': 'NZ\$',
+      'EUR': '€',
+      'USD': '\$',
+      'GBP': '£',
+      'JPY': '¥',
+      'CHF': 'Fr',
+      'CAD': 'CA\$',
+      'AUD': 'A\$',
+      'CNY': '¥',
+      'SEK': 'kr',
+      'NOK': 'kr',
+      'DKK': 'kr',
+      'PLN': 'zł',
+      'CZK': 'Kč',
+      'HUF': 'Ft',
+      'TRY': '₺',
+      'INR': '₹',
+      'BRL': 'R\$',
+      'KRW': '₩',
+      'SGD': 'S\$',
+      'HKD': 'HK\$',
+      'MXN': 'MX\$',
+      'ZAR': 'R',
+      'THB': '฿',
+      'NZD': 'NZ\$',
     };
     return symbols[code] ?? code;
   }
@@ -399,8 +424,10 @@ class _GeminiApiKeyTile extends ConsumerWidget {
       ),
       trailing: hasKey.valueOrNull == true
           ? IconButton(
-              icon: Icon(Icons.delete_outline,
-                  color: Theme.of(context).colorScheme.error),
+              icon: Icon(
+                Icons.delete_outline,
+                color: Theme.of(context).colorScheme.error,
+              ),
               tooltip: 'Remove key',
               onPressed: () async {
                 await ref.read(geminiApiKeyServiceProvider).clearApiKey();
@@ -461,10 +488,12 @@ class _GeminiModelTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentModel = ref.watch(geminiModelProvider);
-    final label = _models
-        .where((m) => m.$1 == currentModel)
-        .map((m) => m.$2)
-        .firstOrNull ?? currentModel;
+    final label =
+        _models
+            .where((m) => m.$1 == currentModel)
+            .map((m) => m.$2)
+            .firstOrNull ??
+        currentModel;
 
     return ListTile(
       leading: const Icon(Icons.smart_toy),

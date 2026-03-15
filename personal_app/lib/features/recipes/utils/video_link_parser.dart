@@ -25,7 +25,9 @@ enum VideoPlatform { youtube, vimeo, tiktok, instagram, other }
 class VideoLinkParser {
   static final _youtubePatterns = [
     // youtube.com/watch?v=VIDEO_ID
-    RegExp(r'(?:https?://)?(?:www\.)?youtube\.com/watch\?.*v=([a-zA-Z0-9_-]{11})'),
+    RegExp(
+      r'(?:https?://)?(?:www\.)?youtube\.com/watch\?.*v=([a-zA-Z0-9_-]{11})',
+    ),
     // youtu.be/VIDEO_ID
     RegExp(r'(?:https?://)?youtu\.be/([a-zA-Z0-9_-]{11})'),
     // youtube.com/embed/VIDEO_ID
@@ -34,14 +36,15 @@ class VideoLinkParser {
     RegExp(r'(?:https?://)?(?:www\.)?youtube\.com/shorts/([a-zA-Z0-9_-]{11})'),
   ];
 
-  static final _vimeoPattern =
-      RegExp(r'(?:https?://)?(?:www\.)?vimeo\.com/(\d+)');
+  static final _vimeoPattern = RegExp(
+    r'(?:https?://)?(?:www\.)?vimeo\.com/(\d+)',
+  );
 
-  static final _tiktokPattern =
-      RegExp(r'(?:https?://)?(?:www\.)?tiktok\.com/');
+  static final _tiktokPattern = RegExp(r'(?:https?://)?(?:www\.)?tiktok\.com/');
 
-  static final _instagramPattern =
-      RegExp(r'(?:https?://)?(?:www\.)?instagram\.com/(?:reel|p)/');
+  static final _instagramPattern = RegExp(
+    r'(?:https?://)?(?:www\.)?instagram\.com/(?:reel|p)/',
+  );
 
   /// Parse a URL into a [VideoLinkInfo] with detected platform and video ID.
   static VideoLinkInfo parse(String url) {

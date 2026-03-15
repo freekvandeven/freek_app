@@ -11,7 +11,7 @@ class ChangelogEntry {
     List<String>? added,
     List<String>? changed,
     List<String>? fixed,
-  })  : added = added ?? [],
-        changed = changed ?? [],
-        fixed = fixed ?? [];
+  }) : added = added ?? [],
+       changed = changed ?? [],
+       fixed = fixed ?? [];
 }

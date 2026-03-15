@@ -11,10 +11,13 @@ class FirestoreVaultService implements VaultService {
   final String _userId;
 
   FirestoreVaultService(this._userId, {FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
-  DocumentReference<Map<String, dynamic>> get _vaultDoc =>
-      _firestore.collection('users').doc(_userId).collection('vault').doc('config');
+  DocumentReference<Map<String, dynamic>> get _vaultDoc => _firestore
+      .collection('users')
+      .doc(_userId)
+      .collection('vault')
+      .doc('config');
 
   CollectionReference<Map<String, dynamic>> get _entries =>
       _firestore.collection('users').doc(_userId).collection('vault_entries');
@@ -32,10 +35,7 @@ class FirestoreVaultService implements VaultService {
       masterPassword,
       salt,
     );
-    await _vaultDoc.set({
-      'salt': salt,
-      'verificationHash': verificationHash,
-    });
+    await _vaultDoc.set({'salt': salt, 'verificationHash': verificationHash});
   }
 
   @override
@@ -79,13 +79,19 @@ class FirestoreVaultService implements VaultService {
   }
 
   @override
-  Future<Uint8List?> reEncryptVault(String oldPassword, String newPassword) async {
+  Future<Uint8List?> reEncryptVault(
+    String oldPassword,
+    String newPassword,
+  ) async {
     final oldKey = await unlockVault(oldPassword);
     if (oldKey == null) return null;
 
     // Generate new salt & verification hash
     final newSalt = VaultCrypto.generateSalt();
-    final newVerificationHash = VaultCrypto.createVerificationHash(newPassword, newSalt);
+    final newVerificationHash = VaultCrypto.createVerificationHash(
+      newPassword,
+      newSalt,
+    );
     final newKey = VaultCrypto.deriveKey(newPassword, newSalt);
 
     // Re-encrypt all entries
@@ -93,11 +99,17 @@ class FirestoreVaultService implements VaultService {
     final batch = _firestore.batch();
 
     for (final entry in entries) {
-      final plainPassword = VaultCrypto.decryptField(entry.encryptedPassword, oldKey);
+      final plainPassword = VaultCrypto.decryptField(
+        entry.encryptedPassword,
+        oldKey,
+      );
       final newEncPassword = VaultCrypto.encryptField(plainPassword, newKey);
       String? newEncNotes;
       if (entry.encryptedNotes != null) {
-        final plainNotes = VaultCrypto.decryptField(entry.encryptedNotes!, oldKey);
+        final plainNotes = VaultCrypto.decryptField(
+          entry.encryptedNotes!,
+          oldKey,
+        );
         newEncNotes = VaultCrypto.encryptField(plainNotes, newKey);
       }
       final reEncrypted = PasswordEntry(

@@ -26,8 +26,10 @@ void showQuickActions(BuildContext context) {
         children: [
           const Padding(
             padding: EdgeInsets.all(16),
-            child: Text('Quick Actions',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            child: Text(
+              'Quick Actions',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
           ),
           ListTile(
             leading: const Icon(Icons.bug_report, color: Colors.red),
@@ -38,8 +40,10 @@ void showQuickActions(BuildContext context) {
             },
           ),
           ListTile(
-            leading: Icon(Icons.lightbulb,
-                color: Theme.of(context).colorScheme.primary),
+            leading: Icon(
+              Icons.lightbulb,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             title: const Text('Request a Feature'),
             onTap: () {
               Navigator.pop(ctx);

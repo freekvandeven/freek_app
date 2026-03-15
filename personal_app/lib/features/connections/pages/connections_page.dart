@@ -9,21 +9,17 @@ class ConnectionsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const QuickActionsTitle(child: Text('Connections'))),
+      appBar: AppBar(
+        title: const QuickActionsTitle(child: Text('Connections')),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text(
-            'Quick Links',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('Quick Links', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           ..._quickLinks.map((link) => _LinkTile(link: link)),
           const SizedBox(height: 24),
-          Text(
-            'Integrations',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('Integrations', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           ..._integrations.map((item) => _IntegrationTile(item: item)),
         ],
@@ -172,15 +168,13 @@ class _IntegrationTile extends StatelessWidget {
         title: Text(item.label),
         subtitle: Text(item.description),
         trailing: OutlinedButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('${item.label} integration coming soon'),
-                    ),
-                  );
-                },
-                child: const Text('Connect'),
-              ),
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('${item.label} integration coming soon')),
+            );
+          },
+          child: const Text('Connect'),
+        ),
       ),
     );
   }

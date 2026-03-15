@@ -20,8 +20,10 @@ class MockConversationService implements ConversationService {
     final prefs = await SharedPreferencesAsync().getStringList(_key);
     if (prefs == null) return [];
     return prefs
-        .map((e) =>
-            ConversationTopic.fromMap(jsonDecode(e) as Map<String, dynamic>))
+        .map(
+          (e) =>
+              ConversationTopic.fromMap(jsonDecode(e) as Map<String, dynamic>),
+        )
         .toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
   }

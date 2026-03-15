@@ -61,8 +61,7 @@ class _GeminiChatPageState extends ConsumerState<GeminiChatPage> {
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Clear chat',
-            onPressed: () =>
-                ref.read(geminiChatProvider.notifier).clearChat(),
+            onPressed: () => ref.read(geminiChatProvider.notifier).clearChat(),
           ),
         ],
       ),
@@ -75,10 +74,7 @@ class _GeminiChatPageState extends ConsumerState<GeminiChatPage> {
               ),
               leading: const Icon(Icons.warning_amber, color: Colors.orange),
               actions: [
-                TextButton(
-                  onPressed: () {},
-                  child: const Text('Dismiss'),
-                ),
+                TextButton(onPressed: () {}, child: const Text('Dismiss')),
               ],
             ),
           Expanded(
@@ -90,7 +86,9 @@ class _GeminiChatPageState extends ConsumerState<GeminiChatPage> {
                         Icon(
                           Icons.auto_awesome,
                           size: 64,
-                          color: theme.colorScheme.primary.withValues(alpha: 0.4),
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.4,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -108,21 +106,24 @@ class _GeminiChatPageState extends ConsumerState<GeminiChatPage> {
                             _SuggestionChip(
                               label: 'Meal plan for the week',
                               onTap: () {
-                                _controller.text = 'Suggest a meal plan for this week';
+                                _controller.text =
+                                    'Suggest a meal plan for this week';
                                 _send();
                               },
                             ),
                             _SuggestionChip(
                               label: 'Organize my tasks',
                               onTap: () {
-                                _controller.text = 'How should I organize my tasks for better productivity?';
+                                _controller.text =
+                                    'How should I organize my tasks for better productivity?';
                                 _send();
                               },
                             ),
                             _SuggestionChip(
                               label: 'Budget tips',
                               onTap: () {
-                                _controller.text = 'Give me some practical budgeting tips';
+                                _controller.text =
+                                    'Give me some practical budgeting tips';
                                 _send();
                               },
                             ),
@@ -141,8 +142,7 @@ class _GeminiChatPageState extends ConsumerState<GeminiChatPage> {
                     },
                   ),
           ),
-          if (_isSending)
-            const LinearProgressIndicator(),
+          if (_isSending) const LinearProgressIndicator(),
           Padding(
             padding: const EdgeInsets.all(8),
             child: SafeArea(
@@ -203,9 +203,7 @@ class _ChatBubble extends StatelessWidget {
               : theme.colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: isUser
-            ? Text(message.text)
-            : MarkdownBody(data: message.text),
+        child: isUser ? Text(message.text) : MarkdownBody(data: message.text),
       ),
     );
   }
@@ -218,9 +216,6 @@ class _SuggestionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ActionChip(
-      label: Text(label),
-      onPressed: onTap,
-    );
+    return ActionChip(label: Text(label), onPressed: onTap);
   }
 }

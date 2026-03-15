@@ -24,13 +24,13 @@ class ChatMessage {
   final DateTime timestamp;
 
   ChatMessage({required this.text, required this.isUser})
-      : timestamp = DateTime.now();
+    : timestamp = DateTime.now();
 }
 
 final geminiChatProvider =
     NotifierProvider<GeminiChatNotifier, List<ChatMessage>>(
-  GeminiChatNotifier.new,
-);
+      GeminiChatNotifier.new,
+    );
 
 class GeminiChatNotifier extends Notifier<List<ChatMessage>> {
   @override

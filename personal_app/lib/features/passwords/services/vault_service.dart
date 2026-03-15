@@ -100,23 +100,35 @@ class MockVaultService implements VaultService {
   }
 
   @override
-  Future<Uint8List?> reEncryptVault(String oldPassword, String newPassword) async {
+  Future<Uint8List?> reEncryptVault(
+    String oldPassword,
+    String newPassword,
+  ) async {
     final oldKey = await unlockVault(oldPassword);
     if (oldKey == null) return null;
 
     // Generate new salt & verification hash
     final newSalt = VaultCrypto.generateSalt();
-    final newVerificationHash = VaultCrypto.createVerificationHash(newPassword, newSalt);
+    final newVerificationHash = VaultCrypto.createVerificationHash(
+      newPassword,
+      newSalt,
+    );
     final newKey = VaultCrypto.deriveKey(newPassword, newSalt);
 
     // Re-encrypt all entries
     final entries = await getEntries();
     final reEncrypted = entries.map((entry) {
-      final plainPassword = VaultCrypto.decryptField(entry.encryptedPassword, oldKey);
+      final plainPassword = VaultCrypto.decryptField(
+        entry.encryptedPassword,
+        oldKey,
+      );
       final newEncPassword = VaultCrypto.encryptField(plainPassword, newKey);
       String? newEncNotes;
       if (entry.encryptedNotes != null) {
-        final plainNotes = VaultCrypto.decryptField(entry.encryptedNotes!, oldKey);
+        final plainNotes = VaultCrypto.decryptField(
+          entry.encryptedNotes!,
+          oldKey,
+        );
         newEncNotes = VaultCrypto.encryptField(plainNotes, newKey);
       }
       return PasswordEntry(

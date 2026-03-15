@@ -58,9 +58,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
     await ref.read(authServiceProvider).updateProfile(updated);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Profile updated')));
       context.pop();
     }
   }
@@ -76,9 +76,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     return Scaffold(
       appBar: AppBar(
         title: const QuickActionsTitle(child: Text('Profile')),
-        actions: [
-          TextButton(onPressed: _save, child: const Text('Save')),
-        ],
+        actions: [TextButton(onPressed: _save, child: const Text('Save'))],
       ),
       body: Form(
         key: _formKey,
@@ -149,10 +147,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    _infoRow('Member since',
-                        user.createdAt.toIso8601String().substring(0, 10)),
-                    _infoRow('Last updated',
-                        user.updatedAt.toIso8601String().substring(0, 10)),
+                    _infoRow(
+                      'Member since',
+                      user.createdAt.toIso8601String().substring(0, 10),
+                    ),
+                    _infoRow(
+                      'Last updated',
+                      user.updatedAt.toIso8601String().substring(0, 10),
+                    ),
                   ],
                 ),
               ),

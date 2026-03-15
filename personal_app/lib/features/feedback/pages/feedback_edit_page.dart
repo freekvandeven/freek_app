@@ -191,7 +191,9 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(
-          title: QuickActionsTitle(child: Text(isEditing ? 'Edit Feedback' : 'New Feedback')),
+          title: QuickActionsTitle(
+            child: Text(isEditing ? 'Edit Feedback' : 'New Feedback'),
+          ),
         ),
         body: const Center(child: CircularProgressIndicator()),
       );
@@ -199,7 +201,9 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: QuickActionsTitle(child: Text(isEditing ? 'Edit Feedback' : 'New Feedback')),
+        title: QuickActionsTitle(
+          child: Text(isEditing ? 'Edit Feedback' : 'New Feedback'),
+        ),
         actions: [TextButton(onPressed: _save, child: const Text('Save'))],
       ),
       body: Form(

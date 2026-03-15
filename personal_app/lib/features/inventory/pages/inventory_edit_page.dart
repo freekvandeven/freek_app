@@ -122,7 +122,9 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
     if (!service.isConfigured) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Configure a Gemini API key in Settings first')),
+          const SnackBar(
+            content: Text('Configure a Gemini API key in Settings first'),
+          ),
         );
       }
       return;
@@ -143,17 +145,20 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
           if (result['name'] is String && _nameController.text.isEmpty) {
             _nameController.text = result['name'] as String;
           }
-          if (result['description'] is String && _descriptionController.text.isEmpty) {
+          if (result['description'] is String &&
+              _descriptionController.text.isEmpty) {
             _descriptionController.text = result['description'] as String;
           }
-          if (result['category'] is String && _categoryController.text.isEmpty) {
+          if (result['category'] is String &&
+              _categoryController.text.isEmpty) {
             _categoryController.text = result['category'] as String;
           }
           if (result['quantity'] is int) {
             _quantityController.text = (result['quantity'] as int).toString();
           }
           if (result['purchasePrice'] is num && _priceController.text.isEmpty) {
-            _priceController.text = (result['purchasePrice'] as num).toStringAsFixed(2);
+            _priceController.text = (result['purchasePrice'] as num)
+                .toStringAsFixed(2);
           }
           if (result['barcode'] is String && _barcodeController.text.isEmpty) {
             _barcodeController.text = result['barcode'] as String;
@@ -164,7 +169,9 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
         );
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not extract item details from image')),
+          const SnackBar(
+            content: Text('Could not extract item details from image'),
+          ),
         );
       }
     } finally {
@@ -180,14 +187,20 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
 
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: QuickActionsTitle(child: Text(isEditing ? 'Edit Item' : 'New Item'))),
+        appBar: AppBar(
+          title: QuickActionsTitle(
+            child: Text(isEditing ? 'Edit Item' : 'New Item'),
+          ),
+        ),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: QuickActionsTitle(child: Text(isEditing ? 'Edit Item' : 'New Item')),
+        title: QuickActionsTitle(
+          child: Text(isEditing ? 'Edit Item' : 'New Item'),
+        ),
         actions: [
           IconButton(
             icon: _isScanning

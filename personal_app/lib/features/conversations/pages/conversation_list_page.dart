@@ -29,19 +29,21 @@ class ConversationListPage extends ConsumerWidget {
                   ConversationSort.values.byName(value);
             },
             itemBuilder: (_) => ConversationSort.values
-                .map((s) => PopupMenuItem(
-                      value: s.name,
-                      child: Row(
-                        children: [
-                          if (sort == s)
-                            const Icon(Icons.check, size: 18)
-                          else
-                            const SizedBox(width: 18),
-                          const SizedBox(width: 8),
-                          Text(_sortLabel(s)),
-                        ],
-                      ),
-                    ))
+                .map(
+                  (s) => PopupMenuItem(
+                    value: s.name,
+                    child: Row(
+                      children: [
+                        if (sort == s)
+                          const Icon(Icons.check, size: 18)
+                        else
+                          const SizedBox(width: 18),
+                        const SizedBox(width: 8),
+                        Text(_sortLabel(s)),
+                      ],
+                    ),
+                  ),
+                )
                 .toList(),
           ),
           PopupMenuButton<String>(
@@ -70,8 +72,10 @@ class ConversationListPage extends ConsumerWidget {
             itemBuilder: (_) => [
               const PopupMenuItem(
                 enabled: false,
-                child: Text('Status',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
+                child: Text(
+                  'Status',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
               PopupMenuItem(
                 value: 'status_all',
@@ -84,23 +88,29 @@ class ConversationListPage extends ConsumerWidget {
               PopupMenuItem(
                 value: 'status_resolved',
                 child: _filterItem(
-                    'Resolved', statusFilter == TopicStatus.resolved),
+                  'Resolved',
+                  statusFilter == TopicStatus.resolved,
+                ),
               ),
               const PopupMenuDivider(),
               const PopupMenuItem(
                 enabled: false,
-                child: Text('Person / Group',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
+                child: Text(
+                  'Person / Group',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
               PopupMenuItem(
                 value: 'person_all',
                 child: _filterItem('All', personFilter == null),
               ),
               if (personsAsync.hasValue)
-                ...personsAsync.value!.map((p) => PopupMenuItem<String>(
-                      value: 'person:$p',
-                      child: _filterItem(p, personFilter == p),
-                    )),
+                ...personsAsync.value!.map(
+                  (p) => PopupMenuItem<String>(
+                    value: 'person:$p',
+                    child: _filterItem(p, personFilter == p),
+                  ),
+                ),
             ],
           ),
         ],
@@ -118,9 +128,11 @@ class ConversationListPage extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.forum_outlined,
-                      size: 64,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  Icon(
+                    Icons.forum_outlined,
+                    size: 64,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                   const SizedBox(height: 16),
                   const Text('No conversation topics yet'),
                 ],
@@ -129,8 +141,7 @@ class ConversationListPage extends ConsumerWidget {
           }
           return ListView.builder(
             itemCount: topics.length,
-            itemBuilder: (context, index) =>
-                _TopicTile(topic: topics[index]),
+            itemBuilder: (context, index) => _TopicTile(topic: topics[index]),
           );
         },
       ),
@@ -138,15 +149,15 @@ class ConversationListPage extends ConsumerWidget {
   }
 
   Widget _filterItem(String label, bool selected) => Row(
-        children: [
-          if (selected)
-            const Icon(Icons.check, size: 18)
-          else
-            const SizedBox(width: 18),
-          const SizedBox(width: 8),
-          Text(label),
-        ],
-      );
+    children: [
+      if (selected)
+        const Icon(Icons.check, size: 18)
+      else
+        const SizedBox(width: 18),
+      const SizedBox(width: 8),
+      Text(label),
+    ],
+  );
 
   String _sortLabel(ConversationSort s) {
     switch (s) {
@@ -204,10 +215,12 @@ class _TopicTile extends ConsumerWidget {
                 case 'resolve':
                   await ref
                       .read(conversationListProvider.notifier)
-                      .updateTopic(topic.copyWith(
-                        status: TopicStatus.resolved,
-                        resolvedAt: DateTime.now(),
-                      ));
+                      .updateTopic(
+                        topic.copyWith(
+                          status: TopicStatus.resolved,
+                          resolvedAt: DateTime.now(),
+                        ),
+                      );
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Marked as resolved')),
@@ -216,10 +229,12 @@ class _TopicTile extends ConsumerWidget {
                 case 'reopen':
                   await ref
                       .read(conversationListProvider.notifier)
-                      .updateTopic(topic.copyWith(
-                        status: TopicStatus.open,
-                        clearResolvedAt: true,
-                      ));
+                      .updateTopic(
+                        topic.copyWith(
+                          status: TopicStatus.open,
+                          clearResolvedAt: true,
+                        ),
+                      );
                 case 'delete':
                   final confirm = await showDialog<bool>(
                     context: context,

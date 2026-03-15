@@ -10,8 +10,7 @@ import '../providers/feedback_providers.dart';
 class FeedbackListPage extends ConsumerWidget {
   const FeedbackListPage({super.key});
 
-  void _copyAllToClipboard(
-      BuildContext context, List<FeedbackEntry> entries) {
+  void _copyAllToClipboard(BuildContext context, List<FeedbackEntry> entries) {
     final bugs = entries.where((e) => e.type == FeedbackType.bug).toList();
     final wishes = entries.where((e) => e.type == FeedbackType.wish).toList();
 
@@ -19,39 +18,44 @@ class FeedbackListPage extends ConsumerWidget {
     buffer.writeln('# Freek App — Feedback & Improvement Instructions');
     buffer.writeln();
     buffer.writeln(
-        'Below is a list of user-reported feedback items for the Freek App '
-        '(a Flutter personal life-management app). Each item is either a bug '
-        'report or a feature wish. Please address each item listed below.');
+      'Below is a list of user-reported feedback items for the Freek App '
+      '(a Flutter personal life-management app). Each item is either a bug '
+      'report or a feature wish. Please address each item listed below.',
+    );
     buffer.writeln();
     buffer.writeln('## Instructions');
     buffer.writeln();
     buffer.writeln(
-        'For EACH individual item below, follow these steps before moving on '
-        'to the next item:');
+      'For EACH individual item below, follow these steps before moving on '
+      'to the next item:',
+    );
+    buffer.writeln('1. Implement the fix or feature for that single item.');
     buffer.writeln(
-        '1. Implement the fix or feature for that single item.');
+      '2. Update the relevant project documentation under `docs/` '
+      '(e.g. `docs/requirements/screens.md`, `docs/requirements/user_stories.md`, '
+      '`docs/requirements/data_model.md`) to reflect any new or changed behavior.',
+    );
     buffer.writeln(
-        '2. Update the relevant project documentation under `docs/` '
-        '(e.g. `docs/requirements/screens.md`, `docs/requirements/user_stories.md`, '
-        '`docs/requirements/data_model.md`) to reflect any new or changed behavior.');
+      '3. If a new feature is added, consider whether it needs a new feature spec '
+      'in `docs/requirements/features/`.',
+    );
     buffer.writeln(
-        '3. If a new feature is added, consider whether it needs a new feature spec '
-        'in `docs/requirements/features/`.');
+      '4. If a technical decision was made, document it in '
+      '`docs/requirements/tech_decisions.md` or create an ADR in `docs/decisions/`.',
+    );
     buffer.writeln(
-        '4. If a technical decision was made, document it in '
-        '`docs/requirements/tech_decisions.md` or create an ADR in `docs/decisions/`.');
+      '5. Update `CHANGELOG.md` (in the personal_app directory) under the '
+      'current version\'s `### Added`, `### Changed`, or `### Fixed` section '
+      'with a brief description of what was done.',
+    );
     buffer.writeln(
-        '5. Update `CHANGELOG.md` (in the personal_app directory) under the '
-        'current version\'s `### Added`, `### Changed`, or `### Fixed` section '
-        'with a brief description of what was done.');
-    buffer.writeln(
-        '6. **Commit immediately** with a descriptive conventional commit message '
-        '(e.g. `fix: resolve biometric lock not triggering at startup` or '
-        '`feat: add recipe image upload via Firebase Storage`). '
-        'Do NOT batch multiple items into a single commit.');
+      '6. **Commit immediately** with a descriptive conventional commit message '
+      '(e.g. `fix: resolve biometric lock not triggering at startup` or '
+      '`feat: add recipe image upload via Firebase Storage`). '
+      'Do NOT batch multiple items into a single commit.',
+    );
     buffer.writeln();
-    buffer.writeln(
-        'Each item = one commit. Keep commits small and focused.');
+    buffer.writeln('Each item = one commit. Keep commits small and focused.');
     buffer.writeln();
 
     if (bugs.isNotEmpty) {
@@ -63,9 +67,11 @@ class FeedbackListPage extends ConsumerWidget {
         buffer.writeln(bug.description);
         buffer.writeln();
         buffer.writeln(
-            '- Status: ${bug.status.name[0].toUpperCase()}${bug.status.name.substring(1)}');
+          '- Status: ${bug.status.name[0].toUpperCase()}${bug.status.name.substring(1)}',
+        );
         buffer.writeln(
-            '- Reported: ${bug.createdAt.toIso8601String().substring(0, 10)}');
+          '- Reported: ${bug.createdAt.toIso8601String().substring(0, 10)}',
+        );
         if (bug.attachedLogs != null && bug.attachedLogs!.isNotEmpty) {
           buffer.writeln();
           buffer.writeln('#### Attached Logs');
@@ -95,9 +101,11 @@ class FeedbackListPage extends ConsumerWidget {
         buffer.writeln(wish.description);
         buffer.writeln();
         buffer.writeln(
-            '- Status: ${wish.status.name[0].toUpperCase()}${wish.status.name.substring(1)}');
+          '- Status: ${wish.status.name[0].toUpperCase()}${wish.status.name.substring(1)}',
+        );
         buffer.writeln(
-            '- Reported: ${wish.createdAt.toIso8601String().substring(0, 10)}');
+          '- Reported: ${wish.createdAt.toIso8601String().substring(0, 10)}',
+        );
         if (wish.attachedLogs != null && wish.attachedLogs!.isNotEmpty) {
           buffer.writeln();
           buffer.writeln('#### Attached Logs');
@@ -121,8 +129,10 @@ class FeedbackListPage extends ConsumerWidget {
     Clipboard.setData(ClipboardData(text: buffer.toString()));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-          content: Text(
-              'Copied ${entries.length} feedback item${entries.length == 1 ? '' : 's'} to clipboard')),
+        content: Text(
+          'Copied ${entries.length} feedback item${entries.length == 1 ? '' : 's'} to clipboard',
+        ),
+      ),
     );
   }
 
@@ -137,15 +147,15 @@ class FeedbackListPage extends ConsumerWidget {
         title: const QuickActionsTitle(child: Text('Feedback')),
         actions: [
           entriesAsync.whenOrNull(
-            data: (entries) => entries.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.copy_all),
-                    tooltip: 'Copy all to clipboard',
-                    onPressed: () =>
-                        _copyAllToClipboard(context, entries),
-                  )
-                : null,
-          ) ?? const SizedBox.shrink(),
+                data: (entries) => entries.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.copy_all),
+                        tooltip: 'Copy all to clipboard',
+                        onPressed: () => _copyAllToClipboard(context, entries),
+                      )
+                    : null,
+              ) ??
+              const SizedBox.shrink(),
           PopupMenuButton<String>(
             icon: const Icon(Icons.filter_list),
             onSelected: (value) {
@@ -238,101 +248,104 @@ class _FeedbackTile extends ConsumerWidget {
         : Icons.lightbulb;
 
     return ListTile(
-        leading: Icon(icon, color: color),
-        title: Text(
-          entry.title,
-          style: entry.status == FeedbackStatus.resolved
-              ? const TextStyle(decoration: TextDecoration.lineThrough)
-              : null,
-        ),
-        subtitle: Text(
-          '${entry.status.name[0].toUpperCase()}${entry.status.name.substring(1)}'
-          ' · ${entry.createdAt.toIso8601String().substring(0, 10)}'
-          '${entry.isPrivate ? ' · Private' : ''}',
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (entry.attachedLogs != null && entry.attachedLogs!.isNotEmpty)
-              const Icon(Icons.attach_file, size: 18, color: Colors.grey),
-            if (entry.imageUrls.isNotEmpty)
-              const Icon(Icons.image, size: 18, color: Colors.grey),
-            PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert),
-          onSelected: (value) async {
-            switch (value) {
-              case 'copy':
-                Clipboard.setData(
-                    ClipboardData(text: entry.toClipboardText()));
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Copied to clipboard')),
+      leading: Icon(icon, color: color),
+      title: Text(
+        entry.title,
+        style: entry.status == FeedbackStatus.resolved
+            ? const TextStyle(decoration: TextDecoration.lineThrough)
+            : null,
+      ),
+      subtitle: Text(
+        '${entry.status.name[0].toUpperCase()}${entry.status.name.substring(1)}'
+        ' · ${entry.createdAt.toIso8601String().substring(0, 10)}'
+        '${entry.isPrivate ? ' · Private' : ''}',
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (entry.attachedLogs != null && entry.attachedLogs!.isNotEmpty)
+            const Icon(Icons.attach_file, size: 18, color: Colors.grey),
+          if (entry.imageUrls.isNotEmpty)
+            const Icon(Icons.image, size: 18, color: Colors.grey),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) async {
+              switch (value) {
+                case 'copy':
+                  Clipboard.setData(
+                    ClipboardData(text: entry.toClipboardText()),
                   );
-                }
-              case 'resolve':
-                await ref.read(feedbackListProvider.notifier).updateEntry(
-                      entry.copyWith(status: FeedbackStatus.resolved),
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Copied to clipboard')),
                     );
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Marked as resolved')),
-                  );
-                }
-              case 'delete':
-                final confirm = await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('Delete feedback?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx, false),
-                        child: const Text('Cancel'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx, true),
-                        child: const Text('Delete'),
-                      ),
-                    ],
-                  ),
-                );
-                if (confirm == true) {
+                  }
+                case 'resolve':
                   await ref
                       .read(feedbackListProvider.notifier)
-                      .deleteEntry(entry.id);
-                }
-            }
-          },
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'copy',
-              child: ListTile(
-                leading: Icon(Icons.copy),
-                title: Text('Copy'),
-                dense: true,
-              ),
-            ),
-            if (entry.status != FeedbackStatus.resolved)
+                      .updateEntry(
+                        entry.copyWith(status: FeedbackStatus.resolved),
+                      );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Marked as resolved')),
+                    );
+                  }
+                case 'delete':
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Delete feedback?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text('Delete'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirm == true) {
+                    await ref
+                        .read(feedbackListProvider.notifier)
+                        .deleteEntry(entry.id);
+                  }
+              }
+            },
+            itemBuilder: (context) => [
               const PopupMenuItem(
-                value: 'resolve',
+                value: 'copy',
                 child: ListTile(
-                  leading: Icon(Icons.check_circle_outline),
-                  title: Text('Resolve'),
+                  leading: Icon(Icons.copy),
+                  title: Text('Copy'),
                   dense: true,
                 ),
               ),
-            const PopupMenuItem(
-              value: 'delete',
-              child: ListTile(
-                leading: Icon(Icons.delete_outline, color: Colors.red),
-                title: Text('Delete', style: TextStyle(color: Colors.red)),
-                dense: true,
+              if (entry.status != FeedbackStatus.resolved)
+                const PopupMenuItem(
+                  value: 'resolve',
+                  child: ListTile(
+                    leading: Icon(Icons.check_circle_outline),
+                    title: Text('Resolve'),
+                    dense: true,
+                  ),
+                ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: ListTile(
+                  leading: Icon(Icons.delete_outline, color: Colors.red),
+                  title: Text('Delete', style: TextStyle(color: Colors.red)),
+                  dense: true,
+                ),
               ),
-            ),
-          ],
-        ),
-          ],
-        ),
-        onTap: () => context.push('/feedback/${entry.id}'),
+            ],
+          ),
+        ],
+      ),
+      onTap: () => context.push('/feedback/${entry.id}'),
     );
   }
 }

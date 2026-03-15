@@ -32,7 +32,9 @@ class _VaultUnlockPageState extends ConsumerState<VaultUnlockPage> {
     final isSetup = ref.watch(vaultSetupProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const QuickActionsTitle(child: Text('Password Vault'))),
+      appBar: AppBar(
+        title: const QuickActionsTitle(child: Text('Password Vault')),
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(32),

@@ -28,10 +28,7 @@ class RecipeInstruction {
 
   const RecipeInstruction({required this.text, this.imageUrl});
 
-  Map<String, dynamic> toMap() => {
-    'text': text,
-    'imageUrl': imageUrl,
-  };
+  Map<String, dynamic> toMap() => {'text': text, 'imageUrl': imageUrl};
 
   factory RecipeInstruction.fromMap(Map<String, dynamic> map) {
     return RecipeInstruction(
@@ -88,8 +85,9 @@ class Recipe {
        updatedAt = updatedAt ?? DateTime.now();
 
   /// Primary image URL (the thumbnail).
-  String? get primaryImageUrl =>
-      images.isNotEmpty ? images[primaryImageIndex.clamp(0, images.length - 1)] : null;
+  String? get primaryImageUrl => images.isNotEmpty
+      ? images[primaryImageIndex.clamp(0, images.length - 1)]
+      : null;
 
   Recipe copyWith({
     String? title,
@@ -187,7 +185,8 @@ class Recipe {
       tags: (map['tags'] as List?)?.map((s) => s as String).toList() ?? [],
       images: images,
       primaryImageIndex: map['primaryImageIndex'] as int? ?? 0,
-      videoLinks: (map['videoLinks'] as List?)?.map((s) => s as String).toList() ?? [],
+      videoLinks:
+          (map['videoLinks'] as List?)?.map((s) => s as String).toList() ?? [],
       isFavorite: map['isFavorite'] as bool? ?? false,
       source: map['source'] as String?,
       notes: map['notes'] as String?,

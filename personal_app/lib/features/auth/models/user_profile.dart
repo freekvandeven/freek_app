@@ -30,7 +30,9 @@ class UserSettings {
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       defaultCurrency: defaultCurrency ?? this.defaultCurrency,
       biometricEnabled: biometricEnabled ?? this.biometricEnabled,
-      customSeedColor: clearCustomSeedColor ? null : (customSeedColor ?? this.customSeedColor),
+      customSeedColor: clearCustomSeedColor
+          ? null
+          : (customSeedColor ?? this.customSeedColor),
       geminiModel: clearGeminiModel ? null : (geminiModel ?? this.geminiModel),
     );
   }

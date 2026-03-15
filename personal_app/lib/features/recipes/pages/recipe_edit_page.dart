@@ -232,7 +232,9 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                   tooltip: 'Upload image',
                   onPressed: () async {
                     final service = ref.read(imageUploadServiceProvider);
-                    final url = await service.pickAndUploadImage(folder: 'recipes');
+                    final url = await service.pickAndUploadImage(
+                      folder: 'recipes',
+                    );
                     if (url != null) imgCtrl.text = url;
                   },
                 ),
@@ -249,10 +251,14 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
             onPressed: () {
               if (ctrl.text.trim().isNotEmpty) {
                 final imgUrl = imgCtrl.text.trim();
-                setState(() => _instructions.add(RecipeInstruction(
-                  text: ctrl.text.trim(),
-                  imageUrl: imgUrl.isEmpty ? null : imgUrl,
-                )));
+                setState(
+                  () => _instructions.add(
+                    RecipeInstruction(
+                      text: ctrl.text.trim(),
+                      imageUrl: imgUrl.isEmpty ? null : imgUrl,
+                    ),
+                  ),
+                );
               }
               Navigator.pop(ctx);
             },
@@ -404,7 +410,9 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: QuickActionsTitle(child: Text(_isEditing ? 'Edit Recipe' : 'New Recipe')),
+        title: QuickActionsTitle(
+          child: Text(_isEditing ? 'Edit Recipe' : 'New Recipe'),
+        ),
         actions: [TextButton(onPressed: _save, child: const Text('Save'))],
       ),
       body: Form(
@@ -565,7 +573,13 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 subtitle: _instructions[index].imageUrl != null
-                    ? Text(_instructions[index].imageUrl!, style: const TextStyle(fontSize: 11, color: Colors.grey))
+                    ? Text(
+                        _instructions[index].imageUrl!,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey,
+                        ),
+                      )
                     : null,
                 trailing: IconButton(
                   icon: const Icon(Icons.remove_circle_outline, size: 20),
@@ -605,7 +619,8 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                     child: Stack(
                       children: [
                         GestureDetector(
-                          onTap: () => setState(() => _primaryImageIndex = index),
+                          onTap: () =>
+                              setState(() => _primaryImageIndex = index),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: Image.network(
@@ -627,12 +642,21 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                             top: 2,
                             left: 2,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 1,
+                              ),
                               decoration: BoxDecoration(
                                 color: Theme.of(context).colorScheme.primary,
                                 borderRadius: BorderRadius.circular(4),
                               ),
-                              child: const Text('Primary', style: TextStyle(color: Colors.white, fontSize: 9)),
+                              child: const Text(
+                                'Primary',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                ),
+                              ),
                             ),
                           ),
                         Positioned(
@@ -643,14 +667,23 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                               setState(() {
                                 _images.removeAt(index);
                                 if (_primaryImageIndex >= _images.length) {
-                                  _primaryImageIndex = _images.isEmpty ? 0 : _images.length - 1;
+                                  _primaryImageIndex = _images.isEmpty
+                                      ? 0
+                                      : _images.length - 1;
                                 }
                               });
                             },
                             child: Container(
                               padding: const EdgeInsets.all(2),
-                              decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-                              child: const Icon(Icons.close, size: 14, color: Colors.white),
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.close,
+                                size: 14,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
@@ -673,38 +706,36 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                 ),
               ],
             ),
-            ..._videoLinks.asMap().entries.map(
-              (entry) {
-                final info = VideoLinkParser.parse(entry.value);
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                  leading: Icon(
-                    info.platform == VideoPlatform.youtube
-                        ? Icons.play_circle_fill
-                        : Icons.ondemand_video,
-                    color: info.platform == VideoPlatform.youtube
-                        ? Colors.red
-                        : null,
-                  ),
-                  title: Text(
-                    VideoLinkParser.platformLabel(info.platform),
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  subtitle: Text(
-                    entry.value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11, color: Colors.grey),
-                  ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.remove_circle_outline, size: 20),
-                    onPressed: () =>
-                        setState(() => _videoLinks.removeAt(entry.key)),
-                  ),
-                );
-              },
-            ),
+            ..._videoLinks.asMap().entries.map((entry) {
+              final info = VideoLinkParser.parse(entry.value);
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                leading: Icon(
+                  info.platform == VideoPlatform.youtube
+                      ? Icons.play_circle_fill
+                      : Icons.ondemand_video,
+                  color: info.platform == VideoPlatform.youtube
+                      ? Colors.red
+                      : null,
+                ),
+                title: Text(
+                  VideoLinkParser.platformLabel(info.platform),
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                subtitle: Text(
+                  entry.value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.remove_circle_outline, size: 20),
+                  onPressed: () =>
+                      setState(() => _videoLinks.removeAt(entry.key)),
+                ),
+              );
+            }),
 
             const SizedBox(height: 16),
 

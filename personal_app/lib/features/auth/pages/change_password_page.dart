@@ -121,7 +121,9 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
     );
     vaultPasswordController.dispose();
 
-    if (oldVaultPassword == null || oldVaultPassword.isEmpty || !mounted) return;
+    if (oldVaultPassword == null || oldVaultPassword.isEmpty || !mounted) {
+      return;
+    }
 
     final newKey = await vaultService.reEncryptVault(
       oldVaultPassword,
@@ -136,7 +138,9 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vault re-encryption failed — wrong master password')),
+        const SnackBar(
+          content: Text('Vault re-encryption failed — wrong master password'),
+        ),
       );
     }
   }
@@ -174,10 +178,9 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
                     const SizedBox(height: 8),
                     Text(
                       'Enter your current password and choose a new one.',
-                      style:
-                          Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 32),
@@ -190,8 +193,7 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
                         ),
                         child: Text(
                           _errorMessage!,
-                          style: TextStyle(
-                              color: colorScheme.onErrorContainer),
+                          style: TextStyle(color: colorScheme.onErrorContainer),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -235,9 +237,8 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
                                 ? Icons.visibility_outlined
                                 : Icons.visibility_off_outlined,
                           ),
-                          onPressed: () => setState(
-                            () => _obscureNew = !_obscureNew,
-                          ),
+                          onPressed: () =>
+                              setState(() => _obscureNew = !_obscureNew),
                         ),
                       ),
                       validator: (value) {
@@ -279,14 +280,12 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
                     ),
                     const SizedBox(height: 24),
                     FilledButton(
-                      onPressed:
-                          _isLoading ? null : _handleChangePassword,
+                      onPressed: _isLoading ? null : _handleChangePassword,
                       child: _isLoading
                           ? const SizedBox(
                               height: 20,
                               width: 20,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Text('Change Password'),
                     ),

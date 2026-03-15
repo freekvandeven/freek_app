@@ -148,10 +148,7 @@ class _Section extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 label,
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w600, color: color),
               ),
             ],
           ),

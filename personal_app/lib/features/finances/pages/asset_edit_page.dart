@@ -90,14 +90,20 @@ class _AssetEditPageState extends ConsumerState<AssetEditPage> {
 
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: QuickActionsTitle(child: Text(isEditing ? 'Edit Asset' : 'New Asset'))),
+        appBar: AppBar(
+          title: QuickActionsTitle(
+            child: Text(isEditing ? 'Edit Asset' : 'New Asset'),
+          ),
+        ),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: QuickActionsTitle(child: Text(isEditing ? 'Edit Asset' : 'New Asset')),
+        title: QuickActionsTitle(
+          child: Text(isEditing ? 'Edit Asset' : 'New Asset'),
+        ),
         actions: [TextButton(onPressed: _save, child: const Text('Save'))],
       ),
       body: Form(

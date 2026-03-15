@@ -304,9 +304,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: ':topicId',
-            builder: (context, state) => ConversationEditPage(
-              topicId: state.pathParameters['topicId'],
-            ),
+            builder: (context, state) =>
+                ConversationEditPage(topicId: state.pathParameters['topicId']),
           ),
         ],
       ),

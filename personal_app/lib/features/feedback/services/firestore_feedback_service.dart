@@ -8,7 +8,7 @@ class FirestoreFeedbackService implements FeedbackService {
   final String _userId;
 
   FirestoreFeedbackService(this._userId, {FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   /// Public feedback shared across all users.
   CollectionReference<Map<String, dynamic>> get _publicCollection =>
@@ -18,8 +18,9 @@ class FirestoreFeedbackService implements FeedbackService {
   CollectionReference<Map<String, dynamic>> get _privateCollection =>
       _firestore.collection('users').doc(_userId).collection('feedback');
 
-  CollectionReference<Map<String, dynamic>> _collectionFor(FeedbackEntry entry) =>
-      entry.isPrivate ? _privateCollection : _publicCollection;
+  CollectionReference<Map<String, dynamic>> _collectionFor(
+    FeedbackEntry entry,
+  ) => entry.isPrivate ? _privateCollection : _publicCollection;
 
   @override
   Future<List<FeedbackEntry>> getEntries() async {

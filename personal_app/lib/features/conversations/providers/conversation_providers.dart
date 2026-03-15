@@ -18,8 +18,8 @@ final conversationServiceProvider = Provider<ConversationService>((ref) {
 
 final conversationListProvider =
     AsyncNotifierProvider<ConversationListNotifier, List<ConversationTopic>>(
-  ConversationListNotifier.new,
-);
+      ConversationListNotifier.new,
+    );
 
 class ConversationListNotifier extends AsyncNotifier<List<ConversationTopic>> {
   @override
@@ -44,7 +44,9 @@ class ConversationListNotifier extends AsyncNotifier<List<ConversationTopic>> {
 }
 
 final conversationPersonFilterProvider = StateProvider<String?>((_) => null);
-final conversationStatusFilterProvider = StateProvider<TopicStatus?>((_) => null);
+final conversationStatusFilterProvider = StateProvider<TopicStatus?>(
+  (_) => null,
+);
 final conversationSortProvider = StateProvider<ConversationSort>(
   (_) => ConversationSort.priorityDesc,
 );
@@ -53,35 +55,41 @@ enum ConversationSort { priorityDesc, priorityAsc, newest, oldest }
 
 final filteredConversationsProvider =
     Provider<AsyncValue<List<ConversationTopic>>>((ref) {
-  final listAsync = ref.watch(conversationListProvider);
-  final personFilter = ref.watch(conversationPersonFilterProvider);
-  final statusFilter = ref.watch(conversationStatusFilterProvider);
-  final sort = ref.watch(conversationSortProvider);
+      final listAsync = ref.watch(conversationListProvider);
+      final personFilter = ref.watch(conversationPersonFilterProvider);
+      final statusFilter = ref.watch(conversationStatusFilterProvider);
+      final sort = ref.watch(conversationSortProvider);
 
-  return listAsync.whenData((topics) {
-    var filtered = topics.toList();
-    if (personFilter != null) {
-      filtered = filtered
-          .where((t) =>
-              t.personOrGroup.toLowerCase() == personFilter.toLowerCase())
-          .toList();
-    }
-    if (statusFilter != null) {
-      filtered = filtered.where((t) => t.status == statusFilter).toList();
-    }
-    switch (sort) {
-      case ConversationSort.priorityDesc:
-        filtered.sort((a, b) => b.priority.index.compareTo(a.priority.index));
-      case ConversationSort.priorityAsc:
-        filtered.sort((a, b) => a.priority.index.compareTo(b.priority.index));
-      case ConversationSort.newest:
-        filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      case ConversationSort.oldest:
-        filtered.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-    }
-    return filtered;
-  });
-});
+      return listAsync.whenData((topics) {
+        var filtered = topics.toList();
+        if (personFilter != null) {
+          filtered = filtered
+              .where(
+                (t) =>
+                    t.personOrGroup.toLowerCase() == personFilter.toLowerCase(),
+              )
+              .toList();
+        }
+        if (statusFilter != null) {
+          filtered = filtered.where((t) => t.status == statusFilter).toList();
+        }
+        switch (sort) {
+          case ConversationSort.priorityDesc:
+            filtered.sort(
+              (a, b) => b.priority.index.compareTo(a.priority.index),
+            );
+          case ConversationSort.priorityAsc:
+            filtered.sort(
+              (a, b) => a.priority.index.compareTo(b.priority.index),
+            );
+          case ConversationSort.newest:
+            filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          case ConversationSort.oldest:
+            filtered.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+        }
+        return filtered;
+      });
+    });
 
 /// Distinct person/group values for filter dropdown.
 final conversationPersonsProvider = Provider<AsyncValue<List<String>>>((ref) {

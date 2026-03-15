@@ -1,4 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -28,24 +31,36 @@ Future<void> main() async {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
+
+      if (AppConfig.useEmulators) {
+        final host = AppConfig.emulatorHost;
+        FirebaseAuth.instance.useAuthEmulator(host, 9099);
+        FirebaseFirestore.instance.useFirestoreEmulator(host, 8080);
+        FirebaseStorage.instance.useStorageEmulator(host, 9199);
+        if (kDebugMode) {
+          debugPrint('🔧 Connected to Firebase emulators at $host');
+        }
+      }
     }
   } catch (e, st) {
     if (kDebugMode) {
       debugPrint('Initialization error: $e\n$st');
     }
-    runApp(MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text(
-              'Failed to initialize:\n$e',
-              textAlign: TextAlign.center,
+    runApp(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                'Failed to initialize:\n$e',
+                textAlign: TextAlign.center,
+              ),
             ),
           ),
         ),
       ),
-    ));
+    );
     return;
   }
 
@@ -82,17 +97,15 @@ class PersonalApp extends ConsumerWidget {
         final seedColor = ref.watch(customSeedColorProvider);
 
         return MaterialApp.router(
-            title: 'Freek App',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme(seedColor),
-            darkTheme: AppTheme.darkTheme(seedColor),
-            themeMode: ref.watch(themeModeProvider),
-            routerConfig: router,
-            builder: (context, child) => LockScreen(
-              enabled: biometricEnabled,
-              child: child!,
-            ),
-          );
+          title: 'Freek App',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme(seedColor),
+          darkTheme: AppTheme.darkTheme(seedColor),
+          themeMode: ref.watch(themeModeProvider),
+          routerConfig: router,
+          builder: (context, child) =>
+              LockScreen(enabled: biometricEnabled, child: child!),
+        );
       },
     );
   }

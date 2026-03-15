@@ -52,7 +52,9 @@ class FeedbackEntry {
       status: status ?? this.status,
       isPrivate: isPrivate ?? this.isPrivate,
       userId: userId,
-      attachedLogs: clearAttachedLogs ? null : (attachedLogs ?? this.attachedLogs),
+      attachedLogs: clearAttachedLogs
+          ? null
+          : (attachedLogs ?? this.attachedLogs),
       imageUrls: imageUrls ?? this.imageUrls,
       createdAt: createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
@@ -89,10 +91,12 @@ class FeedbackEntry {
 
   String toClipboardText() {
     final typeLabel = type == FeedbackType.bug ? 'Bug' : 'Wish';
-    final buf = StringBuffer('**[$typeLabel] $title**\n\n'
-        '$description\n\n'
-        'Status: ${status.name[0].toUpperCase()}${status.name.substring(1)}\n'
-        'Created: ${createdAt.toIso8601String().substring(0, 10)}');
+    final buf = StringBuffer(
+      '**[$typeLabel] $title**\n\n'
+      '$description\n\n'
+      'Status: ${status.name[0].toUpperCase()}${status.name.substring(1)}\n'
+      'Created: ${createdAt.toIso8601String().substring(0, 10)}',
+    );
     if (attachedLogs != null && attachedLogs!.isNotEmpty) {
       buf.write('\n\n**Attached Logs:**\n```\n$attachedLogs\n```');
     }

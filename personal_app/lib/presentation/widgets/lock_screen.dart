@@ -80,11 +80,7 @@ class _LockScreenState extends State<LockScreen> with WidgetsBindingObserver {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.lock_outline,
-                size: 72,
-                color: colorScheme.primary,
-              ),
+              Icon(Icons.lock_outline, size: 72, color: colorScheme.primary),
               const SizedBox(height: 24),
               Text(
                 'Freek App',

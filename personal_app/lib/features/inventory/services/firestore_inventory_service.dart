@@ -8,7 +8,7 @@ class FirestoreInventoryService implements InventoryService {
   final String _userId;
 
   FirestoreInventoryService(this._userId, {FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   CollectionReference<Map<String, dynamic>> get _collection =>
       _firestore.collection('users').doc(_userId).collection('inventory');

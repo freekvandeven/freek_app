@@ -32,22 +32,25 @@ class GeminiService {
   }
 
   GenerativeModel _getModel() {
-    _model ??= GenerativeModel(
-      model: _modelName,
-      apiKey: _apiKey!,
-    );
+    _model ??= GenerativeModel(model: _modelName, apiKey: _apiKey!);
     return _model!;
   }
 
   ChatSession _getChat() {
-    _chat ??= _getModel().startChat(history: [
-      Content.text(
-        'You are a helpful personal assistant embedded in a life-management app called "Personal App". '
-        'You help with tasks, recipes, finances, calendar planning, knowledge organization, and general questions. '
-        'Keep answers concise and practical.',
-      ),
-      Content.model([TextPart('Understood! I\'m ready to help you with anything in your Personal App.')]),
-    ]);
+    _chat ??= _getModel().startChat(
+      history: [
+        Content.text(
+          'You are a helpful personal assistant embedded in a life-management app called "Personal App". '
+          'You help with tasks, recipes, finances, calendar planning, knowledge organization, and general questions. '
+          'Keep answers concise and practical.',
+        ),
+        Content.model([
+          TextPart(
+            'Understood! I\'m ready to help you with anything in your Personal App.',
+          ),
+        ]),
+      ],
+    );
     return _chat!;
   }
 
@@ -89,7 +92,9 @@ class GeminiService {
       final text = response.text?.trim();
       if (text == null || text.isEmpty) return null;
       // Strip markdown fences if present
-      final cleaned = text.replaceAll(RegExp(r'^```json?\s*|\s*```$'), '').trim();
+      final cleaned = text
+          .replaceAll(RegExp(r'^```json?\s*|\s*```$'), '')
+          .trim();
       return jsonDecode(cleaned) as Map<String, dynamic>;
     } catch (e) {
       return null;

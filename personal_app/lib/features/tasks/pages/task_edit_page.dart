@@ -128,7 +128,9 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: QuickActionsTitle(child: Text(_isEditing ? 'Edit Task' : 'New Task')),
+        title: QuickActionsTitle(
+          child: Text(_isEditing ? 'Edit Task' : 'New Task'),
+        ),
         actions: [TextButton(onPressed: _save, child: const Text('Save'))],
       ),
       body: Form(

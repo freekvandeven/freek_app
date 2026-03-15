@@ -7,7 +7,7 @@ class GeminiApiKeyService {
   final FlutterSecureStorage _storage;
 
   GeminiApiKeyService({FlutterSecureStorage? storage})
-      : _storage = storage ?? const FlutterSecureStorage();
+    : _storage = storage ?? const FlutterSecureStorage();
 
   /// Returns the API key from secure storage, or falls back to dotenv config.
   Future<String> getApiKey() async {

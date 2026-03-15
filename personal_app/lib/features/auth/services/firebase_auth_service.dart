@@ -16,17 +16,20 @@ class FirebaseAuthService implements AuthService {
 
   UserProfile? _currentUser;
 
-  FirebaseAuthService({
-    fb.FirebaseAuth? auth,
-    FirebaseFirestore? firestore,
-  })  : _auth = auth ?? fb.FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance;
+  FirebaseAuthService({fb.FirebaseAuth? auth, FirebaseFirestore? firestore})
+    : _auth = auth ?? fb.FirebaseAuth.instance,
+      _firestore = firestore ?? FirebaseFirestore.instance;
 
   /// Cloud Functions callable URL base.
   /// Gen 2 callable functions are accessible at the standard Firebase URL.
+  /// When emulators are active, routes to the local Functions emulator.
   String get _functionsBaseUrl {
     final projectId = AppConfig.firebaseProjectId;
     final region = AppConfig.cloudFunctionsRegion;
+    if (AppConfig.useEmulators) {
+      final host = AppConfig.emulatorHost;
+      return 'http://$host:5001/$projectId/$region';
+    }
     return 'https://$region-$projectId.cloudfunctions.net';
   }
 
@@ -70,8 +73,7 @@ class FirebaseAuthService implements AuthService {
 
       if (response.statusCode != 200) {
         final error = body['error'] as Map<String, dynamic>?;
-        final message =
-            error?['message'] as String? ?? 'Registration failed.';
+        final message = error?['message'] as String? ?? 'Registration failed.';
         throw AuthException(message);
       }
 

@@ -70,3 +70,58 @@ firebase deploy --only firestore:rules
 # Deploy everything
 firebase deploy
 ```
+
+## Local Development with Firebase Emulators
+
+Run the app against local Firebase emulators instead of the production project:
+
+```bash
+# Start emulators (Auth:9099, Firestore:8080, Storage:9199, Functions:5001, UI:4000)
+firebase emulators:start
+
+# In another terminal, run the app with the emulator dotenv
+flutter run --dart-define-from-file=dotenv.emulator
+```
+
+Or copy `dotenv.emulator` to `dotenv` to use emulators as the default backend.
+
+The Emulator UI is available at http://localhost:4000.
+
+## Testing
+
+### Unit / Widget Tests
+
+```bash
+flutter test
+```
+
+### Integration Tests (Firebase Emulators)
+
+Integration tests run against the local Firebase emulators and exercise auth, Firestore, security rules, and the Cloud Function signup flow.
+
+```bash
+# Start emulators + run integration tests in one command
+firebase emulators:exec "flutter test integration_test/ -d chrome"
+
+# Or with flutter drive (used in CI)
+chromedriver --port=4444 &
+firebase emulators:exec \
+  "flutter drive --driver=test_driver/integration_test.dart \
+   --target=integration_test/app_test.dart -d web-server"
+```
+
+## Pre-commit Hook
+
+A pre-commit hook runs `dart format`, `flutter analyze`, and `flutter test` before each commit.
+
+```bash
+# Install the hook (run once after cloning)
+bash scripts/setup-hooks.sh
+```
+
+## CI/CD
+
+GitHub Actions runs on every push/PR to `master`:
+
+- **quality** job: format check, `flutter analyze`, unit tests
+- **integration** job: starts Firebase emulators, runs integration tests on Chrome
