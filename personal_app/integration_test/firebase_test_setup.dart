@@ -70,14 +70,18 @@ Future<UserCredential> createTestUser({
   );
   final uid = credential.user!.uid;
 
-  // Set inviteVerified custom claim via Auth emulator REST API
-  final claimResponse = await http.post(
+  // Set inviteVerified custom claim via Auth emulator internal REST API.
+  // The emulator exposes a PATCH endpoint to update user accounts directly,
+  // including custom claims (which the Identity Toolkit REST API does not support).
+  final claimResponse = await http.patch(
     Uri.parse(
-      'http://$emulatorHost:$authPort/identitytoolkit.googleapis.com/v1/accounts:update?key=fake-api-key',
+      'http://$emulatorHost:$authPort/emulator/v1/projects/$projectId/accounts/$uid',
     ),
-    headers: {'Content-Type': 'application/json'},
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer owner',
+    },
     body: jsonEncode({
-      'localId': uid,
       'customAttributes': jsonEncode({'inviteVerified': true}),
     }),
   );
