@@ -64,8 +64,8 @@ jobs:
       - name: Create dotenv for emulators
         run: cp dotenv.emulator dotenv
 
-      - name: Install Cloud Functions dependencies
-        run: cd functions && npm install
+      - name: Install and build Cloud Functions
+        run: cd functions && npm install && npm run build
 
       - name: Start chromedriver
         run: chromedriver --port=4444 &

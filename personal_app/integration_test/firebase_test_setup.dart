@@ -73,7 +73,7 @@ Future<UserCredential> createTestUser({
   // Set inviteVerified custom claim via Auth emulator REST API
   final claimResponse = await http.post(
     Uri.parse(
-      'http://$emulatorHost:$authPort/identitytoolkit.googleapis.com/v1/accounts:update',
+      'http://$emulatorHost:$authPort/identitytoolkit.googleapis.com/v1/accounts:update?key=fake-api-key',
     ),
     headers: {'Content-Type': 'application/json'},
     body: jsonEncode({
