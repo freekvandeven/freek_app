@@ -1,0 +1,148 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:personal_app/features/auth/models/user_profile.dart';
+
+void main() {
+  group('UserSettings', () {
+    test('default constructor has correct defaults', () {
+      const settings = UserSettings();
+      expect(settings.themeMode, 'system');
+      expect(settings.notificationsEnabled, isTrue);
+      expect(settings.defaultCurrency, 'EUR');
+      expect(settings.biometricEnabled, isTrue);
+      expect(settings.customSeedColor, isNull);
+      expect(settings.geminiModel, isNull);
+    });
+
+    test('toMap and fromMap round-trip', () {
+      const settings = UserSettings(
+        themeMode: 'dark',
+        notificationsEnabled: false,
+        defaultCurrency: 'USD',
+        biometricEnabled: false,
+        customSeedColor: '#FF0000',
+        geminiModel: 'gemini-pro',
+      );
+      final map = settings.toMap();
+      final restored = UserSettings.fromMap(map);
+
+      expect(restored.themeMode, 'dark');
+      expect(restored.notificationsEnabled, isFalse);
+      expect(restored.defaultCurrency, 'USD');
+      expect(restored.biometricEnabled, isFalse);
+      expect(restored.customSeedColor, '#FF0000');
+      expect(restored.geminiModel, 'gemini-pro');
+    });
+
+    test('fromMap uses defaults for missing keys', () {
+      final settings = UserSettings.fromMap({});
+      expect(settings.themeMode, 'system');
+      expect(settings.notificationsEnabled, isTrue);
+      expect(settings.defaultCurrency, 'EUR');
+      expect(settings.biometricEnabled, isTrue);
+    });
+
+    test('copyWith replaces values', () {
+      const settings = UserSettings();
+      final updated = settings.copyWith(
+        themeMode: 'light',
+        defaultCurrency: 'USD',
+      );
+      expect(updated.themeMode, 'light');
+      expect(updated.defaultCurrency, 'USD');
+      expect(updated.notificationsEnabled, isTrue); // unchanged
+    });
+
+    test('copyWith clearCustomSeedColor sets null', () {
+      const settings = UserSettings(customSeedColor: '#FF0000');
+      final updated = settings.copyWith(clearCustomSeedColor: true);
+      expect(updated.customSeedColor, isNull);
+    });
+
+    test('copyWith clearGeminiModel sets null', () {
+      const settings = UserSettings(geminiModel: 'gemini-pro');
+      final updated = settings.copyWith(clearGeminiModel: true);
+      expect(updated.geminiModel, isNull);
+    });
+  });
+
+  group('UserProfile', () {
+    final now = DateTime(2025, 1, 15, 10, 30);
+    final later = DateTime(2025, 1, 16, 12, 0);
+
+    UserProfile createProfile() => UserProfile(
+      id: 'user-123',
+      email: 'test@example.com',
+      displayName: 'Test User',
+      bio: 'Hello world',
+      phone: '+31612345678',
+      createdAt: now,
+      updatedAt: later,
+      settings: const UserSettings(themeMode: 'dark'),
+    );
+
+    test('toMap and fromMap round-trip', () {
+      final profile = createProfile();
+      final map = profile.toMap();
+      final restored = UserProfile.fromMap(map);
+
+      expect(restored.id, 'user-123');
+      expect(restored.email, 'test@example.com');
+      expect(restored.displayName, 'Test User');
+      expect(restored.bio, 'Hello world');
+      expect(restored.phone, '+31612345678');
+      expect(restored.createdAt, now);
+      expect(restored.updatedAt, later);
+      expect(restored.settings.themeMode, 'dark');
+    });
+
+    test('fromMap handles null optional fields', () {
+      final profile = UserProfile.fromMap({
+        'id': 'u1',
+        'email': 'a@b.com',
+        'displayName': null,
+        'bio': null,
+        'phone': null,
+        'createdAt': now.toIso8601String(),
+        'updatedAt': now.toIso8601String(),
+      });
+      expect(profile.displayName, isNull);
+      expect(profile.bio, isNull);
+      expect(profile.phone, isNull);
+      expect(profile.settings.themeMode, 'system'); // default
+    });
+
+    test('copyWith replaces fields', () {
+      final profile = createProfile();
+      final updated = profile.copyWith(displayName: 'New Name');
+      expect(updated.displayName, 'New Name');
+      expect(updated.email, 'test@example.com'); // unchanged
+      expect(updated.id, 'user-123'); // unchanged
+    });
+
+    test('copyWith clearBio sets null', () {
+      final profile = createProfile();
+      final updated = profile.copyWith(clearBio: true);
+      expect(updated.bio, isNull);
+    });
+
+    test('copyWith clearPhone sets null', () {
+      final profile = createProfile();
+      final updated = profile.copyWith(clearPhone: true);
+      expect(updated.phone, isNull);
+    });
+
+    test('toMap serializes dates as ISO8601', () {
+      final profile = createProfile();
+      final map = profile.toMap();
+      expect(map['createdAt'], now.toIso8601String());
+      expect(map['updatedAt'], later.toIso8601String());
+    });
+
+    test('toMap includes nested settings', () {
+      final profile = createProfile();
+      final map = profile.toMap();
+      expect(map['settings'], isA<Map<String, dynamic>>());
+      expect(map['settings']['themeMode'], 'dark');
+    });
+  });
+}
