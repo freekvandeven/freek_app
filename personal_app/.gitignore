@@ -48,8 +48,5 @@ app.*.map.json
 dotenv
 !dotenv.example
 
-# Windows installer output (built via scripts/build-windows-installer.ps1)
-/build/installer/
-
 # Firebase
 .firebase/

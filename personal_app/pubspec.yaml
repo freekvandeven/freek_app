@@ -51,6 +51,7 @@ dev_dependencies:
   custom_lint: ^0.7.5
   riverpod_lint: ^2.6.3
   flutter_launcher_icons: ^0.14.4
+  msix: ^3.16.13
 
 flutter_launcher_icons:
   android: true
@@ -61,6 +62,15 @@ flutter_launcher_icons:
   adaptive_icon_background: "#2D77BB"
   adaptive_icon_foreground: "assets/app_icon.png"
   remove_alpha_ios: true
+
+msix_config:
+  display_name: Personal App
+  publisher_display_name: Freek
+  identity_name: com.freek.personalapp
+  logo_path: assets/app_icon.png
+  output_name: PersonalAppSetup
+  capabilities: internetClient
+  install_certificate: false
 
 flutter_native_splash:
   color: "#2D77BB"
