@@ -45,7 +45,7 @@ void main() {
       );
 
       expect(profile.email, 'service-login@example.com');
-      expect(profile.displayName, 'Test User');
+      expect(profile.displayName, isNull);
       expect(service.currentUser, isNotNull);
       expect(service.currentUser!.email, 'service-login@example.com');
 

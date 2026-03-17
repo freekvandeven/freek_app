@@ -57,64 +57,39 @@ CLOUD_FUNCTIONS_REGION=us-central1
   _initialized = true;
 }
 
-/// Creates a test user directly in the Auth emulator, sets the inviteVerified
-/// custom claim via the emulator REST API, and seeds a user profile in Firestore.
+/// Creates a test user by calling the [createUserWithInvite] Cloud Function
+/// running in the emulator. The function uses the Admin SDK to create the user,
+/// set the `inviteVerified` custom claim, and create the user profile in Firestore.
 Future<UserCredential> createTestUser({
   String email = 'test@example.com',
   String password = 'Test123!',
 }) async {
-  // Create user via Firebase Auth
-  final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-    email: email,
-    password: password,
-  );
-  final uid = credential.user!.uid;
+  // Each call needs a unique invite code (the function deletes it after use)
+  final inviteCode = 'test-invite-${email.hashCode.abs()}';
+  await seedInviteCode(inviteCode);
 
-  // Set inviteVerified custom claim via Auth emulator internal REST API.
-  // The emulator exposes a PATCH endpoint to update user accounts directly,
-  // including custom claims (which the Identity Toolkit REST API does not support).
-  final claimResponse = await http.patch(
+  // Call the createUserWithInvite Cloud Function
+  final response = await http.post(
     Uri.parse(
-      'http://$emulatorHost:$authPort/emulator/v1/projects/$projectId/accounts/$uid',
+      'http://$emulatorHost:$functionsPort/$projectId/us-central1/createUserWithInvite',
     ),
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer owner',
-    },
+    headers: {'Content-Type': 'application/json'},
     body: jsonEncode({
-      'customAttributes': jsonEncode({'inviteVerified': true}),
+      'data': {'email': email, 'password': password, 'inviteCode': inviteCode},
     }),
   );
 
-  if (claimResponse.statusCode != 200) {
+  if (response.statusCode != 200) {
     throw Exception(
-      'Failed to set custom claims: ${claimResponse.statusCode} ${claimResponse.body}',
+      'createUserWithInvite failed: ${response.statusCode} ${response.body}',
     );
   }
 
-  // Sign out and back in to get a fresh ID token with the new claim
-  await FirebaseAuth.instance.signOut();
-  final freshCredential = await FirebaseAuth.instance
-      .signInWithEmailAndPassword(email: email, password: password);
+  final body = jsonDecode(response.body) as Map<String, dynamic>;
+  final token = body['result']['token'] as String;
 
-  // Seed user profile in Firestore (security rules now allow this)
-  await FirebaseFirestore.instance.collection('users').doc(uid).set({
-    'id': uid,
-    'email': email,
-    'displayName': 'Test User',
-    'bio': null,
-    'phone': null,
-    'createdAt': FieldValue.serverTimestamp(),
-    'updatedAt': FieldValue.serverTimestamp(),
-    'settings': {
-      'themeMode': 'system',
-      'notificationsEnabled': true,
-      'defaultCurrency': 'EUR',
-      'biometricEnabled': false,
-    },
-  });
-
-  return freshCredential;
+  // Sign in with the custom token returned by the function
+  return FirebaseAuth.instance.signInWithCustomToken(token);
 }
 
 /// Seeds an invite code document in the Firestore emulator.

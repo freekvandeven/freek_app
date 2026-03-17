@@ -74,7 +74,7 @@ void main() {
 
       expect(doc.exists, isTrue);
       expect(doc.data()!['email'], 'firestore-read@example.com');
-      expect(doc.data()!['displayName'], 'Test User');
+      expect(doc.data()!['displayName'], isNull);
     });
 
     testWidgets('can update user profile', (tester) async {
