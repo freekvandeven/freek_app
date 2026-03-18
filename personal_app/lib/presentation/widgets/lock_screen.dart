@@ -69,40 +69,51 @@ class _LockScreenState extends State<LockScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    if (!_locked) return widget.child;
-
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.lock_outline, size: 72, color: colorScheme.primary),
-              const SizedBox(height: 24),
-              Text(
-                'Freek App',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Authenticate to unlock',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+    return Stack(
+      children: [
+        // Keep child mounted so form state is preserved across lock/unlock
+        widget.child,
+        if (_locked)
+          Positioned.fill(
+            child: Scaffold(
+              body: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.lock_outline,
+                        size: 72,
+                        color: colorScheme.primary,
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Freek App',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Authenticate to unlock',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      FilledButton.icon(
+                        onPressed: _authenticate,
+                        icon: const Icon(Icons.fingerprint),
+                        label: const Text('Unlock'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 32),
-              FilledButton.icon(
-                onPressed: _authenticate,
-                icon: const Icon(Icons.fingerprint),
-                label: const Text('Unlock'),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+      ],
     );
   }
 }

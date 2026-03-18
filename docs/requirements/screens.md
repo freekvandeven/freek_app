@@ -187,6 +187,7 @@ S004 Home/Dashboard
 - Biometric prompt (fingerprint, face, PIN fallback)
 - Retry button if authentication fails
 - Logout option
+- Rendered as an overlay (Stack) so the app widget tree stays mounted and form state is preserved after unlock
 
 **Navigation**:
 - From: S002 (Login) or S001 (Splash, if already logged in)

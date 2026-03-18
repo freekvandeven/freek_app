@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] - 2026-03-18
+
+### Fixed
+- Lock screen no longer wipes form state — biometric lock overlay now keeps the app widget tree mounted so in-progress form input is preserved after unlock
+
 ## [0.5.0] - 2026-03-15
 
 ### Fixed
