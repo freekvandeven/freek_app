@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - Lock screen no longer wipes form state — biometric lock overlay now keeps the app widget tree mounted so in-progress form input is preserved after unlock
+- Image upload to Firebase Storage no longer fails with "unauthorized" — force-refresh the ID token before upload to ensure the `inviteVerified` claim is present; show SnackBar on upload errors
 
 ## [0.5.0] - 2026-03-15
 

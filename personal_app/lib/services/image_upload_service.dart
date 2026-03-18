@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -47,6 +48,9 @@ class ImageUploadService {
 
   /// Upload an XFile to Firebase Storage and return the download URL.
   Future<String> uploadXFile(XFile file, {String folder = 'images'}) async {
+    // Force-refresh the ID token so the inviteVerified claim is present.
+    await FirebaseAuth.instance.currentUser?.getIdToken(true);
+
     final ext = file.name.split('.').last;
     final fileName = '${const Uuid().v4()}.$ext';
     final ref = _storage.ref('users/$userId/$folder/$fileName');
