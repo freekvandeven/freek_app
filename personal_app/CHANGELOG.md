@@ -18,6 +18,8 @@ All notable changes to this project will be documented in this file.
 - People directory — browse other app users via the new "People" entry in the More menu; tap a user to view their public profile
 - Firestore & Storage rules updated for public profile reads and profile photo visibility
 - Version check at startup — the app reads `appConfig/version` from Firestore and shows a dialog when an update is available or required; includes "Update" and "Later" actions with a configurable download URL
+- Dashboard now shows all features — added Conversations and People tiles to the home screen grid alongside existing entries
+- "What's New" link on the dashboard — navigates to the changelog page so users can quickly see recent changes
 
 ## [0.5.0] - 2026-03-15
 

@@ -100,6 +100,14 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           ),
           const SizedBox(height: 24),
           _buildFeatureGrid(context, colorScheme),
+          const SizedBox(height: 16),
+          Center(
+            child: TextButton.icon(
+              onPressed: () => context.push('/settings/changelog'),
+              icon: const Icon(Icons.new_releases_outlined),
+              label: const Text("What's New"),
+            ),
+          ),
         ],
       ),
     );
@@ -169,6 +177,18 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         label: 'Gemini AI',
         color: Colors.deepPurple,
         route: '/gemini',
+      ),
+      _FeatureTile(
+        icon: Icons.forum_rounded,
+        label: 'Conversations',
+        color: Colors.pink,
+        route: '/conversations',
+      ),
+      _FeatureTile(
+        icon: Icons.people_rounded,
+        label: 'People',
+        color: Colors.brown,
+        route: '/people',
       ),
     ];
 
