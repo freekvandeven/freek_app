@@ -52,6 +52,11 @@ class MorePage extends StatelessWidget {
               label: 'Gemini AI',
               route: '/gemini',
             ),
+            _MenuItem(
+              icon: Icons.people_rounded,
+              label: 'People',
+              route: '/people',
+            ),
           ]),
           _buildSection(context, 'App', [
             _MenuItem(

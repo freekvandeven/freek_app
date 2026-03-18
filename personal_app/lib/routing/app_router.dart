@@ -32,6 +32,8 @@ import '../features/passwords/pages/password_edit_page.dart';
 import '../features/passwords/pages/password_list_page.dart';
 import '../features/passwords/pages/vault_unlock_page.dart';
 import '../features/passwords/providers/vault_providers.dart';
+import '../features/people/pages/public_profile_page.dart';
+import '../features/people/pages/user_directory_page.dart';
 import '../features/recipes/pages/recipe_detail_page.dart';
 import '../features/recipes/pages/recipe_edit_page.dart';
 import '../features/recipes/pages/recipe_list_page.dart';
@@ -268,6 +270,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/connections',
         builder: (context, state) => const ConnectionsPage(),
+      ),
+      GoRoute(
+        path: '/people',
+        builder: (context, state) => const UserDirectoryPage(),
+        routes: [
+          GoRoute(
+            path: ':userId',
+            builder: (context, state) =>
+                PublicProfilePage(userId: state.pathParameters['userId']!),
+          ),
+        ],
       ),
       GoRoute(
         path: '/gemini',

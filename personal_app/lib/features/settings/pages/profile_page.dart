@@ -3,6 +3,7 @@ import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../services/image_upload_service.dart';
 import '../../auth/providers/auth_providers.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
@@ -18,6 +19,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   final _bioController = TextEditingController();
   final _phoneController = TextEditingController();
   bool _loaded = false;
+  bool _uploadingPhoto = false;
 
   @override
   void dispose() {
@@ -65,6 +67,29 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     }
   }
 
+  Future<void> _changePhoto() async {
+    final user = ref.read(currentUserProvider);
+    if (user == null) return;
+
+    setState(() => _uploadingPhoto = true);
+    try {
+      final uploadService = ref.read(imageUploadServiceProvider);
+      final url = await uploadService.pickAndUploadImage(folder: 'profile');
+      if (url != null && mounted) {
+        final updated = user.copyWith(photoUrl: url);
+        await ref.read(authServiceProvider).updateProfile(updated);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Photo upload failed: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingPhoto = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
@@ -84,14 +109,49 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           padding: const EdgeInsets.all(16),
           children: [
             Center(
-              child: CircleAvatar(
-                radius: 48,
-                backgroundColor: colorScheme.primaryContainer,
-                child: Text(
-                  _initials(user.displayName ?? user.email),
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: colorScheme.onPrimaryContainer,
-                  ),
+              child: GestureDetector(
+                onTap: _uploadingPhoto ? null : _changePhoto,
+                child: Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 48,
+                      backgroundColor: colorScheme.primaryContainer,
+                      backgroundImage: user.photoUrl != null
+                          ? NetworkImage(user.photoUrl!)
+                          : null,
+                      child: user.photoUrl == null
+                          ? Text(
+                              _initials(user.displayName ?? user.email),
+                              style: Theme.of(context).textTheme.headlineMedium
+                                  ?.copyWith(
+                                    color: colorScheme.onPrimaryContainer,
+                                  ),
+                            )
+                          : null,
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: CircleAvatar(
+                        radius: 16,
+                        backgroundColor: colorScheme.primary,
+                        child: _uploadingPhoto
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Icon(
+                                Icons.camera_alt,
+                                size: 16,
+                                color: colorScheme.onPrimary,
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

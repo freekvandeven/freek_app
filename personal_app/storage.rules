@@ -2,7 +2,16 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Users can only access files in their own directory
+    // Profile pictures are readable by any verified user
+    match /users/{userId}/profile/{allPaths=**} {
+      allow read: if request.auth != null
+        && request.auth.token.inviteVerified == true;
+      allow write: if request.auth != null
+        && request.auth.uid == userId
+        && request.auth.token.inviteVerified == true;
+    }
+
+    // Users can only access other files in their own directory
     match /users/{userId}/{allPaths=**} {
       allow read, write: if request.auth != null
         && request.auth.uid == userId

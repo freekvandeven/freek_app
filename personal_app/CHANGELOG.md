@@ -12,6 +12,12 @@ All notable changes to this project will be documented in this file.
 - Gemini AI model picker now fetches available models from the API instead of using a hardcoded list — only models supporting content generation are shown
 - Dismissing the biometric prompt no longer causes an infinite re-prompt loop — the lock screen stays visible with manual Unlock and Sign Out buttons instead of repeatedly triggering the system dialog
 
+### Added
+- Public profiles — profile data (display name, bio, photo) is synced to a `publicProfiles` Firestore collection readable by all verified users; private data (email, phone, settings) stays in the user's own document
+- Profile picture upload — tap the avatar on the Profile page to pick and upload a photo from the gallery; photos are stored in Firebase Storage under `users/{uid}/profile/`
+- People directory — browse other app users via the new "People" entry in the More menu; tap a user to view their public profile
+- Firestore & Storage rules updated for public profile reads and profile photo visibility
+
 ## [0.5.0] - 2026-03-15
 
 ### Fixed

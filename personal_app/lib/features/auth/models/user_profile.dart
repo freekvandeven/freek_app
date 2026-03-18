@@ -64,6 +64,7 @@ class UserProfile {
   final String? displayName;
   final String? bio;
   final String? phone;
+  final String? photoUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
   final UserSettings settings;
@@ -74,6 +75,7 @@ class UserProfile {
     this.displayName,
     this.bio,
     this.phone,
+    this.photoUrl,
     required this.createdAt,
     required this.updatedAt,
     this.settings = const UserSettings(),
@@ -83,10 +85,12 @@ class UserProfile {
     String? displayName,
     String? bio,
     String? phone,
+    String? photoUrl,
     DateTime? updatedAt,
     UserSettings? settings,
     bool clearBio = false,
     bool clearPhone = false,
+    bool clearPhotoUrl = false,
   }) {
     return UserProfile(
       id: id,
@@ -94,6 +98,7 @@ class UserProfile {
       displayName: displayName ?? this.displayName,
       bio: clearBio ? null : (bio ?? this.bio),
       phone: clearPhone ? null : (phone ?? this.phone),
+      photoUrl: clearPhotoUrl ? null : (photoUrl ?? this.photoUrl),
       createdAt: createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
       settings: settings ?? this.settings,
@@ -106,9 +111,18 @@ class UserProfile {
     'displayName': displayName,
     'bio': bio,
     'phone': phone,
+    'photoUrl': photoUrl,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
     'settings': settings.toMap(),
+  };
+
+  /// Returns only the fields visible to other users.
+  Map<String, dynamic> toPublicMap() => {
+    'id': id,
+    'displayName': displayName,
+    'bio': bio,
+    'photoUrl': photoUrl,
   };
 
   factory UserProfile.fromMap(Map<String, dynamic> map) {
@@ -118,6 +132,7 @@ class UserProfile {
       displayName: map['displayName'] as String?,
       bio: map['bio'] as String?,
       phone: map['phone'] as String?,
+      photoUrl: map['photoUrl'] as String?,
       createdAt: DateTime.parse(map['createdAt'] as String),
       updatedAt: DateTime.parse(map['updatedAt'] as String),
       settings: map['settings'] != null

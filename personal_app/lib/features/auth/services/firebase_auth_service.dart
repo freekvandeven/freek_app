@@ -163,6 +163,11 @@ class FirebaseAuthService implements AuthService {
   @override
   Future<void> updateProfile(UserProfile profile) async {
     await _saveProfile(profile);
+    // Sync public-facing profile data so other users can discover this user.
+    await _firestore
+        .collection('publicProfiles')
+        .doc(profile.id)
+        .set(profile.toPublicMap());
     if (_currentUser?.id == profile.id) {
       _currentUser = profile;
       _authStateController.add(profile);
