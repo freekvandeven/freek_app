@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 - Lock screen no longer wipes form state — biometric lock overlay now keeps the app widget tree mounted so in-progress form input is preserved after unlock
 - Image upload to Firebase Storage no longer fails with "unauthorized" — force-refresh the ID token before upload to ensure the `inviteVerified` claim is present; show SnackBar on upload errors
 - YouTube video embeds no longer show error 150/152 on desktop — desktop platforms (Windows, macOS, Linux) now show a thumbnail card with "Watch on YouTube" button instead of the unreliable WebView embed; web and mobile still use the embedded player with a browser-fallback link
+- Currency picker reduced from 24 to 12 common currencies and now shows live EUR conversion rates fetched from the Frankfurter API (ECB data)
 
 ## [0.5.0] - 2026-03-15
 
