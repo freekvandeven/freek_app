@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart'
+    show kIsWeb, TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -341,11 +343,20 @@ class _VideoLinkCardState extends State<_VideoLinkCard> {
   YoutubePlayerController? _ytController;
   late final VideoLinkInfo _info;
 
+  static bool get _isDesktop =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.windows ||
+          defaultTargetPlatform == TargetPlatform.linux ||
+          defaultTargetPlatform == TargetPlatform.macOS);
+
   @override
   void initState() {
     super.initState();
     _info = VideoLinkParser.parse(widget.url);
-    if (_info.platform == VideoPlatform.youtube && _info.videoId != null) {
+    // Skip embedding on desktop — WebView YouTube embeds are unreliable there
+    if (_info.platform == VideoPlatform.youtube &&
+        _info.videoId != null &&
+        !_isDesktop) {
       _ytController = YoutubePlayerController.fromVideoId(
         videoId: _info.videoId!,
         autoPlay: false,
@@ -363,59 +374,106 @@ class _VideoLinkCardState extends State<_VideoLinkCard> {
     super.dispose();
   }
 
+  void _openInBrowser() {
+    launchUrl(Uri.parse(widget.url), mode: LaunchMode.externalApplication);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    // Show embedded player with a fallback "Watch on YouTube" button
     if (_ytController != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: YoutubePlayer(controller: _ytController!),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: YoutubePlayer(
+              controller: _ytController!,
+              aspectRatio: 16 / 9,
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: _openInBrowser,
+              icon: const Icon(Icons.open_in_new, size: 16),
+              label: const Text('Watch on YouTube'),
+            ),
+          ),
+        ],
       );
     }
 
-    // Non-YouTube: show a tappable card with thumbnail/icon
-    final colorScheme = Theme.of(context).colorScheme;
+    // Fallback card for desktop, non-YouTube, or failed embeds
+    final isYouTube = _info.platform == VideoPlatform.youtube;
     final label = VideoLinkParser.platformLabel(_info.platform);
+    final thumbnailUrl = _info.thumbnailUrl;
 
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => launchUrl(
-          Uri.parse(widget.url),
-          mode: LaunchMode.externalApplication,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Icon(Icons.ondemand_video, size: 32, color: colorScheme.primary),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Watch on $label',
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      widget.url,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+        onTap: _openInBrowser,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (thumbnailUrl != null)
+              Image.network(
+                thumbnailUrl,
+                height: 180,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  height: 100,
+                  color: colorScheme.surfaceContainerHighest,
+                  child: Icon(
+                    Icons.ondemand_video,
+                    size: 48,
+                    color: colorScheme.primary,
+                  ),
                 ),
               ),
-              Icon(
-                Icons.open_in_new,
-                size: 18,
-                color: colorScheme.onSurfaceVariant,
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  if (!isYouTube || thumbnailUrl == null)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: Icon(
+                        Icons.ondemand_video,
+                        size: 32,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Watch on $label',
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          widget.url,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: colorScheme.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.open_in_new,
+                    size: 18,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
