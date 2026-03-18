@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import '../../auth/providers/auth_providers.dart';
 import '../../auth/services/biometric_service.dart';
 import '../../gemini/providers/gemini_providers.dart';
+import '../../gemini/services/gemini_service.dart';
 import '../../../presentation/theme/app_theme.dart';
 import '../providers/settings_providers.dart';
 
@@ -428,27 +429,14 @@ class _GeminiApiKeyTile extends ConsumerWidget {
 }
 
 class _GeminiModelTile extends ConsumerWidget {
-  static const _models = [
-    ('gemini-2.5-flash', 'Gemini 2.5 Flash', 'Latest, fast & capable'),
-    ('gemini-2.0-flash', 'Gemini 2.0 Flash', 'Fast & versatile'),
-    ('gemini-1.5-flash', 'Gemini 1.5 Flash', 'Lightweight & widely available'),
-    ('gemini-1.5-pro', 'Gemini 1.5 Pro', 'Advanced reasoning'),
-  ];
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentModel = ref.watch(geminiModelProvider);
-    final label =
-        _models
-            .where((m) => m.$1 == currentModel)
-            .map((m) => m.$2)
-            .firstOrNull ??
-        currentModel;
 
     return ListTile(
       leading: const Icon(Icons.smart_toy),
       title: const Text('Gemini Model'),
-      subtitle: Text(label),
+      subtitle: Text(currentModel),
       onTap: () => _showModelPicker(context, ref, currentModel),
     );
   }
@@ -456,26 +444,90 @@ class _GeminiModelTile extends ConsumerWidget {
   void _showModelPicker(BuildContext context, WidgetRef ref, String current) {
     showDialog(
       context: context,
-      builder: (ctx) => SimpleDialog(
-        title: const Text('Gemini Model'),
-        children: [
-          for (final (id, name, desc) in _models)
+      builder: (ctx) => _GeminiModelPickerDialog(
+        current: current,
+        onSelected: (id) {
+          final user = ref.read(currentUserProvider)!;
+          final updated = user.copyWith(
+            settings: user.settings.copyWith(geminiModel: id),
+          );
+          ref.read(authServiceProvider).updateProfile(updated);
+          ref.read(geminiServiceProvider).setModel(id);
+        },
+        geminiService: ref.read(geminiServiceProvider),
+      ),
+    );
+  }
+}
+
+class _GeminiModelPickerDialog extends StatefulWidget {
+  final String current;
+  final ValueChanged<String> onSelected;
+  final GeminiService geminiService;
+
+  const _GeminiModelPickerDialog({
+    required this.current,
+    required this.onSelected,
+    required this.geminiService,
+  });
+
+  @override
+  State<_GeminiModelPickerDialog> createState() =>
+      _GeminiModelPickerDialogState();
+}
+
+class _GeminiModelPickerDialogState extends State<_GeminiModelPickerDialog> {
+  List<({String id, String displayName})>? _models;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchModels();
+  }
+
+  Future<void> _fetchModels() async {
+    final models = await widget.geminiService.listModels();
+    if (mounted) {
+      setState(() {
+        _models = models.isEmpty ? null : models;
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SimpleDialog(
+      title: const Text('Gemini Model'),
+      children: [
+        if (_loading)
+          const Padding(
+            padding: EdgeInsets.all(24),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (_models == null)
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              'Could not fetch models. Check your API key.',
+              textAlign: TextAlign.center,
+            ),
+          )
+        else
+          for (final model in _models!)
             ListTile(
-              title: Text(name),
-              subtitle: Text(desc),
-              trailing: current == id ? const Icon(Icons.check) : null,
+              title: Text(model.displayName),
+              subtitle: Text(model.id),
+              trailing: widget.current == model.id
+                  ? const Icon(Icons.check)
+                  : null,
               onTap: () {
-                final user = ref.read(currentUserProvider)!;
-                final updated = user.copyWith(
-                  settings: user.settings.copyWith(geminiModel: id),
-                );
-                ref.read(authServiceProvider).updateProfile(updated);
-                ref.read(geminiServiceProvider).setModel(id);
-                Navigator.pop(ctx);
+                widget.onSelected(model.id);
+                Navigator.pop(context);
               },
             ),
-        ],
-      ),
+      ],
     );
   }
 }

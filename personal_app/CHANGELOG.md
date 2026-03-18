@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - Image upload to Firebase Storage no longer fails with "unauthorized" — force-refresh the ID token before upload to ensure the `inviteVerified` claim is present; show SnackBar on upload errors
 - YouTube video embeds no longer show error 150/152 on desktop — desktop platforms (Windows, macOS, Linux) now show a thumbnail card with "Watch on YouTube" button instead of the unreliable WebView embed; web and mobile still use the embedded player with a browser-fallback link
 - Currency picker reduced from 24 to 12 common currencies and now shows live EUR conversion rates fetched from the Frankfurter API (ECB data)
+- Gemini AI model picker now fetches available models from the API instead of using a hardcoded list — only models supporting content generation are shown
 
 ## [0.5.0] - 2026-03-15
 

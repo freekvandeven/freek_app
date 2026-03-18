@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:http/http.dart' as http;
 
 class GeminiService {
   static const defaultModel = 'gemini-2.0-flash';
@@ -28,6 +29,37 @@ class GeminiService {
       _modelName = model;
       _model = null;
       _chat = null;
+    }
+  }
+
+  /// Fetch available generative models from the Gemini API.
+  /// Returns a list of (modelId, displayName) pairs.
+  Future<List<({String id, String displayName})>> listModels() async {
+    if (_apiKey == null || _apiKey!.isEmpty) return [];
+    try {
+      final response = await http.get(
+        Uri.parse(
+          'https://generativelanguage.googleapis.com/v1beta/models?key=$_apiKey',
+        ),
+      );
+      if (response.statusCode != 200) return [];
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      final models = body['models'] as List<dynamic>;
+      return models
+          .where((m) {
+            final methods =
+                (m['supportedGenerationMethods'] as List<dynamic>?) ?? [];
+            return methods.contains('generateContent');
+          })
+          .map((m) {
+            final name = m['name'] as String; // "models/gemini-2.0-flash"
+            final id = name.replaceFirst('models/', '');
+            final displayName = m['displayName'] as String? ?? id;
+            return (id: id, displayName: displayName);
+          })
+          .toList();
+    } catch (_) {
+      return [];
     }
   }
 
