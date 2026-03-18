@@ -5,8 +5,14 @@ import '../../features/auth/services/biometric_service.dart';
 class LockScreen extends StatefulWidget {
   final Widget child;
   final bool enabled;
+  final VoidCallback? onSignOut;
 
-  const LockScreen({super.key, required this.child, required this.enabled});
+  const LockScreen({
+    super.key,
+    required this.child,
+    required this.enabled,
+    this.onSignOut,
+  });
 
   @override
   State<LockScreen> createState() => _LockScreenState();
@@ -15,6 +21,9 @@ class LockScreen extends StatefulWidget {
 class _LockScreenState extends State<LockScreen> with WidgetsBindingObserver {
   bool _locked = true;
   bool _authenticating = false;
+  // Prevents the resume handler from re-triggering the biometric dialog
+  // immediately after the user dismissed it.
+  bool _dismissed = false;
 
   @override
   void initState() {
@@ -37,11 +46,12 @@ class _LockScreenState extends State<LockScreen> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && widget.enabled && _locked) {
-      _authenticate();
-    }
     if (state == AppLifecycleState.paused && widget.enabled) {
       setState(() => _locked = true);
+      _dismissed = false; // Real background → allow auto-auth on resume
+    }
+    if (state == AppLifecycleState.resumed && widget.enabled && _locked) {
+      if (!_dismissed) _authenticate();
     }
   }
 
@@ -64,7 +74,13 @@ class _LockScreenState extends State<LockScreen> with WidgetsBindingObserver {
 
     final success = await BiometricService.authenticate();
     if (mounted) setState(() => _locked = !success);
+    if (!success) _dismissed = true;
     _authenticating = false;
+  }
+
+  void _manualUnlock() {
+    _dismissed = false;
+    _authenticate();
   }
 
   @override
@@ -103,10 +119,17 @@ class _LockScreenState extends State<LockScreen> with WidgetsBindingObserver {
                       ),
                       const SizedBox(height: 32),
                       FilledButton.icon(
-                        onPressed: _authenticate,
+                        onPressed: _manualUnlock,
                         icon: const Icon(Icons.fingerprint),
                         label: const Text('Unlock'),
                       ),
+                      if (widget.onSignOut != null) ...[
+                        const SizedBox(height: 16),
+                        TextButton(
+                          onPressed: widget.onSignOut,
+                          child: const Text('Sign Out'),
+                        ),
+                      ],
                     ],
                   ),
                 ),
