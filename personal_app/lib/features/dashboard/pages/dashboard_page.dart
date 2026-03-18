@@ -1,17 +1,78 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:personal_app/features/auth/providers/auth_providers.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
+import '../../../services/version_check_service.dart';
 
-class DashboardPage extends ConsumerWidget {
+class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends ConsumerState<DashboardPage> {
+  bool _versionChecked = false;
+
+  void _checkVersion() {
+    if (_versionChecked) return;
+    _versionChecked = true;
+
+    final status = ref.read(versionCheckProvider).valueOrNull;
+    if (status == null) return;
+
+    if (status.updateRequired) {
+      _showUpdateDialog(status, required: true);
+    } else if (status.updateAvailable) {
+      _showUpdateDialog(status, required: false);
+    }
+  }
+
+  void _showUpdateDialog(VersionStatus status, {required bool required}) {
+    showDialog(
+      context: context,
+      barrierDismissible: !required,
+      builder: (context) => AlertDialog(
+        title: Text(required ? 'Update Required' : 'Update Available'),
+        content: Text(
+          required
+              ? 'A new version (${status.latest ?? status.minRequired}) is required. '
+                    'Your current version (${status.current}) is no longer supported.'
+              : 'A new version (${status.latest}) is available. '
+                    'You are running ${status.current}.',
+        ),
+        actions: [
+          if (!required)
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Later'),
+            ),
+          FilledButton(
+            onPressed: () {
+              if (status.updateUrl != null) {
+                launchUrl(Uri.parse(status.updateUrl!));
+              }
+              if (!required) Navigator.of(context).pop();
+            },
+            child: const Text('Update'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
     final colorScheme = Theme.of(context).colorScheme;
+
+    // Listen for version check completion
+    ref.listen(versionCheckProvider, (_, next) {
+      if (next.hasValue) _checkVersion();
+    });
 
     return Scaffold(
       appBar: AppBar(

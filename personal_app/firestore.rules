@@ -30,6 +30,13 @@ service cloud.firestore {
         && request.auth.token.inviteVerified == true;
     }
 
+    // App config (version info, etc.) — read-only for authenticated users
+    match /appConfig/{document=**} {
+      allow read: if request.auth != null
+        && request.auth.token.inviteVerified == true;
+      allow write: if false;
+    }
+
     // Default deny: any path not matched above is rejected
   }
 }
