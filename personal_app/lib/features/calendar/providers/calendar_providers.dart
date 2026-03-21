@@ -109,3 +109,18 @@ final selectedDayEventsProvider = Provider<List<CalendarEvent>>((ref) {
   final eventsByDay = ref.watch(calendarEventsByDayProvider);
   return eventsByDay.valueOrNull?[day] ?? [];
 });
+
+/// Events for the current week (Monday–Sunday).
+final thisWeekEventsProvider = Provider<List<CalendarEvent>>((ref) {
+  final events = ref.watch(calendarEventsProvider).valueOrNull ?? [];
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  // Monday = 1, so subtract (weekday - 1) to get Monday
+  final monday = today.subtract(Duration(days: now.weekday - 1));
+  final sunday = monday.add(const Duration(days: 7));
+
+  return events.where((e) {
+    final d = DateTime(e.date.year, e.date.month, e.date.day);
+    return !d.isBefore(monday) && d.isBefore(sunday);
+  }).toList()..sort((a, b) => a.date.compareTo(b.date));
+});

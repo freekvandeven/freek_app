@@ -89,6 +89,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
             lastDay: DateTime.utc(2100, 12, 31),
             focusedDay: _focusedDay,
             calendarFormat: _calendarFormat,
+            startingDayOfWeek: StartingDayOfWeek.monday,
             selectedDayPredicate: (day) => isSameDay(selectedDay, day),
             eventLoader: (day) {
               final normalizedDay = DateTime(day.year, day.month, day.day);

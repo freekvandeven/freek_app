@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:personal_app/features/auth/providers/auth_providers.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import '../../../services/version_check_service.dart';
+import '../../calendar/models/calendar_event.dart';
+import '../../calendar/providers/calendar_providers.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -99,6 +102,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             ),
           ),
           const SizedBox(height: 24),
+          _buildThisWeek(context, ref),
+          const SizedBox(height: 24),
           _buildFeatureGrid(context, colorScheme),
           const SizedBox(height: 16),
           Center(
@@ -111,6 +116,95 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         ],
       ),
     );
+  }
+
+  Widget _buildThisWeek(BuildContext context, WidgetRef ref) {
+    final events = ref.watch(thisWeekEventsProvider);
+    if (events.isEmpty) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.date_range, size: 20, color: theme.colorScheme.primary),
+            const SizedBox(width: 8),
+            Text('This Week', style: theme.textTheme.titleMedium),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ...events.take(5).map((e) {
+          final eventDay = DateTime(e.date.year, e.date.month, e.date.day);
+          final isToday = eventDay == today;
+          final isPast = eventDay.isBefore(today);
+          final dayLabel = isToday ? 'Today' : DateFormat.E().format(e.date);
+
+          return ListTile(
+            dense: true,
+            visualDensity: VisualDensity.compact,
+            leading: CircleAvatar(
+              radius: 14,
+              backgroundColor: _eventColor(
+                e,
+              ).withValues(alpha: isPast ? 0.3 : 1.0),
+              child: Icon(_eventIcon(e.type), size: 14, color: Colors.white),
+            ),
+            title: Text(
+              e.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: isPast
+                  ? TextStyle(
+                      decoration: TextDecoration.lineThrough,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    )
+                  : null,
+            ),
+            trailing: Text(
+              dayLabel,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: isToday
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurfaceVariant,
+                fontWeight: isToday ? FontWeight.bold : null,
+              ),
+            ),
+            onTap: () => context.go('/calendar'),
+          );
+        }),
+        if (events.length > 5)
+          Padding(
+            padding: const EdgeInsets.only(left: 16),
+            child: TextButton(
+              onPressed: () => context.go('/calendar'),
+              child: Text('+${events.length - 5} more'),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Color _eventColor(CalendarEvent event) {
+    if (event.color != null) {
+      return Color(int.parse(event.color!));
+    }
+    return switch (event.type) {
+      EventType.task => Colors.orange,
+      EventType.finance => Colors.green,
+      EventType.custom => Colors.purple,
+    };
+  }
+
+  IconData _eventIcon(EventType type) {
+    return switch (type) {
+      EventType.task => Icons.check_circle_outline,
+      EventType.finance => Icons.attach_money,
+      EventType.custom => Icons.event,
+    };
   }
 
   Widget _buildFeatureGrid(BuildContext context, ColorScheme colorScheme) {
