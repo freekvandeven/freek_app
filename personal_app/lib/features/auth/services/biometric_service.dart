@@ -24,4 +24,14 @@ class BiometricService {
       return false;
     }
   }
+
+  /// Cancel any in-progress biometric authentication.
+  /// On Android this ensures a clean state before re-prompting.
+  static Future<void> stopAuthentication() async {
+    try {
+      await _auth.stopAuthentication();
+    } catch (_) {
+      // Not all platforms support stopping authentication
+    }
+  }
 }

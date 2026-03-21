@@ -73,13 +73,18 @@ class _LockScreenState extends State<LockScreen> with WidgetsBindingObserver {
     }
 
     final success = await BiometricService.authenticate();
+    _authenticating = false;
     if (mounted) setState(() => _locked = !success);
     if (!success) _dismissed = true;
-    _authenticating = false;
   }
 
-  void _manualUnlock() {
+  Future<void> _manualUnlock() async {
     _dismissed = false;
+    // Cancel any lingering biometric session before re-prompting.
+    // On Android, calling authenticate() immediately after dismissal may
+    // silently fail; stopAuthentication() ensures a clean state.
+    await BiometricService.stopAuthentication();
+    _authenticating = false;
     _authenticate();
   }
 
