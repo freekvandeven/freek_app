@@ -176,6 +176,13 @@ class SettingsPage extends ConsumerWidget {
             onTap: () => context.push('/settings/changelog'),
           ),
           ListTile(
+            leading: const Icon(Icons.developer_mode),
+            title: const Text('Developer'),
+            subtitle: const Text('Logs, debug info & tools'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings/developer'),
+          ),
+          ListTile(
             leading: Icon(
               Icons.logout,
               color: Theme.of(context).colorScheme.error,

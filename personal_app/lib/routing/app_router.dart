@@ -39,6 +39,7 @@ import '../features/recipes/pages/recipe_edit_page.dart';
 import '../features/recipes/pages/recipe_list_page.dart';
 import '../features/changelog/pages/changelog_page.dart';
 import '../features/settings/pages/data_export_page.dart';
+import '../features/settings/pages/developer_page.dart';
 import '../features/settings/pages/profile_page.dart';
 import '../features/settings/pages/settings_page.dart';
 import '../features/tasks/pages/task_edit_page.dart';
@@ -341,6 +342,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'change-password',
             builder: (context, state) => const ChangePasswordPage(),
+          ),
+          GoRoute(
+            path: 'developer',
+            builder: (context, state) => const DeveloperPage(),
           ),
         ],
       ),
