@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Settings update no longer fails with permission-denied — `updateProfile` now force-refreshes the ID token before Firestore writes and wraps the `publicProfiles` sync in a try-catch so that transient permission errors do not block saving user settings
 - Calendar now starts on Monday instead of Sunday
+- Profile image upload and Firebase reads no longer fail with permission errors — deployed updated Firestore and Storage security rules to production that support `publicProfiles`, `appConfig`, and profile picture storage paths
 
 ### Added
 - "This Week" section on the dashboard — shows up to 5 upcoming calendar events (tasks, finance, custom) for the current Mon–Sun week with color-coded icons, day labels, and tap-to-navigate
