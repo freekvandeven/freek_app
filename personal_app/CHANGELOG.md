@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - "This Week" section on the dashboard — shows up to 5 upcoming calendar events (tasks, finance, custom) for the current Mon–Sun week with color-coded icons, day labels, and tap-to-navigate
+- Network images are now cached locally using `cached_network_image` — reduces bandwidth, speeds up image loading, and shows images offline across recipes, profiles, conversations, and feedback
 
 ## [0.6.0] - 2026-03-18
 

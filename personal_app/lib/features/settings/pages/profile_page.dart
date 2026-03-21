@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -117,7 +118,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       radius: 48,
                       backgroundColor: colorScheme.primaryContainer,
                       backgroundImage: user.photoUrl != null
-                          ? NetworkImage(user.photoUrl!)
+                          ? CachedNetworkImageProvider(user.photoUrl!)
                           : null,
                       child: user.photoUrl == null
                           ? Text(

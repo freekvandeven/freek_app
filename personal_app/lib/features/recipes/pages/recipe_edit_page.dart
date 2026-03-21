@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -623,12 +624,12 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                               setState(() => _primaryImageIndex = index),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              _images[index],
+                            child: CachedNetworkImage(
+                              imageUrl: _images[index],
                               width: 80,
                               height: 80,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
+                              errorWidget: (_, __, ___) => Container(
                                 width: 80,
                                 height: 80,
                                 color: Colors.grey[300],

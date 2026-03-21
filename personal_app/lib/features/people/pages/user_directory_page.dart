@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -68,7 +69,7 @@ class UserDirectoryPage extends ConsumerWidget {
                 leading: CircleAvatar(
                   backgroundColor: colorScheme.primaryContainer,
                   backgroundImage: photoUrl != null
-                      ? NetworkImage(photoUrl)
+                      ? CachedNetworkImageProvider(photoUrl)
                       : null,
                   child: photoUrl == null
                       ? Text(

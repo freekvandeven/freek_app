@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -325,12 +326,12 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          _imageUrls[index],
+                        child: CachedNetworkImage(
+                          imageUrl: _imageUrls[index],
                           width: 120,
                           height: 120,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
+                          errorWidget: (_, __, ___) => Container(
                             width: 120,
                             height: 120,
                             color: Colors.grey[300],

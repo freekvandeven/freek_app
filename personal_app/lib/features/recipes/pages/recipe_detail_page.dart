@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart'
     show kIsWeb, TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/material.dart';
@@ -102,11 +103,11 @@ class RecipeDetailPage extends ConsumerWidget {
               child: recipe.images.length == 1
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        recipe.images.first,
+                      child: CachedNetworkImage(
+                        imageUrl: recipe.images.first,
                         width: double.infinity,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Center(
+                        errorWidget: (_, __, ___) => const Center(
                           child: Icon(Icons.broken_image, size: 48),
                         ),
                       ),
@@ -121,12 +122,12 @@ class RecipeDetailPage extends ConsumerWidget {
                           children: [
                             ClipRRect(
                               borderRadius: BorderRadius.circular(12),
-                              child: Image.network(
-                                recipe.images[index],
+                              child: CachedNetworkImage(
+                                imageUrl: recipe.images[index],
                                 width: 280,
                                 height: 200,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => const SizedBox(
+                                errorWidget: (_, __, ___) => const SizedBox(
                                   width: 280,
                                   child: Center(
                                     child: Icon(Icons.broken_image, size: 48),
@@ -266,12 +267,12 @@ class RecipeDetailPage extends ConsumerWidget {
                       const SizedBox(height: 8),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          entry.value.imageUrl!,
+                        child: CachedNetworkImage(
+                          imageUrl: entry.value.imageUrl!,
                           height: 150,
                           width: double.infinity,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                          errorWidget: (_, __, ___) => const SizedBox.shrink(),
                         ),
                       ),
                     ],
@@ -419,11 +420,11 @@ class _VideoLinkCardState extends State<_VideoLinkCard> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (thumbnailUrl != null)
-              Image.network(
-                thumbnailUrl,
+              CachedNetworkImage(
+                imageUrl: thumbnailUrl,
                 height: 180,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                errorWidget: (_, __, ___) => Container(
                   height: 100,
                   color: colorScheme.surfaceContainerHighest,
                   child: Icon(
