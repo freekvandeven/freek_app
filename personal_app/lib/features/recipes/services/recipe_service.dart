@@ -10,6 +10,8 @@ abstract class RecipeService {
   Future<Recipe> updateRecipe(Recipe recipe);
   Future<void> deleteRecipe(String id);
   Future<Recipe?> getRecipe(String id);
+  Future<List<String>> getAvailableTags();
+  Future<void> saveAvailableTags(List<String> tags);
 }
 
 class MockRecipeService implements RecipeService {
@@ -62,5 +64,19 @@ class MockRecipeService implements RecipeService {
       _key,
       jsonEncode(recipes.map((r) => r.toMap()).toList()),
     );
+  }
+
+  static const _tagsKey = 'mock_recipe_tags';
+
+  @override
+  Future<List<String>> getAvailableTags() async {
+    final json = await _prefs.getString(_tagsKey);
+    if (json == null) return [];
+    return (jsonDecode(json) as List).cast<String>();
+  }
+
+  @override
+  Future<void> saveAvailableTags(List<String> tags) async {
+    await _prefs.setString(_tagsKey, jsonEncode(tags));
   }
 }

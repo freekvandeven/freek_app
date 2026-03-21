@@ -85,3 +85,28 @@ final recipeTagsProvider = Provider<List<String>>((ref) {
   tags.sort();
   return tags;
 });
+
+final availableTagsProvider =
+    AsyncNotifierProvider<AvailableTagsNotifier, List<String>>(
+      AvailableTagsNotifier.new,
+    );
+
+class AvailableTagsNotifier extends AsyncNotifier<List<String>> {
+  RecipeService get _service => ref.read(recipeServiceProvider);
+
+  @override
+  Future<List<String>> build() async {
+    final saved = await _service.getAvailableTags();
+    final fromRecipes = ref.watch(recipeTagsProvider);
+    final merged = {...saved, ...fromRecipes}.toList()..sort();
+    return merged;
+  }
+
+  Future<void> addTag(String tag) async {
+    final current = state.valueOrNull ?? [];
+    if (current.contains(tag)) return;
+    final updated = [...current, tag]..sort();
+    state = AsyncData(updated);
+    await _service.saveAvailableTags(updated);
+  }
+}

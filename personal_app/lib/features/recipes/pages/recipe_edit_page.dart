@@ -27,6 +27,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
   final _sourceController = TextEditingController();
   final _notesController = TextEditingController();
   final _tagController = TextEditingController();
+  TextEditingController? _autocompleteTagController;
   List<Ingredient> _ingredients = [];
   List<RecipeInstruction> _instructions = [];
   List<String> _tags = [];
@@ -59,7 +60,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
         _notesController.text = recipe.notes ?? '';
         _ingredients = List.from(recipe.ingredients);
         _instructions = List.from(recipe.instructions);
-        _tags = List.from(recipe.tags);
+        _tags = recipe.tags.map((t) => t.toLowerCase()).toList();
         _images = List.from(recipe.images);
         _primaryImageIndex = recipe.primaryImageIndex;
         _videoLinks = List.from(recipe.videoLinks);
@@ -366,11 +367,13 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
   }
 
   void _addTag() {
-    final text = _tagController.text.trim();
+    final ctrl = _autocompleteTagController ?? _tagController;
+    final text = ctrl.text.trim().toLowerCase();
     if (text.isNotEmpty && !_tags.contains(text)) {
       setState(() => _tags.add(text));
-      _tagController.clear();
+      ref.read(availableTagsProvider.notifier).addTag(text);
     }
+    ctrl.clear();
   }
 
   void _addVideoLink() {
@@ -469,10 +472,35 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
             Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _tagController,
-                    decoration: const InputDecoration(labelText: 'Add tag'),
-                    onSubmitted: (_) => _addTag(),
+                  child: Autocomplete<String>(
+                    optionsBuilder: (textEditingValue) {
+                      final input = textEditingValue.text.toLowerCase().trim();
+                      if (input.isEmpty) return const Iterable<String>.empty();
+                      final available =
+                          ref.read(availableTagsProvider).valueOrNull ?? [];
+                      return available.where(
+                        (t) => t.contains(input) && !_tags.contains(t),
+                      );
+                    },
+                    onSelected: (tag) {
+                      if (!_tags.contains(tag)) {
+                        setState(() => _tags.add(tag));
+                        ref.read(availableTagsProvider.notifier).addTag(tag);
+                      }
+                      _autocompleteTagController?.clear();
+                    },
+                    fieldViewBuilder:
+                        (context, controller, focusNode, onFieldSubmitted) {
+                          _autocompleteTagController = controller;
+                          return TextField(
+                            controller: controller,
+                            focusNode: focusNode,
+                            decoration: const InputDecoration(
+                              labelText: 'Add tag',
+                            ),
+                            onSubmitted: (_) => _addTag(),
+                          );
+                        },
                   ),
                 ),
                 IconButton(icon: const Icon(Icons.add), onPressed: _addTag),

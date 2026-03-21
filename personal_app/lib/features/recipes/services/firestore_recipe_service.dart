@@ -42,4 +42,22 @@ class FirestoreRecipeService implements RecipeService {
     if (!doc.exists || doc.data() == null) return null;
     return Recipe.fromMap(doc.data()!);
   }
+
+  DocumentReference<Map<String, dynamic>> get _tagsDoc => _firestore
+      .collection('users')
+      .doc(_userId)
+      .collection('meta')
+      .doc('recipeTags');
+
+  @override
+  Future<List<String>> getAvailableTags() async {
+    final doc = await _tagsDoc.get();
+    if (!doc.exists || doc.data() == null) return [];
+    return (doc.data()!['tags'] as List?)?.cast<String>() ?? [];
+  }
+
+  @override
+  Future<void> saveAvailableTags(List<String> tags) async {
+    await _tagsDoc.set({'tags': tags});
+  }
 }
