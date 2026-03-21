@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../presentation/widgets/quick_actions_title.dart';
 
@@ -37,6 +38,10 @@ class PublicProfilePage extends ConsumerWidget {
           final displayName = data['displayName'] as String? ?? 'Anonymous';
           final bio = data['bio'] as String?;
           final photoUrl = data['photoUrl'] as String?;
+          final createdAtStr = data['createdAt'] as String?;
+          final createdAt = createdAtStr != null
+              ? DateTime.tryParse(createdAtStr)
+              : null;
 
           return ListView(
             padding: const EdgeInsets.all(24),
@@ -73,6 +78,17 @@ class PublicProfilePage extends ConsumerWidget {
                       color: colorScheme.onSurfaceVariant,
                     ),
                     textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+              if (createdAt != null) ...[
+                const SizedBox(height: 16),
+                Center(
+                  child: Text(
+                    'Member since ${DateFormat.yMMMM().format(createdAt)}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ],

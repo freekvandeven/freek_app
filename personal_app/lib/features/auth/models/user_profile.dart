@@ -123,6 +123,7 @@ class UserProfile {
     'displayName': displayName,
     'bio': bio,
     'photoUrl': photoUrl,
+    'createdAt': createdAt.toIso8601String(),
   };
 
   factory UserProfile.fromMap(Map<String, dynamic> map) {
