@@ -47,6 +47,7 @@ final feedbackTypeFilterProvider = StateProvider<FeedbackType?>((_) => null);
 final feedbackStatusFilterProvider = StateProvider<FeedbackStatus?>(
   (_) => null,
 );
+final feedbackManualFilterProvider = StateProvider<bool?>((_) => null);
 
 final filteredFeedbackProvider = Provider<AsyncValue<List<FeedbackEntry>>>((
   ref,
@@ -54,6 +55,7 @@ final filteredFeedbackProvider = Provider<AsyncValue<List<FeedbackEntry>>>((
   final listAsync = ref.watch(feedbackListProvider);
   final typeFilter = ref.watch(feedbackTypeFilterProvider);
   final statusFilter = ref.watch(feedbackStatusFilterProvider);
+  final manualFilter = ref.watch(feedbackManualFilterProvider);
 
   return listAsync.whenData((entries) {
     var filtered = entries;
@@ -62,6 +64,9 @@ final filteredFeedbackProvider = Provider<AsyncValue<List<FeedbackEntry>>>((
     }
     if (statusFilter != null) {
       filtered = filtered.where((e) => e.status == statusFilter).toList();
+    }
+    if (manualFilter != null) {
+      filtered = filtered.where((e) => e.isManual == manualFilter).toList();
     }
     return filtered;
   });

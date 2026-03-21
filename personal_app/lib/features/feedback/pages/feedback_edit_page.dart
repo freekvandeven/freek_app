@@ -26,6 +26,7 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
   FeedbackType _type = FeedbackType.wish;
   FeedbackStatus _status = FeedbackStatus.open;
   bool _isPrivate = false;
+  bool _isManual = false;
   bool _isLoading = true;
   String? _attachedLogs;
   List<String> _imageUrls = [];
@@ -57,6 +58,7 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
         _type = entry.type;
         _status = entry.status;
         _isPrivate = entry.isPrivate;
+        _isManual = entry.isManual;
         _attachedLogs = entry.attachedLogs;
         _imageUrls = List<String>.from(entry.imageUrls);
         _isLoading = false;
@@ -86,6 +88,7 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
           description: _descriptionController.text.trim(),
           status: _status,
           isPrivate: _isPrivate,
+          isManual: _isManual,
           attachedLogs: _attachedLogs,
           clearAttachedLogs: _attachedLogs == null,
           imageUrls: _imageUrls,
@@ -98,6 +101,7 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim(),
           isPrivate: _isPrivate,
+          isManual: _isManual,
           userId: userId,
           attachedLogs: _attachedLogs,
           imageUrls: _imageUrls,
@@ -264,6 +268,14 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
               subtitle: const Text('Only visible to you'),
               value: _isPrivate,
               onChanged: (v) => setState(() => _isPrivate = v),
+            ),
+            SwitchListTile(
+              title: const Text('Manual'),
+              subtitle: const Text(
+                'Manually handled — excluded from AI export',
+              ),
+              value: _isManual,
+              onChanged: (v) => setState(() => _isManual = v),
             ),
             const SizedBox(height: 8),
             ListTile(

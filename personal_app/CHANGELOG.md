@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 - "This Week" section on the dashboard — shows up to 5 upcoming calendar events (tasks, finance, custom) for the current Mon–Sun week with color-coded icons, day labels, and tap-to-navigate
 - Network images are now cached locally using `cached_network_image` — reduces bandwidth, speeds up image loading, and shows images offline across recipes, profiles, conversations, and feedback
 - Recipe tag management — tags are auto-lowercased, available tags are persisted in a separate Firestore document (`meta/recipeTags`), and the tag input field shows autocomplete suggestions from previously used tags
+- Manual feedback option — feedback entries can be marked as "Manual" to indicate they are handled outside the app; manual entries are excluded from clipboard/AI export and can be filtered in the list view
 
 ## [0.6.0] - 2026-03-18
 

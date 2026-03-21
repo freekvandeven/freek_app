@@ -14,6 +14,7 @@ class FeedbackEntry {
   final String? userId;
   final String? attachedLogs;
   final List<String> imageUrls;
+  final bool isManual;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -24,6 +25,7 @@ class FeedbackEntry {
     required this.description,
     this.status = FeedbackStatus.open,
     this.isPrivate = false,
+    this.isManual = false,
     this.userId,
     this.attachedLogs,
     this.imageUrls = const [],
@@ -39,6 +41,7 @@ class FeedbackEntry {
     String? description,
     FeedbackStatus? status,
     bool? isPrivate,
+    bool? isManual,
     String? attachedLogs,
     bool clearAttachedLogs = false,
     List<String>? imageUrls,
@@ -51,6 +54,7 @@ class FeedbackEntry {
       description: description ?? this.description,
       status: status ?? this.status,
       isPrivate: isPrivate ?? this.isPrivate,
+      isManual: isManual ?? this.isManual,
       userId: userId,
       attachedLogs: clearAttachedLogs
           ? null
@@ -68,6 +72,7 @@ class FeedbackEntry {
     'description': description,
     'status': status.name,
     'isPrivate': isPrivate,
+    'isManual': isManual,
     'userId': userId,
     'attachedLogs': attachedLogs,
     'imageUrls': imageUrls,
@@ -82,6 +87,7 @@ class FeedbackEntry {
     description: map['description'] as String,
     status: FeedbackStatus.values.byName(map['status'] as String),
     isPrivate: map['isPrivate'] as bool? ?? false,
+    isManual: map['isManual'] as bool? ?? false,
     userId: map['userId'] as String?,
     attachedLogs: map['attachedLogs'] as String?,
     imageUrls: (map['imageUrls'] as List<dynamic>?)?.cast<String>() ?? const [],

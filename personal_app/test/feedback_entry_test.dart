@@ -12,6 +12,7 @@ void main() {
       description: 'When I tap sign in, the app freezes.',
       status: FeedbackStatus.open,
       isPrivate: true,
+      isManual: true,
       userId: 'user-123',
       attachedLogs: 'Error: null pointer',
       imageUrls: ['https://example.com/screenshot.png'],
@@ -30,6 +31,7 @@ void main() {
       expect(restored.description, 'When I tap sign in, the app freezes.');
       expect(restored.status, FeedbackStatus.open);
       expect(restored.isPrivate, isTrue);
+      expect(restored.isManual, isTrue);
       expect(restored.userId, 'user-123');
       expect(restored.attachedLogs, 'Error: null pointer');
       expect(restored.imageUrls, ['https://example.com/screenshot.png']);
@@ -48,6 +50,7 @@ void main() {
         'updatedAt': now.toIso8601String(),
       });
       expect(entry.isPrivate, isFalse);
+      expect(entry.isManual, isFalse);
       expect(entry.imageUrls, isEmpty);
       expect(entry.attachedLogs, isNull);
     });

@@ -11,8 +11,11 @@ class FeedbackListPage extends ConsumerWidget {
   const FeedbackListPage({super.key});
 
   void _copyAllToClipboard(BuildContext context, List<FeedbackEntry> entries) {
-    final bugs = entries.where((e) => e.type == FeedbackType.bug).toList();
-    final wishes = entries.where((e) => e.type == FeedbackType.wish).toList();
+    final exportable = entries.where((e) => !e.isManual).toList();
+    final bugs = exportable.where((e) => e.type == FeedbackType.bug).toList();
+    final wishes = exportable
+        .where((e) => e.type == FeedbackType.wish)
+        .toList();
 
     final buffer = StringBuffer();
     buffer.writeln('# Freek App — Feedback & Improvement Instructions');
@@ -130,7 +133,8 @@ class FeedbackListPage extends ConsumerWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Copied ${entries.length} feedback item${entries.length == 1 ? '' : 's'} to clipboard',
+          'Copied ${exportable.length} feedback item${exportable.length == 1 ? '' : 's'} to clipboard'
+          '${entries.length != exportable.length ? ' (${entries.length - exportable.length} manual excluded)' : ''}',
         ),
       ),
     );
@@ -141,6 +145,7 @@ class FeedbackListPage extends ConsumerWidget {
     final entriesAsync = ref.watch(filteredFeedbackProvider);
     final typeFilter = ref.watch(feedbackTypeFilterProvider);
     final statusFilter = ref.watch(feedbackStatusFilterProvider);
+    final manualFilter = ref.watch(feedbackManualFilterProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -169,6 +174,12 @@ class FeedbackListPage extends ConsumerWidget {
                     FeedbackType.bug;
               } else if (value == 'all_status') {
                 ref.read(feedbackStatusFilterProvider.notifier).state = null;
+              } else if (value == 'all_manual') {
+                ref.read(feedbackManualFilterProvider.notifier).state = null;
+              } else if (value == 'manual_only') {
+                ref.read(feedbackManualFilterProvider.notifier).state = true;
+              } else if (value == 'non_manual') {
+                ref.read(feedbackManualFilterProvider.notifier).state = false;
               } else {
                 ref.read(feedbackStatusFilterProvider.notifier).state =
                     FeedbackStatus.values.byName(value);
@@ -204,6 +215,23 @@ class FeedbackListPage extends ConsumerWidget {
                   checked: statusFilter == s,
                   child: Text(s.name[0].toUpperCase() + s.name.substring(1)),
                 ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(enabled: false, child: Text('Source')),
+              CheckedPopupMenuItem(
+                value: 'all_manual',
+                checked: manualFilter == null,
+                child: const Text('All'),
+              ),
+              CheckedPopupMenuItem(
+                value: 'manual_only',
+                checked: manualFilter == true,
+                child: const Text('Manual only'),
+              ),
+              CheckedPopupMenuItem(
+                value: 'non_manual',
+                checked: manualFilter == false,
+                child: const Text('Non-manual only'),
+              ),
             ],
           ),
         ],
@@ -258,7 +286,8 @@ class _FeedbackTile extends ConsumerWidget {
       subtitle: Text(
         '${entry.status.name[0].toUpperCase()}${entry.status.name.substring(1)}'
         ' · ${entry.createdAt.toIso8601String().substring(0, 10)}'
-        '${entry.isPrivate ? ' · Private' : ''}',
+        '${entry.isPrivate ? ' · Private' : ''}'
+        '${entry.isManual ? ' · Manual' : ''}',
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
