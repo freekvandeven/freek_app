@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.0] - 2026-03-19
+
+### Fixed
+- Settings update no longer fails with permission-denied — `updateProfile` now force-refreshes the ID token before Firestore writes and wraps the `publicProfiles` sync in a try-catch so that transient permission errors do not block saving user settings
+
 ## [0.6.0] - 2026-03-18
 
 ### Fixed

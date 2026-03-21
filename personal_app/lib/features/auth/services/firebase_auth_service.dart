@@ -162,12 +162,22 @@ class FirebaseAuthService implements AuthService {
 
   @override
   Future<void> updateProfile(UserProfile profile) async {
+    // Force-refresh the ID token so the inviteVerified claim is present.
+    await _auth.currentUser?.getIdToken(true);
+
     await _saveProfile(profile);
+
     // Sync public-facing profile data so other users can discover this user.
-    await _firestore
-        .collection('publicProfiles')
-        .doc(profile.id)
-        .set(profile.toPublicMap());
+    // Non-critical — don't let a transient permission error block profile saves.
+    try {
+      await _firestore
+          .collection('publicProfiles')
+          .doc(profile.id)
+          .set(profile.toPublicMap());
+    } catch (_) {
+      // publicProfiles sync failed — will retry on next profile update
+    }
+
     if (_currentUser?.id == profile.id) {
       _currentUser = profile;
       _authStateController.add(profile);
