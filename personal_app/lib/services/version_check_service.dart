@@ -52,6 +52,10 @@ class VersionStatus {
   bool get updateAvailable =>
       latest != null && _compareVersions(current, latest!) < 0;
 
+  /// True when the running build is ahead of the latest stable release.
+  bool get isDevBuild =>
+      latest != null && _compareVersions(current, latest!) > 0;
+
   /// Returns negative if a < b, 0 if equal, positive if a > b.
   static int _compareVersions(String a, String b) {
     final aParts = a.split('.').map(int.tryParse).toList();

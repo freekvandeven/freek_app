@@ -11,6 +11,7 @@ import '../../auth/services/biometric_service.dart';
 import '../../gemini/providers/gemini_providers.dart';
 import '../../gemini/services/gemini_service.dart';
 import '../../../presentation/theme/app_theme.dart';
+import '../../../services/version_check_service.dart';
 import '../providers/settings_providers.dart';
 
 class SettingsPage extends ConsumerWidget {
@@ -171,7 +172,9 @@ class SettingsPage extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.info_outline),
             title: const Text('App Version'),
-            subtitle: const Text('0.5.0'),
+            subtitle: Text(
+              ref.watch(versionCheckProvider).valueOrNull?.current ?? '...',
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/settings/changelog'),
           ),

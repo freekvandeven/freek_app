@@ -2,23 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.7.0] - 2026-03-19
-
-### Fixed
-- Settings update no longer fails with permission-denied — `updateProfile` now force-refreshes the ID token before Firestore writes and wraps the `publicProfiles` sync in a try-catch so that transient permission errors do not block saving user settings
-- Calendar now starts on Monday instead of Sunday
-- Profile image upload and Firebase reads no longer fail with permission errors — deployed updated Firestore and Storage security rules to production that support `publicProfiles`, `appConfig`, and profile picture storage paths
-- Biometric unlock button now reliably re-prompts on Android after dismissal — calls `stopAuthentication()` before re-authenticating to clear stale biometric session state
-
-### Added
-- "This Week" section on the dashboard — shows up to 5 upcoming calendar events (tasks, finance, custom) for the current Mon–Sun week with color-coded icons, day labels, and tap-to-navigate
-- Network images are now cached locally using `cached_network_image` — reduces bandwidth, speeds up image loading, and shows images offline across recipes, profiles, conversations, and feedback
-- Recipe tag management — tags are auto-lowercased, available tags are persisted in a separate Firestore document (`meta/recipeTags`), and the tag input field shows autocomplete suggestions from previously used tags
-- Manual feedback option — feedback entries can be marked as "Manual" to indicate they are handled outside the app; manual entries are excluded from clipboard/AI export and can be filtered in the list view
-- Developer page in Settings — shows app info, Firebase auth details (UID, custom claims), debug actions (force token refresh, clear image cache), and a live scrollable log viewer with level filtering and clipboard export
-- Public profile now includes `createdAt` (member since date) — synced to the `publicProfiles` Firestore collection and shown on the public profile page
-
-## [0.6.0] - 2026-03-18
+## [0.6.0] - 2026-03-19
 
 ### Fixed
 - Lock screen no longer wipes form state — biometric lock overlay now keeps the app widget tree mounted so in-progress form input is preserved after unlock
@@ -27,6 +11,10 @@ All notable changes to this project will be documented in this file.
 - Currency picker reduced from 24 to 12 common currencies and now shows live EUR conversion rates fetched from the Frankfurter API (ECB data)
 - Gemini AI model picker now fetches available models from the API instead of using a hardcoded list — only models supporting content generation are shown
 - Dismissing the biometric prompt no longer causes an infinite re-prompt loop — the lock screen stays visible with manual Unlock and Sign Out buttons instead of repeatedly triggering the system dialog
+- Settings update no longer fails with permission-denied — `updateProfile` now force-refreshes the ID token before Firestore writes and wraps the `publicProfiles` sync in a try-catch so that transient permission errors do not block saving user settings
+- Calendar now starts on Monday instead of Sunday
+- Profile image upload and Firebase reads no longer fail with permission errors — deployed updated Firestore and Storage security rules to production that support `publicProfiles`, `appConfig`, and profile picture storage paths
+- Biometric unlock button now reliably re-prompts on Android after dismissal — calls `stopAuthentication()` before re-authenticating to clear stale biometric session state
 
 ### Added
 - Public profiles — profile data (display name, bio, photo) is synced to a `publicProfiles` Firestore collection readable by all verified users; private data (email, phone, settings) stays in the user's own document
@@ -36,6 +24,13 @@ All notable changes to this project will be documented in this file.
 - Version check at startup — the app reads `appConfig/version` from Firestore and shows a dialog when an update is available or required; includes "Update" and "Later" actions with a configurable download URL
 - Dashboard now shows all features — added Conversations and People tiles to the home screen grid alongside existing entries
 - "What's New" link on the dashboard — navigates to the changelog page so users can quickly see recent changes
+- "This Week" section on the dashboard — shows up to 5 upcoming calendar events (tasks, finance, custom) for the current Mon–Sun week with color-coded icons, day labels, and tap-to-navigate
+- Network images are now cached locally using `cached_network_image` — reduces bandwidth, speeds up image loading, and shows images offline across recipes, profiles, conversations, and feedback
+- Recipe tag management — tags are auto-lowercased, available tags are persisted in a separate Firestore document (`meta/recipeTags`), and the tag input field shows autocomplete suggestions from previously used tags
+- Manual feedback option — feedback entries can be marked as "Manual" to indicate they are handled outside the app; manual entries are excluded from clipboard/AI export and can be filtered in the list view
+- Developer page in Settings — shows app info, Firebase auth details (UID, custom claims), debug actions (force token refresh, clear image cache), and a live scrollable log viewer with level filtering and clipboard export
+- Public profile now includes `createdAt` (member since date) — synced to the `publicProfiles` Firestore collection and shown on the public profile page
+- Dev build indicator — app bar shows a "DEV" badge when the running version is ahead of the latest stable release in Firebase
 
 ## [0.5.0] - 2026-03-15
 

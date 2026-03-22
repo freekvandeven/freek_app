@@ -79,7 +79,36 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: QuickActionsTitle(child: Text('Personal App')),
+        title: QuickActionsTitle(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Personal App'),
+              if (ref.watch(versionCheckProvider).valueOrNull?.isDevBuild ??
+                  false) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorScheme.tertiary,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'DEV',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onTertiary,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),

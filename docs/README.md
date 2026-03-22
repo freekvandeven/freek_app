@@ -30,7 +30,8 @@ docs/
     ├── ADR_template.md                          # Template for new ADRs
     ├── ADR_001_security_model.md                # Hybrid encryption, multi-layer auth, secrets
     ├── ADR_002_cicd_pipeline.md                 # GitHub Actions, conventional commits, tag deploys
-    └── ADR_003_forkability.md                   # Config-driven branding, .env approach
+    ├── ADR_003_forkability.md                   # Config-driven branding, .env approach
+    └── ADR_004_release_process.md               # Release workflow, version scheme, dev builds
 ```
 
 ## How to Use
