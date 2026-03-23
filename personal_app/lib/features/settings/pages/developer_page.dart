@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/app_config.dart';
 import '../../../services/log_service.dart';
+import 'test_data_page.dart';
 
 class DeveloperPage extends ConsumerStatefulWidget {
   const DeveloperPage({super.key});
@@ -154,6 +155,15 @@ class _DeveloperPageState extends ConsumerState<DeveloperPage> {
                   PaintingBinding.instance.imageCache.clearLiveImages();
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Image cache cleared')),
+                  );
+                },
+              ),
+              FilledButton.tonalIcon(
+                icon: const Icon(Icons.science, size: 18),
+                label: const Text('Generate Test Data'),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const TestDataPage()),
                   );
                 },
               ),

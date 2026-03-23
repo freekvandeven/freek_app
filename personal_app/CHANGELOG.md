@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- Test data generation on the developer page — select categories and number of items to create realistic sample data for tasks, recipes, transactions, categories, assets, calendar events, inventory items, feedback, knowledge pages, and conversations
 - Feedback reference IDs — each feedback item gets a unique reference ID (e.g., `BUG-0001`, `WISH-0003`) auto-generated on creation
 - AI feedback summaries — cloud function (`updateFeedbackSummary`) accepts AI-generated summaries for feedback items via API key authentication; summaries are visible on the feedback edit page
 - Bash script (`scripts/update-feedback-summary.sh`) for submitting AI summaries from the command line (works with or without `jq`)
