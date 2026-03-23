@@ -84,6 +84,38 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Check for unsaved tag text.
+    final tagCtrl = _autocompleteTagController ?? _tagController;
+    final pendingTag = tagCtrl.text.trim().toLowerCase();
+    if (pendingTag.isNotEmpty) {
+      final action = await showDialog<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Unsaved Tag'),
+          content: Text(
+            'You typed "$pendingTag" in the tag field but didn\'t add it. '
+            'Would you like to add it before saving?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'cancel'),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'discard'),
+              child: const Text('Discard'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, 'add'),
+              child: const Text('Add Tag'),
+            ),
+          ],
+        ),
+      );
+      if (action == null || action == 'cancel') return;
+      if (action == 'add') _addTag();
+    }
+
     final description = _descriptionController.text.trim();
     final source = _sourceController.text.trim();
     final notes = _notesController.text.trim();

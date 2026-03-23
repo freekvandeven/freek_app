@@ -11,6 +11,9 @@ All notable changes to this project will be documented in this file.
 - Copilot instructions (`.github/copilot-instructions.md`) to guide AI to submit summaries after completing each feedback item
 - Feedback list shows reference IDs and robot emoji indicator when an AI summary is available
 
+### Fixed
+- Recipe edit page now warns the user when there is unsaved text in the tag field before saving, with options to add the tag, discard it, or cancel
+
 ## [0.6.0] - 2026-03-19
 
 ### Fixed
