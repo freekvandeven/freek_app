@@ -37,10 +37,21 @@ SUMMARY="$2"
 
 FUNCTION_URL="https://us-central1-freek-personal-app.cloudfunctions.net/updateFeedbackSummary"
 
+# Build JSON payload. Use jq if available, otherwise escape manually.
+if command -v jq &>/dev/null; then
+  JSON_BODY=$(jq -n --arg ref "$REF_ID" --arg sum "$SUMMARY" '{referenceId: $ref, summary: $sum}')
+else
+  # Escape backslashes, double quotes, and newlines for JSON.
+  escape_json() {
+    printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e ':a' -e 'N' -e '$!ba' -e 's/\n/\\n/g'
+  }
+  JSON_BODY="{\"referenceId\":\"$(escape_json "$REF_ID")\",\"summary\":\"$(escape_json "$SUMMARY")\"}"
+fi
+
 RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$FUNCTION_URL" \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
-  -d "$(jq -n --arg ref "$REF_ID" --arg sum "$SUMMARY" '{referenceId: $ref, summary: $sum}')")
+  -d "$JSON_BODY")
 
 HTTP_CODE=$(echo "$RESPONSE" | tail -1)
 BODY=$(echo "$RESPONSE" | head -n -1)

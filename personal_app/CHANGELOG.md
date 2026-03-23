@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - Feedback reference IDs — each feedback item gets a unique reference ID (e.g., `BUG-0001`, `WISH-0003`) auto-generated on creation
 - AI feedback summaries — cloud function (`updateFeedbackSummary`) accepts AI-generated summaries for feedback items via API key authentication; summaries are visible on the feedback edit page
-- Bash script (`scripts/update-feedback-summary.sh`) for submitting AI summaries from the command line
+- Bash script (`scripts/update-feedback-summary.sh`) for submitting AI summaries from the command line (works with or without `jq`)
 - Copilot instructions (`.github/copilot-instructions.md`) to guide AI to submit summaries after completing each feedback item
 - Feedback list shows reference IDs and robot emoji indicator when an AI summary is available
 
