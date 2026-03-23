@@ -28,6 +28,25 @@ class FeedbackListNotifier extends AsyncNotifier<List<FeedbackEntry>> {
   }
 
   Future<void> addEntry(FeedbackEntry entry) async {
+    // Auto-generate reference ID if not set.
+    if (entry.referenceId == null) {
+      final entries = await ref.read(feedbackServiceProvider).getEntries();
+      final prefix = entry.type == FeedbackType.bug ? 'BUG' : 'WISH';
+      final sameType = entries.where((e) => e.type == entry.type).toList();
+      int maxNum = 0;
+      for (final e in sameType) {
+        if (e.referenceId != null) {
+          final parts = e.referenceId!.split('-');
+          if (parts.length == 2) {
+            final num = int.tryParse(parts[1]) ?? 0;
+            if (num > maxNum) maxNum = num;
+          }
+        }
+      }
+      entry = entry.copyWith(
+        referenceId: '$prefix-${(maxNum + 1).toString().padLeft(4, '0')}',
+      );
+    }
     await ref.read(feedbackServiceProvider).addEntry(entry);
     ref.invalidateSelf();
   }

@@ -1,4 +1,5 @@
-import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { onCall, onRequest, HttpsError } from "firebase-functions/v2/https";
+import { defineSecret } from "firebase-functions/params";
 import { initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
@@ -153,3 +154,94 @@ export const setInviteVerifiedClaim = onCall(async (request) => {
 
   return { success: true };
 });
+
+// --- Feedback AI Summary ---
+
+const feedbackApiKey = defineSecret("FEEDBACK_API_KEY");
+
+/**
+ * HTTP endpoint: updates a feedback document with an AI-generated summary.
+ *
+ * Authentication: Bearer token matching the FEEDBACK_API_KEY secret.
+ *
+ * POST body: { referenceId: string, summary: string }
+ *
+ * Searches both public (`feedback/`) and all user-private
+ * (`users/{uid}/feedback/`) collections for a document whose
+ * `referenceId` field matches the provided value.
+ */
+export const updateFeedbackSummary = onRequest(
+  { secrets: [feedbackApiKey] },
+  async (req, res) => {
+    if (req.method !== "POST") {
+      res.status(405).json({ error: "Method not allowed" });
+      return;
+    }
+
+    const auth = req.headers.authorization;
+    if (!auth || auth !== `Bearer ${feedbackApiKey.value()}`) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const { referenceId, summary } = req.body;
+    if (
+      typeof referenceId !== "string" ||
+      !referenceId.trim() ||
+      typeof summary !== "string" ||
+      !summary.trim()
+    ) {
+      res
+        .status(400)
+        .json({ error: "referenceId and summary are required strings." });
+      return;
+    }
+
+    const db = getFirestore();
+    const trimmedRef = referenceId.trim();
+    const trimmedSummary = summary.trim();
+
+    // Search public feedback collection first.
+    const publicSnap = await db
+      .collection("feedback")
+      .where("referenceId", "==", trimmedRef)
+      .limit(1)
+      .get();
+
+    if (!publicSnap.empty) {
+      const docRef = publicSnap.docs[0].ref;
+      await docRef.update({
+        aiSummary: trimmedSummary,
+        updatedAt: new Date().toISOString(),
+      });
+      res.json({ success: true, collection: "feedback", id: docRef.id });
+      return;
+    }
+
+    // Search all users' private feedback collections.
+    const usersSnap = await db.collection("users").get();
+    for (const userDoc of usersSnap.docs) {
+      const privateSnap = await userDoc.ref
+        .collection("feedback")
+        .where("referenceId", "==", trimmedRef)
+        .limit(1)
+        .get();
+
+      if (!privateSnap.empty) {
+        const docRef = privateSnap.docs[0].ref;
+        await docRef.update({
+          aiSummary: trimmedSummary,
+          updatedAt: new Date().toISOString(),
+        });
+        res.json({
+          success: true,
+          collection: `users/${userDoc.id}/feedback`,
+          id: docRef.id,
+        });
+        return;
+      }
+    }
+
+    res.status(404).json({ error: `No feedback found with referenceId: ${trimmedRef}` });
+  }
+);

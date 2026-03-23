@@ -57,6 +57,15 @@ class FeedbackListPage extends ConsumerWidget {
       '`feat: add recipe image upload via Firebase Storage`). '
       'Do NOT batch multiple items into a single commit.',
     );
+    buffer.writeln(
+      '7. **Submit AI summary** — After committing, run the following command '
+      'to record what was done for this item (replace the summary with your own):',
+    );
+    buffer.writeln('   ```bash');
+    buffer.writeln(
+      '   ./scripts/update-feedback-summary.sh <REFERENCE_ID> "<Brief summary of changes made>"',
+    );
+    buffer.writeln('   ```');
     buffer.writeln();
     buffer.writeln('Each item = one commit. Keep commits small and focused.');
     buffer.writeln();
@@ -65,7 +74,8 @@ class FeedbackListPage extends ConsumerWidget {
       buffer.writeln('## Bugs (${bugs.length})');
       buffer.writeln();
       for (final bug in bugs) {
-        buffer.writeln('### [Bug] ${bug.title}');
+        final ref = bug.referenceId != null ? ' (${bug.referenceId})' : '';
+        buffer.writeln('### [Bug] ${bug.title}$ref');
         buffer.writeln();
         buffer.writeln(bug.description);
         buffer.writeln();
@@ -99,7 +109,8 @@ class FeedbackListPage extends ConsumerWidget {
       buffer.writeln('## Wishes (${wishes.length})');
       buffer.writeln();
       for (final wish in wishes) {
-        buffer.writeln('### [Wish] ${wish.title}');
+        final ref = wish.referenceId != null ? ' (${wish.referenceId})' : '';
+        buffer.writeln('### [Wish] ${wish.title}$ref');
         buffer.writeln();
         buffer.writeln(wish.description);
         buffer.writeln();
@@ -284,10 +295,12 @@ class _FeedbackTile extends ConsumerWidget {
             : null,
       ),
       subtitle: Text(
+        '${entry.referenceId != null ? '${entry.referenceId} · ' : ''}'
         '${entry.status.name[0].toUpperCase()}${entry.status.name.substring(1)}'
         ' · ${entry.createdAt.toIso8601String().substring(0, 10)}'
         '${entry.isPrivate ? ' · Private' : ''}'
-        '${entry.isManual ? ' · Manual' : ''}',
+        '${entry.isManual ? ' · Manual' : ''}'
+        '${entry.aiSummary != null ? ' · 🤖' : ''}',
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,

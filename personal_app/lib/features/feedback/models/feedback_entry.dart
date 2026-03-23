@@ -6,6 +6,7 @@ enum FeedbackStatus { open, acknowledged, resolved }
 
 class FeedbackEntry {
   final String id;
+  final String? referenceId;
   final FeedbackType type;
   final String title;
   final String description;
@@ -15,11 +16,13 @@ class FeedbackEntry {
   final String? attachedLogs;
   final List<String> imageUrls;
   final bool isManual;
+  final String? aiSummary;
   final DateTime createdAt;
   final DateTime updatedAt;
 
   FeedbackEntry({
     String? id,
+    this.referenceId,
     required this.type,
     required this.title,
     required this.description,
@@ -29,6 +32,7 @@ class FeedbackEntry {
     this.userId,
     this.attachedLogs,
     this.imageUrls = const [],
+    this.aiSummary,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) : id = id ?? const Uuid().v4(),
@@ -36,6 +40,7 @@ class FeedbackEntry {
        updatedAt = updatedAt ?? DateTime.now();
 
   FeedbackEntry copyWith({
+    String? referenceId,
     FeedbackType? type,
     String? title,
     String? description,
@@ -45,10 +50,12 @@ class FeedbackEntry {
     String? attachedLogs,
     bool clearAttachedLogs = false,
     List<String>? imageUrls,
+    String? aiSummary,
     DateTime? updatedAt,
   }) {
     return FeedbackEntry(
       id: id,
+      referenceId: referenceId ?? this.referenceId,
       type: type ?? this.type,
       title: title ?? this.title,
       description: description ?? this.description,
@@ -60,6 +67,7 @@ class FeedbackEntry {
           ? null
           : (attachedLogs ?? this.attachedLogs),
       imageUrls: imageUrls ?? this.imageUrls,
+      aiSummary: aiSummary ?? this.aiSummary,
       createdAt: createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
     );
@@ -67,6 +75,7 @@ class FeedbackEntry {
 
   Map<String, dynamic> toMap() => {
     'id': id,
+    'referenceId': referenceId,
     'type': type.name,
     'title': title,
     'description': description,
@@ -76,12 +85,14 @@ class FeedbackEntry {
     'userId': userId,
     'attachedLogs': attachedLogs,
     'imageUrls': imageUrls,
+    'aiSummary': aiSummary,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
   };
 
   factory FeedbackEntry.fromMap(Map<String, dynamic> map) => FeedbackEntry(
     id: map['id'] as String,
+    referenceId: map['referenceId'] as String?,
     type: FeedbackType.values.byName(map['type'] as String),
     title: map['title'] as String,
     description: map['description'] as String,
@@ -91,14 +102,16 @@ class FeedbackEntry {
     userId: map['userId'] as String?,
     attachedLogs: map['attachedLogs'] as String?,
     imageUrls: (map['imageUrls'] as List<dynamic>?)?.cast<String>() ?? const [],
+    aiSummary: map['aiSummary'] as String?,
     createdAt: DateTime.parse(map['createdAt'] as String),
     updatedAt: DateTime.parse(map['updatedAt'] as String),
   );
 
   String toClipboardText() {
     final typeLabel = type == FeedbackType.bug ? 'Bug' : 'Wish';
+    final refPrefix = referenceId != null ? ' ($referenceId)' : '';
     final buf = StringBuffer(
-      '**[$typeLabel] $title**\n\n'
+      '**[$typeLabel] $title**$refPrefix\n\n'
       '$description\n\n'
       'Status: ${status.name[0].toUpperCase()}${status.name.substring(1)}\n'
       'Created: ${createdAt.toIso8601String().substring(0, 10)}',

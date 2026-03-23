@@ -398,6 +398,34 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
                 },
               ),
             ],
+            if (_existing?.referenceId != null) ...[
+              const SizedBox(height: 16),
+              Text(
+                'Reference: ${_existing!.referenceId}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+            if (_existing?.aiSummary != null &&
+                _existing!.aiSummary!.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              const Text(
+                'AI Summary',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: SelectableText(
+                  _existing!.aiSummary!,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+            ],
           ],
         ),
       ),
