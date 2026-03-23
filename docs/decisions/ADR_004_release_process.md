@@ -23,10 +23,18 @@ A release is performed **only when the developer explicitly indicates it is read
 3. **Commit** — Commit all changes: `git add -A && git commit -m "release: vX.Y.Z"`
 4. **Tag** — Create an annotated git tag: `git tag -a vX.Y.Z -m "Release X.Y.Z"`
 5. **Push** — Push commit and tag: `git push && git push origin vX.Y.Z`
-6. **Update Firebase** — Set the new version in the Firestore `appConfig/version` document:
+6. **Update Firebase** — Run the update script from `personal_app/functions/`:
+   ```bash
+   npm run update-version -- 0.6.0
+   # With optional flags:
+   npm run update-version -- 0.6.0 --min-required 0.5.0 --update-url https://example.com/app.apk
+   ```
+   This updates the Firestore `appConfig/version` document with:
    - `latest`: the new version string (e.g., `"0.6.0"`)
    - `minRequired`: the oldest version still supported
    - `updateUrl`: download URL for the latest build
+
+   **Prerequisite**: Authenticate via `gcloud auth application-default login`
 
 ### Version Scheme
 
@@ -61,5 +69,5 @@ See [ADR-002](ADR_002_cicd_pipeline.md) for the planned CI/CD architecture.
 - Tag-based releases integrate cleanly with future CD automation
 
 ### Negative
-- Firebase `appConfig/version` must be updated manually until automation is added
+- Firebase `appConfig/version` requires running the update script manually (see step 6)
 - CD pipeline for all platforms is not yet implemented
