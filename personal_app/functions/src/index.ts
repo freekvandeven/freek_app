@@ -7,6 +7,11 @@ import { getFirestore, FieldValue } from "firebase-admin/firestore";
 
 initializeApp();
 
+// Deploy all functions in europe-west4 (Netherlands).
+// The storage bucket is in eur4 (dual-region: NL + Finland), so storage
+// triggers must also be in a region within that dual-region.
+const REGION = "europe-west4";
+
 /**
  * NOTE: blockDirectSignup (beforeUserCreated) requires Firebase Identity
  * Platform (GCIP), a paid upgrade. Security is still enforced because all
@@ -28,7 +33,7 @@ initializeApp();
  * 5. Deletes the used invite code (single-use)
  * 6. Returns a custom token for client sign-in
  */
-export const createUserWithInvite = onCall(async (request) => {
+export const createUserWithInvite = onCall({ region: REGION }, async (request) => {
   const { email, password, inviteCode } = request.data;
 
   // --- Input validation ---
@@ -129,7 +134,7 @@ export const createUserWithInvite = onCall(async (request) => {
  *
  * Expects: { targetUid: string }
  */
-export const setInviteVerifiedClaim = onCall(async (request) => {
+export const setInviteVerifiedClaim = onCall({ region: REGION }, async (request) => {
   // Only allow authenticated users who are already invite-verified
   if (!request.auth || !request.auth.token.inviteVerified) {
     throw new HttpsError(
@@ -175,7 +180,7 @@ const feedbackApiKey = defineSecret("FEEDBACK_API_KEY");
  * `referenceId` field matches the provided value.
  */
 export const updateFeedbackSummary = onRequest(
-  { secrets: [feedbackApiKey] },
+  { region: REGION, secrets: [feedbackApiKey] },
   async (req, res) => {
     if (req.method !== "POST") {
       res.status(405).json({ error: "Method not allowed" });
@@ -268,7 +273,7 @@ function extractUserIdFromPath(filePath: string): string | null {
 /**
  * Storage trigger: when a file is uploaded, increment the user's storageUsedBytes.
  */
-export const onFileUploaded = onObjectFinalized(async (event) => {
+export const onFileUploaded = onObjectFinalized({ region: REGION }, async (event) => {
   const filePath = event.data.name;
   const fileSize = event.data.size;
 
@@ -286,7 +291,7 @@ export const onFileUploaded = onObjectFinalized(async (event) => {
 /**
  * Storage trigger: when a file is deleted, decrement the user's storageUsedBytes.
  */
-export const onFileDeleted = onObjectDeleted(async (event) => {
+export const onFileDeleted = onObjectDeleted({ region: REGION }, async (event) => {
   const filePath = event.data.name;
   const fileSize = event.data.size;
 

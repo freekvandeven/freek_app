@@ -36,3 +36,15 @@ When working on feedback items (bugs or wishes), each item has a **reference ID*
 - Use conventional commit messages: `fix:`, `feat:`, `chore:`, etc.
 - Update `CHANGELOG.md` under the current version section
 - Update relevant docs in `docs/` when behavior changes
+
+## Cloud Functions
+
+After every creation or modification of Cloud Functions (`personal_app/functions/`):
+
+1. **Build** — run `npm run build` in the `functions/` directory and fix any TypeScript errors.
+2. **Deploy** — run `firebase deploy --only functions --force --non-interactive` from `personal_app/`.
+3. **Verify** — after deployment, check the Cloud Run logs for runtime errors:
+   ```bash
+   gcloud functions logs read --project=freek-personal-app --region=europe-west4 --gen2 --limit=20
+   ```
+   Or test the function directly (e.g. call a callable function, trigger a storage event) and confirm no errors appear.

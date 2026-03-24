@@ -36,7 +36,7 @@ FIREBASE_MESSAGING_SENDER_ID=90391184253
 FIREBASE_APP_ID=test-app-id
 FIREBASE_MEASUREMENT_ID=test-measurement-id
 GEMINI_API_KEY=fake-gemini-key
-CLOUD_FUNCTIONS_REGION=us-central1
+CLOUD_FUNCTIONS_REGION=europe-west4
 ''',
   );
 
@@ -71,7 +71,7 @@ Future<UserCredential> createTestUser({
   // Call the createUserWithInvite Cloud Function
   final response = await http.post(
     Uri.parse(
-      'http://$emulatorHost:$functionsPort/$projectId/us-central1/createUserWithInvite',
+      'http://$emulatorHost:$functionsPort/$projectId/europe-west4/createUserWithInvite',
     ),
     headers: {'Content-Type': 'application/json'},
     body: jsonEncode({

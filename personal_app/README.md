@@ -2,6 +2,18 @@
 
 A personal Flutter app with Firebase backend, supporting Android, iOS, Web, and Windows.
 
+## Region & Infrastructure
+
+This app is primarily used from the **Netherlands**. All Google Cloud / Firebase resources should be created in **Western Europe** to minimise latency:
+
+| Resource | Region | Location |
+|----------|--------|----------|
+| Cloud Functions | `europe-west4` | Netherlands |
+| Firestore | `eur3` | Multi-region Europe |
+| Cloud Storage | `eur4` | Dual-region (NL + Finland) |
+
+When creating new Firebase or GCP resources, prefer `europe-west4` (Netherlands) as the primary region.
+
 ## Getting Started
 
 ### Prerequisites
@@ -21,7 +33,7 @@ FIREBASE_MESSAGING_SENDER_ID=...
 FIREBASE_PROJECT_ID=...
 FIREBASE_AUTH_DOMAIN=...
 FIREBASE_STORAGE_BUCKET=...
-CLOUD_FUNCTIONS_REGION=us-central1
+CLOUD_FUNCTIONS_REGION=europe-west4
 ```
 
 ### Running the App

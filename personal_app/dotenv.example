@@ -14,8 +14,8 @@ FIREBASE_MESSAGING_SENDER_ID=000000000000
 FIREBASE_APP_ID=1:000000000000:web:0000000000000000000000
 FIREBASE_MEASUREMENT_ID=G-0000000000
 
-# Cloud Functions region (default: us-central1)
-CLOUD_FUNCTIONS_REGION=us-central1
+# Cloud Functions region (europe-west4 = Netherlands)
+CLOUD_FUNCTIONS_REGION=europe-west4
 
 # Emulator settings — set USE_EMULATORS=true to connect to Firebase emulators
 # See dotenv.emulator for a ready-to-use emulator config

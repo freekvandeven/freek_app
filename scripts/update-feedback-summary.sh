@@ -35,7 +35,7 @@ API_KEY=$(cat "$KEY_FILE" | tr -d '[:space:]')
 REF_ID="$1"
 SUMMARY="$2"
 
-FUNCTION_URL="https://us-central1-freek-personal-app.cloudfunctions.net/updateFeedbackSummary"
+FUNCTION_URL="https://europe-west4-freek-personal-app.cloudfunctions.net/updateFeedbackSummary"
 
 # Build JSON payload. Use jq if available, otherwise escape manually.
 if command -v jq &>/dev/null; then

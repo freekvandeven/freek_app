@@ -130,7 +130,7 @@ void main() {
       // Call the createUserWithInvite Cloud Function directly
       final response = await http.post(
         Uri.parse(
-          'http://$emulatorHost:$functionsPort/$projectId/us-central1/createUserWithInvite',
+          'http://$emulatorHost:$functionsPort/$projectId/europe-west4/createUserWithInvite',
         ),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
