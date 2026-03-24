@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../services/image_upload_service.dart';
+import '../../../presentation/widgets/image_upload_preview_dialog.dart';
 import '../models/recipe.dart';
 import '../providers/recipe_providers.dart';
 import '../utils/video_link_parser.dart';
@@ -267,10 +268,22 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                   onPressed: () async {
                     try {
                       final service = ref.read(imageUploadServiceProvider);
-                      final url = await service.pickAndUploadImage(
+                      final file = await service.pickImage();
+                      if (file == null || !mounted) return;
+                      final bytes = await file.readAsBytes();
+                      if (!mounted) return;
+                      final result = await showImageUploadPreviewDialog(
+                        context: context,
+                        originalBytes: bytes,
+                        fileName: file.name,
+                      );
+                      if (result == null) return;
+                      final url = await service.uploadImageBytes(
+                        result.bytes,
+                        fileName: result.fileName,
                         folder: 'recipes',
                       );
-                      if (url != null) imgCtrl.text = url;
+                      imgCtrl.text = url;
                     } catch (e) {
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -349,18 +362,33 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
   }
 
   Future<void> _uploadImage() async {
+    final service = ref.read(imageUploadServiceProvider);
+    final file = await service.pickImage();
+    if (file == null || !mounted) return;
+
+    final bytes = await file.readAsBytes();
+    if (!mounted) return;
+
+    final result = await showImageUploadPreviewDialog(
+      context: context,
+      originalBytes: bytes,
+      fileName: file.name,
+    );
+    if (result == null || !mounted) return;
+
     setState(() => _isUploading = true);
     try {
-      final service = ref.read(imageUploadServiceProvider);
-      final url = await service.pickAndUploadImage(folder: 'recipes');
-      if (url != null && mounted) {
-        setState(() => _images.add(url));
-      }
+      final url = await service.uploadImageBytes(
+        result.bytes,
+        fileName: result.fileName,
+        folder: 'recipes',
+      );
+      if (mounted) setState(() => _images.add(url));
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Image upload failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Image upload failed: $e')));
       }
     } finally {
       if (mounted) setState(() => _isUploading = false);
@@ -368,18 +396,33 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
   }
 
   Future<void> _captureImage() async {
+    final service = ref.read(imageUploadServiceProvider);
+    final file = await service.captureImage();
+    if (file == null || !mounted) return;
+
+    final bytes = await file.readAsBytes();
+    if (!mounted) return;
+
+    final result = await showImageUploadPreviewDialog(
+      context: context,
+      originalBytes: bytes,
+      fileName: file.name,
+    );
+    if (result == null || !mounted) return;
+
     setState(() => _isUploading = true);
     try {
-      final service = ref.read(imageUploadServiceProvider);
-      final url = await service.captureAndUploadImage(folder: 'recipes');
-      if (url != null && mounted) {
-        setState(() => _images.add(url));
-      }
+      final url = await service.uploadImageBytes(
+        result.bytes,
+        fileName: result.fileName,
+        folder: 'recipes',
+      );
+      if (mounted) setState(() => _images.add(url));
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Image upload failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Image upload failed: $e')));
       }
     } finally {
       if (mounted) setState(() => _isUploading = false);

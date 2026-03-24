@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../services/image_upload_service.dart';
+import '../../../presentation/widgets/image_upload_preview_dialog.dart';
 import '../../auth/providers/auth_providers.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
@@ -72,11 +73,28 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final user = ref.read(currentUserProvider);
     if (user == null) return;
 
+    final uploadService = ref.read(imageUploadServiceProvider);
+    final file = await uploadService.pickImage();
+    if (file == null || !mounted) return;
+
+    final bytes = await file.readAsBytes();
+    if (!mounted) return;
+
+    final result = await showImageUploadPreviewDialog(
+      context: context,
+      originalBytes: bytes,
+      fileName: file.name,
+    );
+    if (result == null || !mounted) return;
+
     setState(() => _uploadingPhoto = true);
     try {
-      final uploadService = ref.read(imageUploadServiceProvider);
-      final url = await uploadService.pickAndUploadImage(folder: 'profile');
-      if (url != null && mounted) {
+      final url = await uploadService.uploadImageBytes(
+        result.bytes,
+        fileName: result.fileName,
+        folder: 'profile',
+      );
+      if (mounted) {
         final updated = user.copyWith(photoUrl: url);
         await ref.read(authServiceProvider).updateProfile(updated);
       }

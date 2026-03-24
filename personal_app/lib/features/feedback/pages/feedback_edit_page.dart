@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../services/image_upload_service.dart';
+import '../../../presentation/widgets/image_upload_preview_dialog.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../models/feedback_entry.dart';
 import '../providers/feedback_providers.dart';
@@ -169,13 +170,30 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
     );
     if (source == null || !mounted) return;
 
+    final uploader = ref.read(imageUploadServiceProvider);
+    final file = source == 'gallery'
+        ? await uploader.pickImage()
+        : await uploader.captureImage();
+    if (file == null || !mounted) return;
+
+    final bytes = await file.readAsBytes();
+    if (!mounted) return;
+
+    final result = await showImageUploadPreviewDialog(
+      context: context,
+      originalBytes: bytes,
+      fileName: file.name,
+    );
+    if (result == null || !mounted) return;
+
     setState(() => _isUploading = true);
     try {
-      final uploader = ref.read(imageUploadServiceProvider);
-      final url = source == 'gallery'
-          ? await uploader.pickAndUploadImage(folder: 'feedback')
-          : await uploader.captureAndUploadImage(folder: 'feedback');
-      if (url != null && mounted) {
+      final url = await uploader.uploadImageBytes(
+        result.bytes,
+        fileName: result.fileName,
+        folder: 'feedback',
+      );
+      if (mounted) {
         setState(() => _imageUrls = [..._imageUrls, url]);
       }
     } catch (e) {

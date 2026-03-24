@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
@@ -25,15 +26,20 @@ class StorageLimitExceededException implements Exception {
   const StorageLimitExceededException(this.fileSize, this.used, this.limit);
 
   @override
-  String toString() => 'Storage limit exceeded. This file is '
-      '${_formatBytes(fileSize)} but you only have '
-      '${_formatBytes(limit - used)} remaining of ${_formatBytes(limit)}.';
+  String toString() =>
+      'Storage limit exceeded. This file is '
+      '${formatBytes(fileSize)} but you only have '
+      '${formatBytes(limit - used)} remaining of ${formatBytes(limit)}.';
+}
 
-  static String _formatBytes(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+/// Format bytes to human-readable string.
+String formatBytes(int bytes) {
+  if (bytes < 1024) return '$bytes B';
+  if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+  if (bytes < 1024 * 1024 * 1024) {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
+  return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
 }
 
 class ImageUploadService {
@@ -49,27 +55,45 @@ class ImageUploadService {
     this.storageLimitBytes = 0,
   });
 
-  /// Pick an image from gallery and upload it. Returns the download URL.
-  Future<String?> pickAndUploadImage({String folder = 'images'}) async {
-    final XFile? file = await _picker.pickImage(
+  /// Pick an image from gallery. Returns the XFile or null.
+  Future<XFile?> pickImage() async {
+    return _picker.pickImage(
       source: ImageSource.gallery,
       maxWidth: 1920,
       maxHeight: 1920,
-      imageQuality: 85,
     );
+  }
+
+  /// Pick an image from camera. Returns the XFile or null.
+  Future<XFile?> captureImage() async {
+    if (kIsWeb) return null;
+    return _picker.pickImage(
+      source: ImageSource.camera,
+      maxWidth: 1920,
+      maxHeight: 1920,
+    );
+  }
+
+  /// Compress image bytes to JPEG at the given quality (1-100).
+  static Future<Uint8List> compressBytes(
+    Uint8List bytes, {
+    int quality = 85,
+  }) async {
+    final decoded = img.decodeImage(bytes);
+    if (decoded == null) return bytes;
+    return Uint8List.fromList(img.encodeJpg(decoded, quality: quality));
+  }
+
+  /// Pick an image from gallery and upload it. Returns the download URL.
+  Future<String?> pickAndUploadImage({String folder = 'images'}) async {
+    final XFile? file = await pickImage();
     if (file == null) return null;
     return uploadXFile(file, folder: folder);
   }
 
   /// Pick an image from camera and upload it. Returns the download URL.
   Future<String?> captureAndUploadImage({String folder = 'images'}) async {
-    if (kIsWeb) return null; // Camera not supported on web
-    final XFile? file = await _picker.pickImage(
-      source: ImageSource.camera,
-      maxWidth: 1920,
-      maxHeight: 1920,
-      imageQuality: 85,
-    );
+    final XFile? file = await captureImage();
     if (file == null) return null;
     return uploadXFile(file, folder: folder);
   }
@@ -77,14 +101,23 @@ class ImageUploadService {
   /// Upload an XFile to Firebase Storage and return the download URL.
   /// Throws [StorageLimitExceededException] if the upload would exceed the user's limit.
   Future<String> uploadXFile(XFile file, {String folder = 'images'}) async {
+    final Uint8List bytes = await file.readAsBytes();
+    return uploadImageBytes(bytes, fileName: file.name, folder: folder);
+  }
+
+  /// Upload raw image bytes to Firebase Storage and return the download URL.
+  /// Throws [StorageLimitExceededException] if the upload would exceed the user's limit.
+  Future<String> uploadImageBytes(
+    Uint8List bytes, {
+    String fileName = 'image.jpg',
+    String folder = 'images',
+  }) async {
     // Force-refresh the ID token so the inviteVerified claim is present.
     await FirebaseAuth.instance.currentUser?.getIdToken(true);
 
-    final ext = file.name.split('.').last;
-    final fileName = '${const Uuid().v4()}.$ext';
-    final ref = _storage.ref('users/$userId/$folder/$fileName');
-
-    final Uint8List bytes = await file.readAsBytes();
+    final ext = fileName.split('.').last;
+    final storageName = '${const Uuid().v4()}.$ext';
+    final ref = _storage.ref('users/$userId/$folder/$storageName');
 
     // Check storage limit before uploading
     if (storageLimitBytes > 0 &&

@@ -166,7 +166,8 @@ class UserProfile {
           ? UserSettings.fromMap(map['settings'] as Map<String, dynamic>)
           : const UserSettings(),
       storageUsedBytes: map['storageUsedBytes'] as int? ?? 0,
-      storageLimitBytes: map['storageLimitBytes'] as int? ?? defaultStorageLimitBytes,
+      storageLimitBytes:
+          map['storageLimitBytes'] as int? ?? defaultStorageLimitBytes,
     );
   }
 }

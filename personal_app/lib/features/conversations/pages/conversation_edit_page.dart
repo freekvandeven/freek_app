@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../services/image_upload_service.dart';
+import '../../../presentation/widgets/image_upload_preview_dialog.dart';
 import '../models/conversation_topic.dart';
 import '../providers/conversation_providers.dart';
 
@@ -127,20 +128,37 @@ class _ConversationEditPageState extends ConsumerState<ConversationEditPage> {
     );
     if (source == null || !mounted) return;
 
+    final uploader = ref.read(imageUploadServiceProvider);
+    final file = source == 'gallery'
+        ? await uploader.pickImage()
+        : await uploader.captureImage();
+    if (file == null || !mounted) return;
+
+    final bytes = await file.readAsBytes();
+    if (!mounted) return;
+
+    final result = await showImageUploadPreviewDialog(
+      context: context,
+      originalBytes: bytes,
+      fileName: file.name,
+    );
+    if (result == null || !mounted) return;
+
     setState(() => _isUploading = true);
     try {
-      final uploader = ref.read(imageUploadServiceProvider);
-      final url = source == 'gallery'
-          ? await uploader.pickAndUploadImage(folder: 'conversations')
-          : await uploader.captureAndUploadImage(folder: 'conversations');
-      if (url != null && mounted) {
+      final url = await uploader.uploadImageBytes(
+        result.bytes,
+        fileName: result.fileName,
+        folder: 'conversations',
+      );
+      if (mounted) {
         setState(() => _imageUrls = [..._imageUrls, url]);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Image upload failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Image upload failed: $e')));
       }
     } finally {
       if (mounted) setState(() => _isUploading = false);

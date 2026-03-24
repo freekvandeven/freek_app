@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Storage usage tracking — user profile now tracks `storageUsedBytes` and `storageLimitBytes`; Cloud Functions (`onFileUploaded`/`onFileDeleted`) automatically update usage on storage events; Settings page shows a storage usage bar with percentage; client-side limit check prevents uploads that would exceed the quota
+- Image compression before upload — all image uploads now show a preview dialog with file size and quality presets (Original / Good / Compressed); users can compress images before uploading to save storage space; uses the `image` package for cross-platform JPEG re-encoding
 - Test data generation on the developer page — select categories and number of items to create realistic sample data for tasks, recipes, transactions, categories, assets, calendar events, inventory items, feedback, knowledge pages, and conversations
 - Integration test runner script (`scripts/run-integration-tests.sh`) that automatically starts/stops Firebase emulators
 - Feedback reference IDs — each feedback item gets a unique reference ID (e.g., `BUG-0001`, `WISH-0003`) auto-generated on creation

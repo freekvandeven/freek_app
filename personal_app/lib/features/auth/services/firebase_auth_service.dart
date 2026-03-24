@@ -191,10 +191,10 @@ class FirebaseAuthService implements AuthService {
   }
 
   Future<void> _saveProfile(UserProfile profile) async {
-    await _firestore.collection('users').doc(profile.id).set(
-      profile.toClientMap(),
-      SetOptions(merge: true),
-    );
+    await _firestore
+        .collection('users')
+        .doc(profile.id)
+        .set(profile.toClientMap(), SetOptions(merge: true));
   }
 
   @override
