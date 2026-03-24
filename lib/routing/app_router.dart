@@ -7,6 +7,7 @@ import '../features/auth/pages/signup_page.dart';
 import '../features/auth/pages/change_password_page.dart';
 import '../features/auth/providers/auth_providers.dart';
 import '../features/calendar/pages/calendar_page.dart';
+import '../features/calendar/pages/calendar_event_edit_page.dart';
 import '../features/connections/pages/connections_page.dart';
 import '../features/conversations/pages/conversation_edit_page.dart';
 import '../features/conversations/pages/conversation_list_page.dart';
@@ -110,6 +111,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/calendar',
                 builder: (context, state) => const CalendarPage(),
+                routes: [
+                  GoRoute(
+                    path: 'new',
+                    builder: (context, state) {
+                      final dateParam = state.uri.queryParameters['date'];
+                      DateTime? initialDate;
+                      if (dateParam != null) {
+                        initialDate = DateTime.tryParse(dateParam);
+                      }
+                      return CalendarEventEditPage(initialDate: initialDate);
+                    },
+                  ),
+                  GoRoute(
+                    path: ':eventId',
+                    builder: (context, state) => CalendarEventEditPage(
+                      eventId: state.pathParameters['eventId'],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

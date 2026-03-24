@@ -15,6 +15,8 @@ All notable changes to this project will be documented in this file.
 - Copilot instructions (`.github/copilot-instructions.md`) to guide AI to submit summaries after completing each feedback item
 - Feedback list shows reference IDs and robot emoji indicator when an AI summary is available
 - Settings profile tile shows the user's profile picture when set, instead of a generic icon
+- Calendar events now support start/end times via an all-day toggle; a dedicated event edit page replaces the inline dialog, allowing users to set date, time, end date/time, and description
+- Calendar custom events can be edited after creation — tapping a custom event opens the edit page with pre-filled fields
 
 ### Fixed
 - Pre-commit hook and VS Code test runner no longer hang on integration tests — `dart_test.yaml` restricts default test discovery to `test/` only; pre-commit hook explicitly runs `flutter test test/`; integration tests must be run separately via `scripts/run-integration-tests.sh`

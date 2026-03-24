@@ -8,6 +8,7 @@ class CalendarEvent {
   final String? description;
   final DateTime date;
   final DateTime? endDate;
+  final bool isAllDay;
   final EventType type;
   final String? sourceId;
   final String? color;
@@ -19,6 +20,7 @@ class CalendarEvent {
     this.description,
     required this.date,
     this.endDate,
+    this.isAllDay = true,
     this.type = EventType.custom,
     this.sourceId,
     this.color,
@@ -31,6 +33,7 @@ class CalendarEvent {
     String? description,
     DateTime? date,
     DateTime? endDate,
+    bool? isAllDay,
     EventType? type,
     String? color,
     bool clearDescription = false,
@@ -43,6 +46,7 @@ class CalendarEvent {
       description: clearDescription ? null : (description ?? this.description),
       date: date ?? this.date,
       endDate: clearEndDate ? null : (endDate ?? this.endDate),
+      isAllDay: isAllDay ?? this.isAllDay,
       type: type ?? this.type,
       sourceId: sourceId,
       color: clearColor ? null : (color ?? this.color),
@@ -56,6 +60,7 @@ class CalendarEvent {
     'description': description,
     'date': date.toIso8601String(),
     'endDate': endDate?.toIso8601String(),
+    'isAllDay': isAllDay,
     'type': type.name,
     'sourceId': sourceId,
     'color': color,
@@ -71,6 +76,7 @@ class CalendarEvent {
       endDate: map['endDate'] != null
           ? DateTime.parse(map['endDate'] as String)
           : null,
+      isAllDay: map['isAllDay'] as bool? ?? true,
       type: EventType.values.firstWhere(
         (e) => e.name == (map['type'] as String),
         orElse: () => EventType.custom,

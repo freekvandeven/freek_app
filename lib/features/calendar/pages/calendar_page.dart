@@ -176,13 +176,11 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                             ),
                           ),
                           title: Text(event.title),
-                          subtitle: event.description != null
-                              ? Text(
-                                  event.description!,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                )
-                              : Text(event.type.name),
+                          subtitle: Text(
+                            _eventSubtitle(event),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                           trailing: event.type == EventType.custom
                               ? IconButton(
                                   icon: const Icon(Icons.delete, size: 20),
@@ -199,7 +197,11 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddEventDialog(context, ref, selectedDay),
+        onPressed: () {
+          final dateStr =
+              '${selectedDay.year}-${selectedDay.month.toString().padLeft(2, '0')}-${selectedDay.day.toString().padLeft(2, '0')}';
+          context.push('/calendar/new?date=$dateStr');
+        },
         child: const Icon(Icons.add),
       ),
     );
@@ -214,9 +216,36 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
   }
 
   void _navigateToSource(BuildContext context, CalendarEvent event) {
-    if (event.type == EventType.task && event.sourceId != null) {
+    if (event.type == EventType.custom) {
+      context.push('/calendar/${event.id}');
+    } else if (event.type == EventType.task && event.sourceId != null) {
       context.push('/tasks/${event.sourceId}');
     }
+  }
+
+  String _eventSubtitle(CalendarEvent event) {
+    final parts = <String>[];
+    if (!event.isAllDay) {
+      final time = TimeOfDay(hour: event.date.hour, minute: event.date.minute);
+      parts.add(
+        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
+      );
+      if (event.endDate != null) {
+        final endTime = TimeOfDay(
+          hour: event.endDate!.hour,
+          minute: event.endDate!.minute,
+        );
+        parts.add(
+          '– ${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}',
+        );
+      }
+    }
+    if (event.description != null && event.description!.isNotEmpty) {
+      parts.add(event.description!);
+    } else if (parts.isEmpty) {
+      parts.add(event.type.name);
+    }
+    return parts.join(' ');
   }
 
   void _confirmDelete(
@@ -240,64 +269,6 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
               ref.read(calendarEventsProvider.notifier).deleteEvent(event.id);
             },
             child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showAddEventDialog(BuildContext context, WidgetRef ref, DateTime day) {
-    final titleController = TextEditingController();
-    final descriptionController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('New Event'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(
-                labelText: 'Title',
-                border: OutlineInputBorder(),
-              ),
-              autofocus: true,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description (optional)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              if (titleController.text.trim().isNotEmpty) {
-                ref
-                    .read(calendarEventsProvider.notifier)
-                    .addEvent(
-                      CalendarEvent(
-                        title: titleController.text.trim(),
-                        description: descriptionController.text.trim().isEmpty
-                            ? null
-                            : descriptionController.text.trim(),
-                        date: day,
-                      ),
-                    );
-                Navigator.pop(ctx);
-              }
-            },
-            child: const Text('Add'),
           ),
         ],
       ),
