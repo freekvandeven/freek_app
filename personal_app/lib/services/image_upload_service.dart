@@ -11,15 +11,43 @@ import '../features/auth/providers/auth_providers.dart';
 
 final imageUploadServiceProvider = Provider<ImageUploadService>((ref) {
   final user = ref.watch(currentUserProvider);
-  return ImageUploadService(userId: user?.id ?? 'anonymous');
+  return ImageUploadService(
+    userId: user?.id ?? 'anonymous',
+    storageUsedBytes: user?.storageUsedBytes ?? 0,
+    storageLimitBytes: user?.storageLimitBytes ?? 0,
+  );
 });
+
+class StorageLimitExceededException implements Exception {
+  final int fileSize;
+  final int used;
+  final int limit;
+  const StorageLimitExceededException(this.fileSize, this.used, this.limit);
+
+  @override
+  String toString() => 'Storage limit exceeded. This file is '
+      '${_formatBytes(fileSize)} but you only have '
+      '${_formatBytes(limit - used)} remaining of ${_formatBytes(limit)}.';
+
+  static String _formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+}
 
 class ImageUploadService {
   final String userId;
+  final int storageUsedBytes;
+  final int storageLimitBytes;
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final ImagePicker _picker = ImagePicker();
 
-  ImageUploadService({required this.userId});
+  ImageUploadService({
+    required this.userId,
+    this.storageUsedBytes = 0,
+    this.storageLimitBytes = 0,
+  });
 
   /// Pick an image from gallery and upload it. Returns the download URL.
   Future<String?> pickAndUploadImage({String folder = 'images'}) async {
@@ -47,6 +75,7 @@ class ImageUploadService {
   }
 
   /// Upload an XFile to Firebase Storage and return the download URL.
+  /// Throws [StorageLimitExceededException] if the upload would exceed the user's limit.
   Future<String> uploadXFile(XFile file, {String folder = 'images'}) async {
     // Force-refresh the ID token so the inviteVerified claim is present.
     await FirebaseAuth.instance.currentUser?.getIdToken(true);
@@ -56,6 +85,17 @@ class ImageUploadService {
     final ref = _storage.ref('users/$userId/$folder/$fileName');
 
     final Uint8List bytes = await file.readAsBytes();
+
+    // Check storage limit before uploading
+    if (storageLimitBytes > 0 &&
+        storageUsedBytes + bytes.length > storageLimitBytes) {
+      throw StorageLimitExceededException(
+        bytes.length,
+        storageUsedBytes,
+        storageLimitBytes,
+      );
+    }
+
     final metadata = SettableMetadata(
       contentType: 'image/${ext == 'jpg' ? 'jpeg' : ext}',
     );

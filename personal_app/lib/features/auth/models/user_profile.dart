@@ -68,6 +68,11 @@ class UserProfile {
   final DateTime createdAt;
   final DateTime updatedAt;
   final UserSettings settings;
+  final int storageUsedBytes;
+  final int storageLimitBytes;
+
+  /// Default storage limit: 100 MB
+  static const int defaultStorageLimitBytes = 100 * 1024 * 1024;
 
   const UserProfile({
     required this.id,
@@ -79,6 +84,8 @@ class UserProfile {
     required this.createdAt,
     required this.updatedAt,
     this.settings = const UserSettings(),
+    this.storageUsedBytes = 0,
+    this.storageLimitBytes = defaultStorageLimitBytes,
   });
 
   UserProfile copyWith({
@@ -88,6 +95,8 @@ class UserProfile {
     String? photoUrl,
     DateTime? updatedAt,
     UserSettings? settings,
+    int? storageUsedBytes,
+    int? storageLimitBytes,
     bool clearBio = false,
     bool clearPhone = false,
     bool clearPhotoUrl = false,
@@ -102,10 +111,27 @@ class UserProfile {
       createdAt: createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
       settings: settings ?? this.settings,
+      storageUsedBytes: storageUsedBytes ?? this.storageUsedBytes,
+      storageLimitBytes: storageLimitBytes ?? this.storageLimitBytes,
     );
   }
 
   Map<String, dynamic> toMap() => {
+    'id': id,
+    'email': email,
+    'displayName': displayName,
+    'bio': bio,
+    'phone': phone,
+    'photoUrl': photoUrl,
+    'createdAt': createdAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
+    'settings': settings.toMap(),
+    'storageUsedBytes': storageUsedBytes,
+    'storageLimitBytes': storageLimitBytes,
+  };
+
+  /// Returns client-writable fields only (excludes server-managed storage tracking).
+  Map<String, dynamic> toClientMap() => {
     'id': id,
     'email': email,
     'displayName': displayName,
@@ -139,6 +165,8 @@ class UserProfile {
       settings: map['settings'] != null
           ? UserSettings.fromMap(map['settings'] as Map<String, dynamic>)
           : const UserSettings(),
+      storageUsedBytes: map['storageUsedBytes'] as int? ?? 0,
+      storageLimitBytes: map['storageLimitBytes'] as int? ?? defaultStorageLimitBytes,
     );
   }
 }

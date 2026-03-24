@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 
 import '../../auth/providers/auth_providers.dart';
+import '../../auth/models/user_profile.dart';
 import '../../auth/services/biometric_service.dart';
 import '../../gemini/providers/gemini_providers.dart';
 import '../../gemini/services/gemini_service.dart';
@@ -157,6 +158,9 @@ class SettingsPage extends ConsumerWidget {
             subtitle: const Text('Export your data to CSV'),
             onTap: () => context.push('/settings/export'),
           ),
+
+          const _SectionHeader('Storage'),
+          _StorageUsageTile(user: user),
 
           const _SectionHeader('AI'),
           _GeminiApiKeyTile(),
@@ -630,5 +634,74 @@ class _CurrencyPickerDialogState extends State<_CurrencyPickerDialog> {
     final rate = _rates![code];
     if (rate == null) return null;
     return Text('1 EUR = ${rate.toStringAsFixed(rate < 10 ? 4 : 2)} $code');
+  }
+}
+
+class _StorageUsageTile extends StatelessWidget {
+  final UserProfile user;
+  const _StorageUsageTile({required this.user});
+
+  @override
+  Widget build(BuildContext context) {
+    final used = user.storageUsedBytes;
+    final limit = user.storageLimitBytes;
+    final fraction = limit > 0 ? (used / limit).clamp(0.0, 1.0) : 0.0;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    Color barColor;
+    if (fraction > 0.9) {
+      barColor = colorScheme.error;
+    } else if (fraction > 0.7) {
+      barColor = Colors.orange;
+    } else {
+      barColor = colorScheme.primary;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.cloud_outlined, color: colorScheme.onSurfaceVariant),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  '${_formatBytes(used)} of ${_formatBytes(limit)} used',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+              Text(
+                '${(fraction * 100).toStringAsFixed(0)}%',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: barColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: fraction,
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              color: barColor,
+              minHeight: 8,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 }

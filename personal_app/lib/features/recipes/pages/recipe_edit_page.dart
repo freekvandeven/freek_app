@@ -265,11 +265,19 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                   icon: const Icon(Icons.upload),
                   tooltip: 'Upload image',
                   onPressed: () async {
-                    final service = ref.read(imageUploadServiceProvider);
-                    final url = await service.pickAndUploadImage(
-                      folder: 'recipes',
-                    );
-                    if (url != null) imgCtrl.text = url;
+                    try {
+                      final service = ref.read(imageUploadServiceProvider);
+                      final url = await service.pickAndUploadImage(
+                        folder: 'recipes',
+                      );
+                      if (url != null) imgCtrl.text = url;
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Upload failed: $e')),
+                        );
+                      }
+                    }
                   },
                 ),
               ],
@@ -348,6 +356,12 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
       if (url != null && mounted) {
         setState(() => _images.add(url));
       }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Image upload failed: $e')),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }
@@ -360,6 +374,12 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
       final url = await service.captureAndUploadImage(folder: 'recipes');
       if (url != null && mounted) {
         setState(() => _images.add(url));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Image upload failed: $e')),
+        );
       }
     } finally {
       if (mounted) setState(() => _isUploading = false);

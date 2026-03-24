@@ -1,8 +1,9 @@
 import { onCall, onRequest, HttpsError } from "firebase-functions/v2/https";
+import { onObjectFinalized, onObjectDeleted } from "firebase-functions/v2/storage";
 import { defineSecret } from "firebase-functions/params";
 import { initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
-import { getFirestore } from "firebase-admin/firestore";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
 
 initializeApp();
 
@@ -91,6 +92,7 @@ export const createUserWithInvite = onCall(async (request) => {
 
   // --- Create user profile in Firestore ---
   const now = new Date().toISOString();
+  const defaultStorageLimitBytes = 100 * 1024 * 1024; // 100 MB
   await db
     .collection("users")
     .doc(uid)
@@ -108,6 +110,8 @@ export const createUserWithInvite = onCall(async (request) => {
         defaultCurrency: "EUR",
         biometricEnabled: false,
       },
+      storageUsedBytes: 0,
+      storageLimitBytes: defaultStorageLimitBytes,
     });
 
   // --- Delete invite code (single-use) ---
@@ -245,3 +249,54 @@ export const updateFeedbackSummary = onRequest(
     res.status(404).json({ error: `No feedback found with referenceId: ${trimmedRef}` });
   }
 );
+
+// --- Storage usage tracking ---
+
+/**
+ * Extracts the userId from a Storage object path.
+ * Expected path: users/{userId}/...
+ * Returns null if path doesn't match.
+ */
+function extractUserIdFromPath(filePath: string): string | null {
+  const parts = filePath.split("/");
+  if (parts.length >= 2 && parts[0] === "users") {
+    return parts[1];
+  }
+  return null;
+}
+
+/**
+ * Storage trigger: when a file is uploaded, increment the user's storageUsedBytes.
+ */
+export const onFileUploaded = onObjectFinalized(async (event) => {
+  const filePath = event.data.name;
+  const fileSize = event.data.size;
+
+  if (!filePath || !fileSize || fileSize <= 0) return;
+
+  const userId = extractUserIdFromPath(filePath);
+  if (!userId) return;
+
+  const db = getFirestore();
+  await db.collection("users").doc(userId).update({
+    storageUsedBytes: FieldValue.increment(fileSize),
+  });
+});
+
+/**
+ * Storage trigger: when a file is deleted, decrement the user's storageUsedBytes.
+ */
+export const onFileDeleted = onObjectDeleted(async (event) => {
+  const filePath = event.data.name;
+  const fileSize = event.data.size;
+
+  if (!filePath || !fileSize || fileSize <= 0) return;
+
+  const userId = extractUserIdFromPath(filePath);
+  if (!userId) return;
+
+  const db = getFirestore();
+  await db.collection("users").doc(userId).update({
+    storageUsedBytes: FieldValue.increment(-fileSize),
+  });
+});

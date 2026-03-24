@@ -9,6 +9,20 @@ service cloud.firestore {
 
     // Users can only read/write their own data (includes private feedback).
     // Requires inviteVerified custom claim set by the createUserWithInvite function.
+    // Storage tracking fields (storageUsedBytes, storageLimitBytes) are read-only —
+    // only Cloud Functions (Admin SDK) can modify them.
+    match /users/{userId} {
+      allow read: if request.auth != null
+        && request.auth.uid == userId
+        && request.auth.token.inviteVerified == true;
+      allow write: if request.auth != null
+        && request.auth.uid == userId
+        && request.auth.token.inviteVerified == true
+        && (!request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny(['storageUsedBytes', 'storageLimitBytes'])
+            || resource == null);
+    }
+
     match /users/{userId}/{document=**} {
       allow read, write: if request.auth != null
         && request.auth.uid == userId

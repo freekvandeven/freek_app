@@ -136,6 +136,12 @@ class _ConversationEditPageState extends ConsumerState<ConversationEditPage> {
       if (url != null && mounted) {
         setState(() => _imageUrls = [..._imageUrls, url]);
       }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Image upload failed: $e')),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }

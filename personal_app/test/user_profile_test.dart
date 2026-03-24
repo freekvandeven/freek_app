@@ -144,5 +144,71 @@ void main() {
       expect(map['settings'], isA<Map<String, dynamic>>());
       expect(map['settings']['themeMode'], 'dark');
     });
+
+    test('default storage fields', () {
+      final profile = createProfile();
+      expect(profile.storageUsedBytes, 0);
+      expect(profile.storageLimitBytes, UserProfile.defaultStorageLimitBytes);
+    });
+
+    test('toMap includes storage fields', () {
+      final profile = UserProfile(
+        id: 'u1',
+        email: 'a@b.com',
+        createdAt: now,
+        updatedAt: now,
+        storageUsedBytes: 5000,
+        storageLimitBytes: 100000,
+      );
+      final map = profile.toMap();
+      expect(map['storageUsedBytes'], 5000);
+      expect(map['storageLimitBytes'], 100000);
+    });
+
+    test('fromMap reads storage fields', () {
+      final profile = UserProfile.fromMap({
+        'id': 'u1',
+        'email': 'a@b.com',
+        'createdAt': now.toIso8601String(),
+        'updatedAt': now.toIso8601String(),
+        'storageUsedBytes': 12345,
+        'storageLimitBytes': 50000,
+      });
+      expect(profile.storageUsedBytes, 12345);
+      expect(profile.storageLimitBytes, 50000);
+    });
+
+    test('fromMap uses defaults for missing storage fields', () {
+      final profile = UserProfile.fromMap({
+        'id': 'u1',
+        'email': 'a@b.com',
+        'createdAt': now.toIso8601String(),
+        'updatedAt': now.toIso8601String(),
+      });
+      expect(profile.storageUsedBytes, 0);
+      expect(profile.storageLimitBytes, UserProfile.defaultStorageLimitBytes);
+    });
+
+    test('copyWith updates storage fields', () {
+      final profile = createProfile();
+      final updated = profile.copyWith(storageUsedBytes: 9999);
+      expect(updated.storageUsedBytes, 9999);
+      expect(updated.storageLimitBytes, UserProfile.defaultStorageLimitBytes);
+    });
+
+    test('toClientMap excludes storage fields', () {
+      final profile = UserProfile(
+        id: 'u1',
+        email: 'a@b.com',
+        createdAt: now,
+        updatedAt: now,
+        storageUsedBytes: 5000,
+        storageLimitBytes: 100000,
+      );
+      final map = profile.toClientMap();
+      expect(map.containsKey('storageUsedBytes'), isFalse);
+      expect(map.containsKey('storageLimitBytes'), isFalse);
+      expect(map.containsKey('id'), isTrue);
+    });
   });
 }
