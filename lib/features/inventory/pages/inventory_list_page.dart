@@ -135,6 +135,10 @@ class InventoryListPage extends ConsumerWidget {
                             if (item.category != null) item.category!,
                             if (item.location != null) item.location!,
                             if (item.quantity > 1) 'Qty: ${item.quantity}',
+                            if (item.expiryDate != null)
+                              item.expiryDate!.isBefore(DateTime.now())
+                                  ? 'EXPIRED'
+                                  : 'Exp: ${DateFormat.yMMMd().format(item.expiryDate!)}',
                           ].join(' \u2022 '),
                         ),
                         trailing: item.purchasePrice != null

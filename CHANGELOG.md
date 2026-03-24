@@ -19,6 +19,8 @@ All notable changes to this project will be documented in this file.
 - Calendar custom events can be edited after creation — tapping a custom event opens the edit page with pre-filled fields
 - Tasks now support an optional due time — toggle "Set time" when a due date is set to specify an exact time; time is shown in task list and calendar
 - Task image attachments — add photos from gallery or camera to tasks via the edit page; images are uploaded to Firebase Storage with compression preview
+- Inventory items now support an expiry date — shown in the list with "EXPIRED" warning when past due; date picker on the edit page
+- Inventory items support multiple images — replaced single `imageUrl` with `imageUrls` list; horizontal image gallery with add/remove on the edit page; backward-compatible with existing single-image data
 
 ### Fixed
 - Pre-commit hook and VS Code test runner no longer hang on integration tests — `dart_test.yaml` restricts default test discovery to `test/` only; pre-commit hook explicitly runs `flutter test test/`; integration tests must be run separately via `scripts/run-integration-tests.sh`

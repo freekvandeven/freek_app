@@ -9,7 +9,8 @@ class InventoryItem {
   final int quantity;
   final double? purchasePrice;
   final DateTime? purchaseDate;
-  final String? imageUrl;
+  final DateTime? expiryDate;
+  final List<String> imageUrls;
   final String? barcode;
   final Map<String, String> customFields;
   final DateTime createdAt;
@@ -24,7 +25,8 @@ class InventoryItem {
     this.quantity = 1,
     this.purchasePrice,
     this.purchaseDate,
-    this.imageUrl,
+    this.expiryDate,
+    this.imageUrls = const [],
     this.barcode,
     this.customFields = const {},
     DateTime? createdAt,
@@ -41,7 +43,8 @@ class InventoryItem {
     int? quantity,
     double? purchasePrice,
     DateTime? purchaseDate,
-    String? imageUrl,
+    DateTime? expiryDate,
+    List<String>? imageUrls,
     String? barcode,
     Map<String, String>? customFields,
     bool clearDescription = false,
@@ -49,6 +52,7 @@ class InventoryItem {
     bool clearLocation = false,
     bool clearPurchasePrice = false,
     bool clearPurchaseDate = false,
+    bool clearExpiryDate = false,
     bool clearBarcode = false,
   }) {
     return InventoryItem(
@@ -64,7 +68,8 @@ class InventoryItem {
       purchaseDate: clearPurchaseDate
           ? null
           : (purchaseDate ?? this.purchaseDate),
-      imageUrl: imageUrl ?? this.imageUrl,
+      expiryDate: clearExpiryDate ? null : (expiryDate ?? this.expiryDate),
+      imageUrls: imageUrls ?? this.imageUrls,
       barcode: clearBarcode ? null : (barcode ?? this.barcode),
       customFields: customFields ?? this.customFields,
       createdAt: createdAt,
@@ -81,7 +86,8 @@ class InventoryItem {
     'quantity': quantity,
     'purchasePrice': purchasePrice,
     'purchaseDate': purchaseDate?.toIso8601String(),
-    'imageUrl': imageUrl,
+    'expiryDate': expiryDate?.toIso8601String(),
+    'imageUrls': imageUrls,
     'barcode': barcode,
     'customFields': customFields,
     'createdAt': createdAt.toIso8601String(),
@@ -89,6 +95,16 @@ class InventoryItem {
   };
 
   factory InventoryItem.fromMap(Map<String, dynamic> map) {
+    // Backward compat: migrate single imageUrl to imageUrls list
+    List<String> urls = [];
+    if (map['imageUrls'] is List) {
+      urls = (map['imageUrls'] as List<dynamic>)
+          .map((e) => e as String)
+          .toList();
+    } else if (map['imageUrl'] is String) {
+      urls = [map['imageUrl'] as String];
+    }
+
     return InventoryItem(
       id: map['id'] as String,
       name: map['name'] as String,
@@ -100,7 +116,10 @@ class InventoryItem {
       purchaseDate: map['purchaseDate'] != null
           ? DateTime.parse(map['purchaseDate'] as String)
           : null,
-      imageUrl: map['imageUrl'] as String?,
+      expiryDate: map['expiryDate'] != null
+          ? DateTime.parse(map['expiryDate'] as String)
+          : null,
+      imageUrls: urls,
       barcode: map['barcode'] as String?,
       customFields: map['customFields'] != null
           ? Map<String, String>.from(map['customFields'] as Map)

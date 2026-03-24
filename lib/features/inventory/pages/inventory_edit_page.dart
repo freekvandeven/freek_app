@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
@@ -5,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../presentation/widgets/image_upload_preview_dialog.dart';
+import '../../../services/image_upload_service.dart';
 import '../../gemini/providers/gemini_providers.dart';
 import '../../settings/providers/settings_providers.dart';
 import '../models/inventory_item.dart';
@@ -29,6 +32,9 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
   final _barcodeController = TextEditingController();
 
   DateTime? _purchaseDate;
+  DateTime? _expiryDate;
+  List<String> _imageUrls = [];
+  bool _isUploading = false;
   bool _isLoading = true;
   bool _isScanning = false;
 
@@ -56,6 +62,8 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
         _priceController.text = item.purchasePrice?.toStringAsFixed(2) ?? '';
         _barcodeController.text = item.barcode ?? '';
         _purchaseDate = item.purchaseDate;
+        _expiryDate = item.expiryDate;
+        _imageUrls = List.of(item.imageUrls);
         _isLoading = false;
       });
     } else {
@@ -95,6 +103,8 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
           ? double.tryParse(_priceController.text.trim())
           : null,
       purchaseDate: _purchaseDate,
+      expiryDate: _expiryDate,
+      imageUrls: _imageUrls,
       barcode: _barcodeController.text.trim().isEmpty
           ? null
           : _barcodeController.text.trim(),
@@ -356,6 +366,106 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
                 }
               },
             ),
+            const SizedBox(height: 8),
+
+            // Expiry date
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.event_busy),
+              title: Text(
+                _expiryDate != null
+                    ? DateFormat.yMMMd().format(_expiryDate!)
+                    : 'No expiry date',
+              ),
+              subtitle:
+                  _expiryDate != null && _expiryDate!.isBefore(DateTime.now())
+                  ? Text(
+                      'Expired',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    )
+                  : const Text('Expiry Date'),
+              trailing: _expiryDate != null
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () => setState(() => _expiryDate = null),
+                    )
+                  : null,
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: _expiryDate ?? DateTime.now(),
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                );
+                if (picked != null) {
+                  setState(() => _expiryDate = picked);
+                }
+              },
+            ),
+            const SizedBox(height: 16),
+
+            // Images
+            Text('Images', style: Theme.of(context).textTheme.labelLarge),
+            const SizedBox(height: 8),
+            if (_imageUrls.isNotEmpty)
+              SizedBox(
+                height: 100,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _imageUrls.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (context, index) => Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: CachedNetworkImage(
+                          imageUrl: _imageUrls[index],
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Positioned(
+                        top: 2,
+                        right: 2,
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _imageUrls = List.of(_imageUrls)..removeAt(index);
+                            });
+                          },
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              color: Colors.black54,
+                              shape: BoxShape.circle,
+                            ),
+                            padding: const EdgeInsets.all(4),
+                            child: const Icon(
+                              Icons.close,
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: _isUploading ? null : _addImage,
+              icon: _isUploading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.add_photo_alternate),
+              label: Text(_isUploading ? 'Uploading...' : 'Add image'),
+            ),
             const SizedBox(height: 16),
 
             TextFormField(
@@ -369,5 +479,65 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _addImage() async {
+    final source = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Gallery'),
+              onTap: () => Navigator.pop(ctx, 'gallery'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Camera'),
+              onTap: () => Navigator.pop(ctx, 'camera'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null || !mounted) return;
+
+    final uploader = ref.read(imageUploadServiceProvider);
+    final file = source == 'gallery'
+        ? await uploader.pickImage()
+        : await uploader.captureImage();
+    if (file == null || !mounted) return;
+
+    final bytes = await file.readAsBytes();
+    if (!mounted) return;
+
+    final result = await showImageUploadPreviewDialog(
+      context: context,
+      originalBytes: bytes,
+      fileName: file.name,
+    );
+    if (result == null || !mounted) return;
+
+    setState(() => _isUploading = true);
+    try {
+      final url = await uploader.uploadImageBytes(
+        result.bytes,
+        fileName: result.fileName,
+        folder: 'inventory',
+      );
+      if (mounted) {
+        setState(() => _imageUrls = [..._imageUrls, url]);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
   }
 }
