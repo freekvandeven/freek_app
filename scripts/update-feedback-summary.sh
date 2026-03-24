@@ -10,7 +10,7 @@
 #
 # Prerequisites:
 #   1. Set the secret in Firebase:  firebase functions:secrets:set FEEDBACK_API_KEY
-#   2. Deploy functions:            cd personal_app && firebase deploy --only functions
+#   2. Deploy functions:            firebase deploy --only functions
 #   3. Create local key file:       echo "your-key" > scripts/.feedback-api-key
 #      (This file is gitignored)
 

@@ -10,9 +10,6 @@ jobs:
   quality:
     name: Format, Analyze & Unit Tests
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: personal_app
     steps:
       - uses: actions/checkout@v4
 
@@ -37,9 +34,6 @@ jobs:
   integration:
     name: Integration Tests (Firebase Emulators)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: personal_app
     steps:
       - uses: actions/checkout@v4
 

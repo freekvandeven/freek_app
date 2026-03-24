@@ -11,7 +11,6 @@
 set -e
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-APP_DIR="$REPO_ROOT/personal_app"
 
 # Ports used by emulators (must match firebase.json and firebase_test_setup.dart)
 AUTH_PORT=9099
@@ -33,7 +32,7 @@ if curl -sf "http://localhost:$AUTH_PORT/" >/dev/null 2>&1; then
   EMULATOR_PID=""
 else
   echo "=== Starting Firebase emulators ==="
-  (cd "$APP_DIR" && firebase emulators:start --only auth,firestore,storage,functions) &
+  (cd "$REPO_ROOT" && firebase emulators:start --only auth,firestore,storage,functions) &
   EMULATOR_PID=$!
 
   # Wait for emulators to be ready (timeout after 60s)
@@ -51,4 +50,4 @@ fi
 
 echo ""
 echo "=== Running integration tests ==="
-(cd "$APP_DIR" && flutter test integration_test/)
+(cd "$REPO_ROOT" && flutter test integration_test/)

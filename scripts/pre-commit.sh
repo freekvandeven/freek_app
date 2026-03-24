@@ -11,16 +11,15 @@
 set -e
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-APP_DIR="$REPO_ROOT/personal_app"
 
 echo "=== Pre-commit: dart format ==="
-(cd "$APP_DIR" && dart format --set-exit-if-changed lib/ test/ integration_test/)
+(cd "$REPO_ROOT" && dart format --set-exit-if-changed lib/ test/ integration_test/)
 
 echo "=== Pre-commit: flutter analyze ==="
-(cd "$APP_DIR" && flutter analyze)
+(cd "$REPO_ROOT" && flutter analyze)
 
 echo "=== Pre-commit: flutter test (unit tests) ==="
-(cd "$APP_DIR" && flutter test test/)
+(cd "$REPO_ROOT" && flutter test test/)
 
 # --- Integration tests (with Firebase emulators) ---
 
@@ -58,7 +57,7 @@ if curl -sf "http://localhost:$AUTH_PORT/" >/dev/null 2>&1; then
   echo "=== Firebase emulators already running ==="
 else
   echo "=== Starting Firebase emulators ==="
-  (cd "$APP_DIR" && firebase emulators:start --only auth,firestore,storage,functions) &
+  (cd "$REPO_ROOT" && firebase emulators:start --only auth,firestore,storage,functions) &
   EMULATOR_PID=$!
 
   echo "Waiting for emulators to start..."
@@ -74,6 +73,6 @@ else
 fi
 
 echo "=== Pre-commit: flutter test (integration tests) ==="
-(cd "$APP_DIR" && flutter test integration_test/)
+(cd "$REPO_ROOT" && flutter test integration_test/)
 
 echo "=== All checks passed ==="

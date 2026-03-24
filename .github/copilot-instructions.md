@@ -3,7 +3,7 @@
 ## Project Overview
 
 This is a Flutter personal life-management app ("Freek App") with Firebase backend.
-The codebase is in `personal_app/` with Cloud Functions in `personal_app/functions/`.
+The codebase is at the repository root with Cloud Functions in `functions/`.
 
 ## Feedback Workflow
 
@@ -39,10 +39,10 @@ When working on feedback items (bugs or wishes), each item has a **reference ID*
 
 ## Cloud Functions
 
-After every creation or modification of Cloud Functions (`personal_app/functions/`):
+After every creation or modification of Cloud Functions (`functions/`):
 
 1. **Build** — run `npm run build` in the `functions/` directory and fix any TypeScript errors.
-2. **Deploy** — run `firebase deploy --only functions --force --non-interactive` from `personal_app/`.
+2. **Deploy** — run `firebase deploy --only functions --force --non-interactive` from the repository root.
 3. **Verify** — after deployment, check the Cloud Run logs for runtime errors:
    ```bash
    gcloud functions logs read --project=freek-personal-app --region=europe-west4 --gen2 --limit=20
