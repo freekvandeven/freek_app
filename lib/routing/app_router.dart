@@ -39,6 +39,7 @@ import '../features/recipes/pages/recipe_detail_page.dart';
 import '../features/recipes/pages/recipe_edit_page.dart';
 import '../features/recipes/pages/recipe_list_page.dart';
 import '../features/changelog/pages/changelog_page.dart';
+import '../features/admin/pages/admin_page.dart';
 import '../features/settings/pages/data_export_page.dart';
 import '../features/settings/pages/developer_page.dart';
 import '../features/settings/pages/profile_page.dart';
@@ -343,6 +344,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
+      GoRoute(path: '/admin', builder: (context, state) => const AdminPage()),
       GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsPage(),

@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:go_router/go_router.dart';
 
-class MorePage extends StatelessWidget {
+import '../../admin/providers/admin_providers.dart';
+
+class MorePage extends ConsumerWidget {
   const MorePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isAdmin = ref.watch(isAdminProvider).valueOrNull ?? false;
+
     return Scaffold(
       appBar: AppBar(title: const QuickActionsTitle(child: Text('More'))),
       body: ListView(
@@ -64,6 +69,12 @@ class MorePage extends StatelessWidget {
               label: 'Settings',
               route: '/settings',
             ),
+            if (isAdmin)
+              _MenuItem(
+                icon: Icons.admin_panel_settings_rounded,
+                label: 'Admin',
+                route: '/admin',
+              ),
           ]),
         ],
       ),

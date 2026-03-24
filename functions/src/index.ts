@@ -164,6 +164,94 @@ export const setInviteVerifiedClaim = onCall({ region: REGION }, async (request)
   return { success: true };
 });
 
+// --- Admin: Invite Code Management ---
+
+/**
+ * Admin-only callable function: manage invite codes.
+ *
+ * Requires authenticated user with `inviteVerified` and `admin` custom claims.
+ *
+ * Actions:
+ * - { action: "list" } → returns all invite codes
+ * - { action: "create", code?: string } → creates a new invite code
+ * - { action: "delete", code: string } → deletes an invite code
+ */
+export const manageInviteCodes = onCall({ region: REGION }, async (request) => {
+  if (!request.auth || !request.auth.token.inviteVerified) {
+    throw new HttpsError("permission-denied", "Authentication required.");
+  }
+
+  const callerRecord = await getAuth().getUser(request.auth.uid);
+  if (!callerRecord.customClaims?.admin) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only admin users can manage invite codes."
+    );
+  }
+
+  const { action } = request.data;
+  const db = getFirestore();
+
+  switch (action) {
+    case "list": {
+      const snapshot = await db.collection("inviteCodes").get();
+      const codes = snapshot.docs.map((doc) => ({
+        code: doc.id,
+        ...doc.data(),
+      }));
+      return { codes };
+    }
+
+    case "create": {
+      let { code } = request.data;
+      if (typeof code !== "string" || !code.trim()) {
+        // Generate a random 8-character alphanumeric code
+        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        code = "";
+        for (let i = 0; i < 8; i++) {
+          code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+      } else {
+        code = code.trim();
+      }
+
+      const existing = await db.collection("inviteCodes").doc(code).get();
+      if (existing.exists) {
+        throw new HttpsError("already-exists", "Invite code already exists.");
+      }
+
+      await db.collection("inviteCodes").doc(code).set({
+        createdAt: new Date().toISOString(),
+        createdBy: request.auth.uid,
+      });
+
+      return { code };
+    }
+
+    case "delete": {
+      const { code } = request.data;
+      if (typeof code !== "string" || !code.trim()) {
+        throw new HttpsError("invalid-argument", "code is required.");
+      }
+
+      const docRef = db.collection("inviteCodes").doc(code.trim());
+      const doc = await docRef.get();
+      if (!doc.exists) {
+        throw new HttpsError("not-found", "Invite code not found.");
+      }
+
+      await docRef.delete();
+      return { success: true };
+    }
+
+    default:
+      throw new HttpsError(
+        "invalid-argument",
+        "Invalid action. Use 'list', 'create', or 'delete'."
+      );
+  }
+});
+
 // --- Feedback AI Summary ---
 
 const feedbackApiKey = defineSecret("FEEDBACK_API_KEY");
