@@ -158,9 +158,12 @@ class _TaskTile extends ConsumerWidget {
     if (task.dueDate != null) {
       final isOverdue =
           !task.isCompleted && task.dueDate!.isBefore(DateTime.now());
+      final dateText = task.hasDueTime
+          ? '${DateFormat.MMMd().format(task.dueDate!)} ${DateFormat.Hm().format(task.dueDate!)}'
+          : DateFormat.MMMd().format(task.dueDate!);
       parts.add(
         Text(
-          DateFormat.MMMd().format(task.dueDate!),
+          dateText,
           style: TextStyle(
             color: isOverdue ? colorScheme.error : null,
             fontWeight: isOverdue ? FontWeight.bold : null,
@@ -187,6 +190,9 @@ class _TaskTile extends ConsumerWidget {
     }
     if (task.isRepeatable) {
       parts.add(Icon(Icons.repeat, size: 14, color: colorScheme.primary));
+    }
+    if (task.attachments.isNotEmpty) {
+      parts.add(Icon(Icons.attach_file, size: 14, color: colorScheme.primary));
     }
     if (parts.isEmpty) return null;
     return Wrap(

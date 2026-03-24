@@ -1,9 +1,12 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../presentation/widgets/image_upload_preview_dialog.dart';
+import '../../../services/image_upload_service.dart';
 import '../models/task.dart';
 import '../providers/task_providers.dart';
 
@@ -22,6 +25,10 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
   final _categoryController = TextEditingController();
   TaskPriority _priority = TaskPriority.medium;
   DateTime? _dueDate;
+  TimeOfDay? _dueTime;
+  bool _hasDueTime = false;
+  List<String> _attachments = [];
+  bool _isUploading = false;
   bool _isRepeatable = false;
   RepeatType _repeatType = RepeatType.daily;
   int _repeatInterval = 1;
@@ -47,6 +54,14 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
         _categoryController.text = task.category ?? '';
         _priority = task.priority;
         _dueDate = task.dueDate;
+        _hasDueTime = task.hasDueTime;
+        if (task.hasDueTime && task.dueDate != null) {
+          _dueTime = TimeOfDay(
+            hour: task.dueDate!.hour,
+            minute: task.dueDate!.minute,
+          );
+        }
+        _attachments = List.of(task.attachments);
         _isRepeatable = task.isRepeatable;
         _repeatType = task.repeatType ?? RepeatType.daily;
         _repeatInterval = task.repeatInterval;
@@ -82,6 +97,18 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
     final category = _categoryController.text.trim();
     final description = _descriptionController.text.trim();
 
+    // Build due date with optional time
+    DateTime? dueDate = _dueDate;
+    if (dueDate != null && _hasDueTime && _dueTime != null) {
+      dueDate = DateTime(
+        dueDate.year,
+        dueDate.month,
+        dueDate.day,
+        _dueTime!.hour,
+        _dueTime!.minute,
+      );
+    }
+
     if (_isEditing) {
       final service = ref.read(taskServiceProvider);
       final existing = await service.getTask(widget.taskId!);
@@ -91,10 +118,12 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
           description: description.isEmpty ? null : description,
           clearDescription: description.isEmpty,
           priority: _priority,
-          dueDate: _dueDate,
+          dueDate: dueDate,
+          hasDueTime: _hasDueTime,
           clearDueDate: _dueDate == null,
           category: category.isEmpty ? null : category,
           clearCategory: category.isEmpty,
+          attachments: _attachments,
           isRepeatable: _isRepeatable,
           repeatType: _isRepeatable ? _repeatType : null,
           clearRepeatType: !_isRepeatable,
@@ -109,8 +138,10 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
         title: _titleController.text.trim(),
         description: description.isEmpty ? null : description,
         priority: _priority,
-        dueDate: _dueDate,
+        dueDate: dueDate,
+        hasDueTime: _hasDueTime,
         category: category.isEmpty ? null : category,
+        attachments: _attachments,
         isRepeatable: _isRepeatable,
         repeatType: _isRepeatable ? _repeatType : null,
         repeatInterval: _isRepeatable ? _repeatInterval : 1,
@@ -183,7 +214,11 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
               trailing: _dueDate != null
                   ? IconButton(
                       icon: const Icon(Icons.clear),
-                      onPressed: () => setState(() => _dueDate = null),
+                      onPressed: () => setState(() {
+                        _dueDate = null;
+                        _hasDueTime = false;
+                        _dueTime = null;
+                      }),
                     )
                   : null,
               onTap: () => _pickDate(
@@ -191,6 +226,40 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
                 onPicked: (d) => setState(() => _dueDate = d),
               ),
             ),
+
+            // Due time (only when due date is set)
+            if (_dueDate != null) ...[
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Set time'),
+                value: _hasDueTime,
+                onChanged: (v) => setState(() {
+                  _hasDueTime = v;
+                  if (v && _dueTime == null) {
+                    _dueTime = TimeOfDay(hour: DateTime.now().hour, minute: 0);
+                  }
+                }),
+              ),
+              if (_hasDueTime)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.access_time),
+                  title: Text(
+                    _dueTime != null
+                        ? _dueTime!.format(context)
+                        : 'No time set',
+                  ),
+                  onTap: () async {
+                    final picked = await showTimePicker(
+                      context: context,
+                      initialTime: _dueTime ?? TimeOfDay.now(),
+                    );
+                    if (picked != null) {
+                      setState(() => _dueTime = picked);
+                    }
+                  },
+                ),
+            ],
             const SizedBox(height: 8),
 
             // Category
@@ -217,6 +286,64 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
                 );
               },
               onSelected: (value) => _categoryController.text = value,
+            ),
+            const SizedBox(height: 16),
+
+            // Attachments
+            Text('Attachments', style: Theme.of(context).textTheme.labelLarge),
+            const SizedBox(height: 8),
+            if (_attachments.isNotEmpty)
+              SizedBox(
+                height: 100,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _attachments.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (context, index) => Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: CachedNetworkImage(
+                          imageUrl: _attachments[index],
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Positioned(
+                        top: 2,
+                        right: 2,
+                        child: GestureDetector(
+                          onTap: () => _removeAttachment(index),
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              color: Colors.black54,
+                              shape: BoxShape.circle,
+                            ),
+                            padding: const EdgeInsets.all(4),
+                            child: const Icon(
+                              Icons.close,
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: _isUploading ? null : _addAttachment,
+              icon: _isUploading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.add_photo_alternate),
+              label: Text(_isUploading ? 'Uploading...' : 'Add image'),
             ),
             const SizedBox(height: 16),
 
@@ -289,5 +416,71 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _addAttachment() async {
+    final source = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Gallery'),
+              onTap: () => Navigator.pop(ctx, 'gallery'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Camera'),
+              onTap: () => Navigator.pop(ctx, 'camera'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null || !mounted) return;
+
+    final uploader = ref.read(imageUploadServiceProvider);
+    final file = source == 'gallery'
+        ? await uploader.pickImage()
+        : await uploader.captureImage();
+    if (file == null || !mounted) return;
+
+    final bytes = await file.readAsBytes();
+    if (!mounted) return;
+
+    final result = await showImageUploadPreviewDialog(
+      context: context,
+      originalBytes: bytes,
+      fileName: file.name,
+    );
+    if (result == null || !mounted) return;
+
+    setState(() => _isUploading = true);
+    try {
+      final url = await uploader.uploadImageBytes(
+        result.bytes,
+        fileName: result.fileName,
+        folder: 'tasks',
+      );
+      if (mounted) {
+        setState(() => _attachments = [..._attachments, url]);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
+  }
+
+  void _removeAttachment(int index) {
+    setState(() {
+      _attachments = List.of(_attachments)..removeAt(index);
+    });
   }
 }

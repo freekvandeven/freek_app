@@ -10,9 +10,11 @@ class Task {
   final String? description;
   final bool isCompleted;
   final DateTime? dueDate;
+  final bool hasDueTime;
   final DateTime? completedAt;
   final TaskPriority priority;
   final String? category;
+  final List<String> attachments;
   final bool isRepeatable;
   final RepeatType? repeatType;
   final int repeatInterval;
@@ -26,9 +28,11 @@ class Task {
     this.description,
     this.isCompleted = false,
     this.dueDate,
+    this.hasDueTime = false,
     this.completedAt,
     this.priority = TaskPriority.medium,
     this.category,
+    this.attachments = const [],
     this.isRepeatable = false,
     this.repeatType,
     this.repeatInterval = 1,
@@ -44,9 +48,11 @@ class Task {
     String? description,
     bool? isCompleted,
     DateTime? dueDate,
+    bool? hasDueTime,
     DateTime? completedAt,
     TaskPriority? priority,
     String? category,
+    List<String>? attachments,
     bool? isRepeatable,
     RepeatType? repeatType,
     int? repeatInterval,
@@ -64,9 +70,11 @@ class Task {
       description: clearDescription ? null : (description ?? this.description),
       isCompleted: isCompleted ?? this.isCompleted,
       dueDate: clearDueDate ? null : (dueDate ?? this.dueDate),
+      hasDueTime: hasDueTime ?? this.hasDueTime,
       completedAt: clearCompletedAt ? null : (completedAt ?? this.completedAt),
       priority: priority ?? this.priority,
       category: clearCategory ? null : (category ?? this.category),
+      attachments: attachments ?? this.attachments,
       isRepeatable: isRepeatable ?? this.isRepeatable,
       repeatType: clearRepeatType ? null : (repeatType ?? this.repeatType),
       repeatInterval: repeatInterval ?? this.repeatInterval,
@@ -84,9 +92,11 @@ class Task {
     'description': description,
     'isCompleted': isCompleted,
     'dueDate': dueDate?.toIso8601String(),
+    'hasDueTime': hasDueTime,
     'completedAt': completedAt?.toIso8601String(),
     'priority': priority.name,
     'category': category,
+    'attachments': attachments,
     'isRepeatable': isRepeatable,
     'repeatType': repeatType?.name,
     'repeatInterval': repeatInterval,
@@ -104,6 +114,7 @@ class Task {
       dueDate: map['dueDate'] != null
           ? DateTime.parse(map['dueDate'] as String)
           : null,
+      hasDueTime: map['hasDueTime'] as bool? ?? false,
       completedAt: map['completedAt'] != null
           ? DateTime.parse(map['completedAt'] as String)
           : null,
@@ -112,6 +123,11 @@ class Task {
         orElse: () => TaskPriority.medium,
       ),
       category: map['category'] as String?,
+      attachments:
+          (map['attachments'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
       isRepeatable: map['isRepeatable'] as bool? ?? false,
       repeatType: map['repeatType'] != null
           ? RepeatType.values.firstWhere(
