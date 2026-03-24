@@ -8,6 +8,7 @@ import '../../finances/models/finance_models.dart';
 import '../models/calendar_event.dart';
 import '../services/calendar_service.dart';
 import '../services/firestore_calendar_service.dart';
+import 'google_calendar_providers.dart';
 
 final calendarServiceProvider = Provider<CalendarService>((ref) {
   if (AppConfig.useFirebase) {
@@ -57,7 +58,11 @@ class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
         )
         .toList();
 
-    return [...customEvents, ...taskEvents, ...financeEvents]
+    // Pull Google Calendar events
+    final googleEvents =
+        ref.watch(googleCalendarEventsProvider).valueOrNull ?? [];
+
+    return [...customEvents, ...taskEvents, ...financeEvents, ...googleEvents]
       ..sort((a, b) => a.date.compareTo(b.date));
   }
 

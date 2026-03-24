@@ -1,6 +1,6 @@
 import 'package:uuid/uuid.dart';
 
-enum EventType { task, finance, custom }
+enum EventType { task, finance, custom, googleCalendar }
 
 class CalendarEvent {
   final String id;

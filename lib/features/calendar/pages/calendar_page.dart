@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/calendar_event.dart';
 import '../providers/calendar_providers.dart';
+import '../providers/google_calendar_providers.dart';
 
 class CalendarPage extends ConsumerStatefulWidget {
   const CalendarPage({super.key});
@@ -21,10 +22,55 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
   DateTime _focusedDay = DateTime.now();
 
   @override
+  void initState() {
+    super.initState();
+    _tryRestoreGoogleCalendar();
+  }
+
+  Future<void> _tryRestoreGoogleCalendar() async {
+    final service = ref.read(googleCalendarServiceProvider);
+    final wasConnected = await service.isConnected;
+    if (wasConnected) {
+      final success = await service.trySilentSignIn();
+      if (success && mounted) {
+        ref.read(googleCalendarConnectedProvider.notifier).state = true;
+      }
+    }
+  }
+
+  Future<void> _toggleGoogleCalendar() async {
+    final service = ref.read(googleCalendarServiceProvider);
+    final connected = ref.read(googleCalendarConnectedProvider);
+
+    if (connected) {
+      await service.disconnect();
+      if (!mounted) return;
+      ref.read(googleCalendarConnectedProvider.notifier).state = false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Google Calendar disconnected')),
+      );
+    } else {
+      final success = await service.signIn();
+      if (!mounted) return;
+      if (success) {
+        ref.read(googleCalendarConnectedProvider.notifier).state = true;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google Calendar connected')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to connect Google Calendar')),
+        );
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final selectedDay = ref.watch(selectedDayProvider);
     final eventsByDay = ref.watch(calendarEventsByDayProvider);
     final selectedEvents = ref.watch(selectedDayEventsProvider);
+    final googleConnected = ref.watch(googleCalendarConnectedProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -37,10 +83,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
             onSelected: (value) {
               switch (value) {
                 case 'google':
-                  launchUrl(
-                    Uri.parse('https://calendar.google.com'),
-                    mode: LaunchMode.externalApplication,
-                  );
+                  _toggleGoogleCalendar();
                 case 'kerio':
                   launchUrl(
                     Uri.parse('https://mail.kerio.com'),
@@ -49,11 +92,18 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'google',
                 child: ListTile(
-                  leading: Icon(Icons.calendar_month, color: Colors.blue),
-                  title: Text('Google Calendar'),
+                  leading: Icon(
+                    Icons.calendar_month,
+                    color: googleConnected ? Colors.green : Colors.blue,
+                  ),
+                  title: Text(
+                    googleConnected
+                        ? 'Disconnect Google Calendar'
+                        : 'Connect Google Calendar',
+                  ),
                   dense: true,
                 ),
               ),
@@ -212,6 +262,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
       EventType.task => Icons.check_circle_outline,
       EventType.finance => Icons.attach_money,
       EventType.custom => Icons.event,
+      EventType.googleCalendar => Icons.calendar_month,
     };
   }
 

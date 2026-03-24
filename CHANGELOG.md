@@ -22,6 +22,7 @@ All notable changes to this project will be documented in this file.
 - Inventory items now support an expiry date — shown in the list with "EXPIRED" warning when past due; date picker on the edit page
 - Inventory items support multiple images — replaced single `imageUrl` with `imageUrls` list; horizontal image gallery with add/remove on the edit page; backward-compatible with existing single-image data
 - Admin page for invite code management — admin users can list, create, and delete invite codes via the More page; backed by a new `manageInviteCodes` Cloud Function with admin-only access control
+- Google Calendar integration — connect your Google Calendar from the sync menu on the calendar page; events are fetched via the Google Calendar API and displayed alongside tasks, finance, and custom events; supports silent re-authentication on app restart
 
 ### Fixed
 - Pre-commit hook and VS Code test runner no longer hang on integration tests — `dart_test.yaml` restricts default test discovery to `test/` only; pre-commit hook explicitly runs `flutter test test/`; integration tests must be run separately via `scripts/run-integration-tests.sh`

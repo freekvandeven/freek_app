@@ -225,6 +225,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       EventType.task => Colors.orange,
       EventType.finance => Colors.green,
       EventType.custom => Colors.purple,
+      EventType.googleCalendar => Colors.blue,
     };
   }
 
@@ -233,6 +234,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       EventType.task => Icons.check_circle_outline,
       EventType.finance => Icons.attach_money,
       EventType.custom => Icons.event,
+      EventType.googleCalendar => Icons.calendar_month,
     };
   }
 
