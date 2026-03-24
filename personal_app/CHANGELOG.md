@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Test data generation on the developer page — select categories and number of items to create realistic sample data for tasks, recipes, transactions, categories, assets, calendar events, inventory items, feedback, knowledge pages, and conversations
+- Integration test runner script (`scripts/run-integration-tests.sh`) that automatically starts/stops Firebase emulators
 - Feedback reference IDs — each feedback item gets a unique reference ID (e.g., `BUG-0001`, `WISH-0003`) auto-generated on creation
 - AI feedback summaries — cloud function (`updateFeedbackSummary`) accepts AI-generated summaries for feedback items via API key authentication; summaries are visible on the feedback edit page
 - Bash script (`scripts/update-feedback-summary.sh`) for submitting AI summaries from the command line (works with or without `jq`)
@@ -13,6 +14,7 @@ All notable changes to this project will be documented in this file.
 - Feedback list shows reference IDs and robot emoji indicator when an AI summary is available
 
 ### Fixed
+- Pre-commit hook and VS Code test runner no longer hang on integration tests — `dart_test.yaml` restricts default test discovery to `test/` only; pre-commit hook explicitly runs `flutter test test/`; integration tests must be run separately via `scripts/run-integration-tests.sh`
 - Recipe edit page now warns the user when there is unsaved text in the tag field before saving, with options to add the tag, discard it, or cancel
 
 ## [0.6.0] - 2026-03-19

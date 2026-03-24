@@ -2,6 +2,9 @@
 # Pre-commit hook — runs dart format, flutter analyze, and unit tests
 # on the personal_app project before allowing a commit.
 #
+# Integration tests (which require Firebase emulators) are skipped here.
+# Run them separately with: scripts/run-integration-tests.sh
+#
 # Install: run scripts/setup-hooks.sh from the repository root.
 
 set -e
@@ -15,7 +18,9 @@ echo "=== Pre-commit: dart format ==="
 echo "=== Pre-commit: flutter analyze ==="
 (cd "$APP_DIR" && flutter analyze)
 
-echo "=== Pre-commit: flutter test ==="
-(cd "$APP_DIR" && flutter test)
+echo "=== Pre-commit: flutter test (unit tests only) ==="
+(cd "$APP_DIR" && flutter test test/)
+
+echo "=== All checks passed ==="
 
 echo "=== All checks passed ==="

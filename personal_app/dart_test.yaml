@@ -1,0 +1,7 @@
+# Exclude integration tests from the default `flutter test` run.
+# Integration tests require Firebase emulators and must be run explicitly
+# via `scripts/run-integration-tests.sh`.
+
+# Only run tests from test/ by default.
+paths:
+  - test/
