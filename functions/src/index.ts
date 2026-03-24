@@ -343,6 +343,53 @@ export const updateFeedbackSummary = onRequest(
   }
 );
 
+// --- Admin: Update Storage Limit ---
+
+/**
+ * Admin-only callable function: update a user's storage limit.
+ * Expects: { targetUserId: string, storageLimitBytes: number }
+ */
+export const updateStorageLimit = onCall({ region: REGION }, async (request) => {
+  if (!request.auth || !request.auth.token.inviteVerified) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only verified users can call this function."
+    );
+  }
+
+  const callerRecord = await getAuth().getUser(request.auth.uid);
+  if (!callerRecord.customClaims?.admin) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only admin users can update storage limits."
+    );
+  }
+
+  const { targetUserId, storageLimitBytes } = request.data;
+  if (typeof targetUserId !== "string" || !targetUserId.trim()) {
+    throw new HttpsError("invalid-argument", "targetUserId is required.");
+  }
+  if (typeof storageLimitBytes !== "number" || storageLimitBytes < 0) {
+    throw new HttpsError(
+      "invalid-argument",
+      "storageLimitBytes must be a non-negative number."
+    );
+  }
+
+  const db = getFirestore();
+  const userRef = db.collection("users").doc(targetUserId.trim());
+  const userDoc = await userRef.get();
+  if (!userDoc.exists) {
+    throw new HttpsError("not-found", "User not found.");
+  }
+
+  await userRef.update({
+    storageLimitBytes: storageLimitBytes,
+  });
+
+  return { success: true, storageLimitBytes };
+});
+
 // --- Storage usage tracking ---
 
 /**
@@ -363,7 +410,7 @@ function extractUserIdFromPath(filePath: string): string | null {
  */
 export const onFileUploaded = onObjectFinalized({ region: REGION }, async (event) => {
   const filePath = event.data.name;
-  const fileSize = event.data.size;
+  const fileSize = Number(event.data.size);
 
   if (!filePath || !fileSize || fileSize <= 0) return;
 
@@ -381,7 +428,7 @@ export const onFileUploaded = onObjectFinalized({ region: REGION }, async (event
  */
 export const onFileDeleted = onObjectDeleted({ region: REGION }, async (event) => {
   const filePath = event.data.name;
-  const fileSize = event.data.size;
+  const fileSize = Number(event.data.size);
 
   if (!filePath || !fileSize || fileSize <= 0) return;
 

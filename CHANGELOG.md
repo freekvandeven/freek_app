@@ -22,6 +22,7 @@ All notable changes to this project will be documented in this file.
 - Inventory items now support an expiry date — shown in the list with "EXPIRED" warning when past due; date picker on the edit page
 - Inventory items support multiple images — replaced single `imageUrl` with `imageUrls` list; horizontal image gallery with add/remove on the edit page; backward-compatible with existing single-image data
 - Admin page for invite code management — admin users can list, create, and delete invite codes via the More page; backed by a new `manageInviteCodes` Cloud Function with admin-only access control
+- Admin storage limit management — admins can view and update any user's storage limit from their public profile page; backed by a new `updateStorageLimit` Cloud Function with admin-only access control; Firestore rules updated to allow admin read access to user documents
 - Google Calendar integration — connect your Google Calendar from the sync menu on the calendar page; events are fetched via the Google Calendar API and displayed alongside tasks, finance, and custom events; supports silent re-authentication on app restart
 
 ### Fixed
@@ -30,6 +31,8 @@ All notable changes to this project will be documented in this file.
 - Changelog page now shows the `[Unreleased]` section when it contains entries — displays an "unreleased build" banner and lists all pending changes so testers can see what's new before the next release
 - Settings version tile shows an "unreleased changes" badge when the bundled CHANGELOG has unreleased entries
 - Changelog "Latest" badge renamed to "Current" and now highlights the entry matching the running app version, rather than always the first entry
+- Admin menu item now reliably appears for admin users — fixed token refresh to force-fetch latest custom claims instead of using potentially stale cached token
+- Storage usage tracking Cloud Functions (`onFileUploaded`/`onFileDeleted`) now correctly parse file size as a number before passing to `FieldValue.increment()`
 
 ## [0.6.0] - 2026-03-19
 

@@ -39,7 +39,7 @@ class AdminService {
   Future<bool> get isAdmin async {
     final user = _auth.currentUser;
     if (user == null) return false;
-    final result = await user.getIdTokenResult();
+    final result = await user.getIdTokenResult(true);
     return result.claims?['admin'] == true;
   }
 
@@ -87,5 +87,37 @@ class AdminService {
 
   Future<void> deleteInviteCode(String code) async {
     await _call({'action': 'delete', 'code': code});
+  }
+
+  Future<void> updateStorageLimit({
+    required String targetUserId,
+    required int storageLimitBytes,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('Not authenticated');
+
+    final token = await user.getIdToken();
+    final response = await http.post(
+      Uri.parse('$_functionsBaseUrl/updateStorageLimit'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'data': {
+          'targetUserId': targetUserId,
+          'storageLimitBytes': storageLimitBytes,
+        },
+      }),
+    );
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (response.statusCode != 200) {
+      final error = body['error'] as Map<String, dynamic>?;
+      final message =
+          error?['message'] as String? ?? 'Failed to update storage limit.';
+      throw Exception(message);
+    }
   }
 }

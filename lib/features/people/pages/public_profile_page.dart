@@ -5,23 +5,112 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../presentation/widgets/quick_actions_title.dart';
+import '../../admin/providers/admin_providers.dart';
 
-class PublicProfilePage extends ConsumerWidget {
+class PublicProfilePage extends ConsumerStatefulWidget {
   final String userId;
 
   const PublicProfilePage({super.key, required this.userId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PublicProfilePage> createState() => _PublicProfilePageState();
+}
+
+class _PublicProfilePageState extends ConsumerState<PublicProfilePage> {
+  Future<DocumentSnapshot<Map<String, dynamic>>>? _profileFuture;
+  int? _currentLimitBytes;
+
+  @override
+  void initState() {
+    super.initState();
+    _profileFuture = FirebaseFirestore.instance
+        .collection('publicProfiles')
+        .doc(widget.userId)
+        .get();
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+  }
+
+  Future<void> _showUpdateStorageLimitDialog(int currentLimitBytes) async {
+    final currentMB = currentLimitBytes / (1024 * 1024);
+    final controller = TextEditingController(
+      text: currentMB.round().toString(),
+    );
+
+    final result = await showDialog<int>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Update Storage Limit'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'Storage limit (MB)',
+            suffixText: 'MB',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final mb = int.tryParse(controller.text.trim());
+              if (mb != null && mb >= 0) {
+                Navigator.pop(context, mb * 1024 * 1024);
+              }
+            },
+            child: const Text('Update'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && mounted) {
+      try {
+        final adminService = ref.read(adminServiceProvider);
+        await adminService.updateStorageLimit(
+          targetUserId: widget.userId,
+          storageLimitBytes: result,
+        );
+        setState(() {
+          _currentLimitBytes = result;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Storage limit updated to ${_formatBytes(result)}'),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        }
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isAdmin = ref.watch(isAdminProvider).valueOrNull ?? false;
 
     return Scaffold(
       appBar: AppBar(title: const QuickActionsTitle(child: Text('Profile'))),
       body: FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        future: FirebaseFirestore.instance
-            .collection('publicProfiles')
-            .doc(userId)
-            .get(),
+        future: _profileFuture,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
@@ -92,10 +181,74 @@ class PublicProfilePage extends ConsumerWidget {
                   ),
                 ),
               ],
+              if (isAdmin) _buildAdminSection(context),
             ],
           );
         },
       ),
+    );
+  }
+
+  Widget _buildAdminSection(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      future: FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .get(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data?.data() == null) {
+          return const SizedBox.shrink();
+        }
+
+        final userData = snapshot.data!.data()!;
+        final storageUsedBytes = userData['storageUsedBytes'] as int? ?? 0;
+        final storageLimitBytes =
+            _currentLimitBytes ??
+            (userData['storageLimitBytes'] as int? ?? 100 * 1024 * 1024);
+        final usage = storageLimitBytes > 0
+            ? (storageUsedBytes / storageLimitBytes).clamp(0.0, 1.0)
+            : 0.0;
+
+        return Column(
+          children: [
+            const SizedBox(height: 32),
+            const Divider(),
+            const SizedBox(height: 8),
+            Text(
+              'Admin',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(color: colorScheme.primary),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: Icon(Icons.storage_rounded, color: colorScheme.primary),
+              title: const Text('Storage Limit'),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 4),
+                  LinearProgressIndicator(
+                    value: usage,
+                    backgroundColor: colorScheme.surfaceContainerHighest,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${_formatBytes(storageUsedBytes)} / ${_formatBytes(storageLimitBytes)}',
+                  ),
+                ],
+              ),
+              trailing: IconButton(
+                icon: const Icon(Icons.edit_rounded),
+                onPressed: () =>
+                    _showUpdateStorageLimitDialog(storageLimitBytes),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
