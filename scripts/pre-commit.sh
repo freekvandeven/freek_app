@@ -24,6 +24,23 @@ echo "=== Pre-commit: flutter test (unit tests) ==="
 
 # --- Integration tests (with Firebase emulators) ---
 
+# Check prerequisites for emulator-based integration tests
+if ! command -v java &>/dev/null; then
+  echo ""
+  echo "=== Skipping integration tests: Java not found ==="
+  echo "Install a Java runtime (JDK 11+) and add it to PATH to enable integration tests."
+  echo "=== All other checks passed ==="
+  exit 0
+fi
+
+if ! command -v firebase &>/dev/null; then
+  echo ""
+  echo "=== Skipping integration tests: Firebase CLI not found ==="
+  echo "Install via: npm install -g firebase-tools"
+  echo "=== All other checks passed ==="
+  exit 0
+fi
+
 AUTH_PORT=9099
 EMULATOR_PID=""
 
