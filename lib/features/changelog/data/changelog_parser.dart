@@ -6,12 +6,15 @@ List<ChangelogEntry> parseChangelog(String markdown) {
   String? section;
 
   for (final line in markdown.split('\n')) {
-    final versionMatch = RegExp(r'^## \[(.+?)\] - (\S+)').firstMatch(line);
+    // Match versioned entries: ## [0.6.0] - 2026-03-19
+    final versionMatch = RegExp(
+      r'^## \[(.+?)\](?:\s*-\s*(\S+))?',
+    ).firstMatch(line);
     if (versionMatch != null) {
       if (current != null) entries.add(current);
       current = ChangelogEntry(
         version: versionMatch.group(1)!,
-        date: versionMatch.group(2)!,
+        date: versionMatch.group(2),
       );
       section = null;
       continue;

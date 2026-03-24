@@ -18,6 +18,9 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Pre-commit hook and VS Code test runner no longer hang on integration tests — `dart_test.yaml` restricts default test discovery to `test/` only; pre-commit hook explicitly runs `flutter test test/`; integration tests must be run separately via `scripts/run-integration-tests.sh`
 - Recipe edit page now warns the user when there is unsaved text in the tag field before saving, with options to add the tag, discard it, or cancel
+- Changelog page now shows the `[Unreleased]` section when it contains entries — displays an "unreleased build" banner and lists all pending changes so testers can see what's new before the next release
+- Settings version tile shows an "unreleased changes" badge when the bundled CHANGELOG has unreleased entries
+- Changelog "Latest" badge renamed to "Current" and now highlights the entry matching the running app version, rather than always the first entry
 
 ## [0.6.0] - 2026-03-19
 

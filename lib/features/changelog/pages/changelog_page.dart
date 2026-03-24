@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
@@ -8,16 +9,18 @@ import '../models/changelog_entry.dart';
 class ChangelogPage extends StatelessWidget {
   const ChangelogPage({super.key});
 
-  Future<List<ChangelogEntry>> _loadChangelog() async {
+  Future<({List<ChangelogEntry> entries, String appVersion})>
+  _loadChangelog() async {
     final markdown = await rootBundle.loadString('CHANGELOG.md');
-    return parseChangelog(markdown);
+    final info = await PackageInfo.fromPlatform();
+    return (entries: parseChangelog(markdown), appVersion: info.version);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const QuickActionsTitle(child: Text('Changelog'))),
-      body: FutureBuilder<List<ChangelogEntry>>(
+      body: FutureBuilder<({List<ChangelogEntry> entries, String appVersion})>(
         future: _loadChangelog(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -26,13 +29,18 @@ class ChangelogPage extends StatelessWidget {
           if (snapshot.hasError || !snapshot.hasData) {
             return const Center(child: Text('Could not load changelog.'));
           }
-          final entries = snapshot.data!;
+          final entries = snapshot.data!.entries;
+          final appVersion = snapshot.data!.appVersion;
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: entries.length,
             itemBuilder: (context, index) {
               final entry = entries[index];
-              return _VersionCard(entry: entry, isLatest: index == 0);
+              final isCurrentVersion = entry.version == appVersion;
+              return _VersionCard(
+                entry: entry,
+                isLatest: !entry.isUnreleased && isCurrentVersion,
+              );
             },
           );
         },
@@ -52,71 +60,101 @@ class _VersionCard extends StatelessWidget {
     final theme = Theme.of(context);
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  'v${entry.version}',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (entry.isUnreleased)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: theme.colorScheme.tertiaryContainer,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.construction,
+                    size: 16,
+                    color: theme.colorScheme.onTertiaryContainer,
                   ),
-                ),
-                if (isLatest) ...[
                   const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      'Latest',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onPrimary,
-                      ),
+                  Text(
+                    'You are running an unreleased build',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onTertiaryContainer,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
-                const Spacer(),
-                Text(
-                  entry.date,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      entry.isUnreleased ? 'Unreleased' : 'v${entry.version}',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (isLatest) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Current',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.onPrimary,
+                          ),
+                        ),
+                      ),
+                    ],
+                    const Spacer(),
+                    if (entry.date != null)
+                      Text(
+                        entry.date!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                  ],
                 ),
+                const SizedBox(height: 12),
+                if (entry.added.isNotEmpty)
+                  _Section(
+                    icon: Icons.add_circle_outline,
+                    label: 'Added',
+                    color: Colors.green,
+                    items: entry.added,
+                  ),
+                if (entry.changed.isNotEmpty)
+                  _Section(
+                    icon: Icons.change_circle_outlined,
+                    label: 'Changed',
+                    color: Colors.orange,
+                    items: entry.changed,
+                  ),
+                if (entry.fixed.isNotEmpty)
+                  _Section(
+                    icon: Icons.bug_report_outlined,
+                    label: 'Fixed',
+                    color: Colors.red,
+                    items: entry.fixed,
+                  ),
               ],
             ),
-            const SizedBox(height: 12),
-            if (entry.added.isNotEmpty)
-              _Section(
-                icon: Icons.add_circle_outline,
-                label: 'Added',
-                color: Colors.green,
-                items: entry.added,
-              ),
-            if (entry.changed.isNotEmpty)
-              _Section(
-                icon: Icons.change_circle_outlined,
-                label: 'Changed',
-                color: Colors.orange,
-                items: entry.changed,
-              ),
-            if (entry.fixed.isNotEmpty)
-              _Section(
-                icon: Icons.bug_report_outlined,
-                label: 'Fixed',
-                color: Colors.red,
-                items: entry.fixed,
-              ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

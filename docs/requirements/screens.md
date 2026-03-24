@@ -41,6 +41,7 @@
 | S035 | Gemini Chat | AI-powered chat assistant using Google Gemini | F012 | Yes |
 | S036 | Conversation List | List of conversation topics with filters by person/status and sorting by priority/date | F013 | Yes |
 | S037 | Conversation Edit | Create or edit a conversation topic with priority, person/group, images | F013 | Yes |
+| S038 | Changelog | Shows all released versions and unreleased changes; highlights current version and unreleased build indicator | F010 | Yes |
 
 ## Navigation Structure
 

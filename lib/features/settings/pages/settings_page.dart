@@ -176,9 +176,7 @@ class SettingsPage extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.info_outline),
             title: const Text('App Version'),
-            subtitle: Text(
-              ref.watch(versionCheckProvider).valueOrNull?.current ?? '...',
-            ),
+            subtitle: _VersionSubtitle(),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/settings/changelog'),
           ),
@@ -703,5 +701,38 @@ class _StorageUsageTile extends StatelessWidget {
       return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
     }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+  }
+}
+
+class _VersionSubtitle extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final version =
+        ref.watch(versionCheckProvider).valueOrNull?.current ?? '...';
+    final hasUnreleased =
+        ref.watch(hasUnreleasedChangesProvider).valueOrNull ?? false;
+
+    if (!hasUnreleased) return Text(version);
+
+    return Row(
+      children: [
+        Text(version),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.tertiaryContainer,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            'unreleased changes',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: Theme.of(context).colorScheme.onTertiaryContainer,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
