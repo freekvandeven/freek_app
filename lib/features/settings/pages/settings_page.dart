@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -31,7 +32,11 @@ class SettingsPage extends ConsumerWidget {
         children: [
           const _SectionHeader('Profile'),
           ListTile(
-            leading: const Icon(Icons.person),
+            leading: user.photoUrl != null
+                ? CircleAvatar(
+                    backgroundImage: CachedNetworkImageProvider(user.photoUrl!),
+                  )
+                : const Icon(Icons.person),
             title: const Text('Edit Profile'),
             subtitle: Text(user.displayName ?? user.email),
             trailing: const Icon(Icons.chevron_right),
