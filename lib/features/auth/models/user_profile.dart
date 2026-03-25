@@ -5,6 +5,7 @@ class UserSettings {
   final bool biometricEnabled;
   final String? customSeedColor;
   final String? geminiModel;
+  final bool showImagePreviews;
 
   const UserSettings({
     this.themeMode = 'system',
@@ -13,6 +14,7 @@ class UserSettings {
     this.biometricEnabled = true,
     this.customSeedColor,
     this.geminiModel,
+    this.showImagePreviews = true,
   });
 
   UserSettings copyWith({
@@ -24,6 +26,7 @@ class UserSettings {
     bool clearCustomSeedColor = false,
     String? geminiModel,
     bool clearGeminiModel = false,
+    bool? showImagePreviews,
   }) {
     return UserSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -34,6 +37,7 @@ class UserSettings {
           ? null
           : (customSeedColor ?? this.customSeedColor),
       geminiModel: clearGeminiModel ? null : (geminiModel ?? this.geminiModel),
+      showImagePreviews: showImagePreviews ?? this.showImagePreviews,
     );
   }
 
@@ -44,6 +48,7 @@ class UserSettings {
     'biometricEnabled': biometricEnabled,
     'customSeedColor': customSeedColor,
     'geminiModel': geminiModel,
+    'showImagePreviews': showImagePreviews,
   };
 
   factory UserSettings.fromMap(Map<String, dynamic> map) {
@@ -54,6 +59,7 @@ class UserSettings {
       biometricEnabled: map['biometricEnabled'] as bool? ?? true,
       customSeedColor: map['customSeedColor'] as String?,
       geminiModel: map['geminiModel'] as String?,
+      showImagePreviews: map['showImagePreviews'] as bool? ?? true,
     );
   }
 }

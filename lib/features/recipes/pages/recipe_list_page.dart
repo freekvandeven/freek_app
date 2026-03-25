@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
+import '../../auth/providers/auth_providers.dart';
 import '../models/recipe.dart';
 import '../providers/recipe_providers.dart';
 
@@ -122,6 +123,8 @@ class _RecipeCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
+    final showImages =
+        ref.watch(currentUserProvider)?.settings.showImagePreviews ?? true;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -132,7 +135,7 @@ class _RecipeCard extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              if (recipe.primaryImageUrl != null) ...[
+              if (showImages && recipe.primaryImageUrl != null) ...[
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: CachedNetworkImage(

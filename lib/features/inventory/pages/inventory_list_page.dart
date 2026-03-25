@@ -1,9 +1,11 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
+import '../../auth/providers/auth_providers.dart';
 import '../providers/inventory_providers.dart';
 
 class InventoryListPage extends ConsumerWidget {
@@ -19,6 +21,8 @@ class InventoryListPage extends ConsumerWidget {
     final items = ref.watch(filteredInventoryProvider);
     final search = ref.watch(inventorySearchProvider);
     final totalValue = ref.watch(inventoryTotalValueProvider);
+    final showImages =
+        ref.watch(currentUserProvider)?.settings.showImagePreviews ?? true;
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -122,13 +126,30 @@ class InventoryListPage extends ConsumerWidget {
                           .read(inventoryListProvider.notifier)
                           .deleteItem(item.id),
                       child: ListTile(
-                        leading: CircleAvatar(
-                          child: Text(
-                            item.name.isNotEmpty
-                                ? item.name[0].toUpperCase()
-                                : '?',
-                          ),
-                        ),
+                        leading: showImages && item.imageUrls.isNotEmpty
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(20),
+                                child: CachedNetworkImage(
+                                  imageUrl: item.imageUrls.first,
+                                  width: 40,
+                                  height: 40,
+                                  fit: BoxFit.cover,
+                                  errorWidget: (_, __, ___) => CircleAvatar(
+                                    child: Text(
+                                      item.name.isNotEmpty
+                                          ? item.name[0].toUpperCase()
+                                          : '?',
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : CircleAvatar(
+                                child: Text(
+                                  item.name.isNotEmpty
+                                      ? item.name[0].toUpperCase()
+                                      : '?',
+                                ),
+                              ),
                         title: Text(item.name),
                         subtitle: Text(
                           [

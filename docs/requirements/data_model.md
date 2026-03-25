@@ -46,6 +46,7 @@ Stored at: `users/{userId}`
 | notificationsEnabled | bool | No | Whether push notifications are enabled |
 | defaultCurrency | String | No | ISO 4217 currency code (default: `EUR`) |
 | biometricEnabled | bool | No | Whether biometric lock is active |
+| showImagePreviews | bool | No | Show thumbnail images in inventory/recipe lists (default: `true`) |
 
 ---
 

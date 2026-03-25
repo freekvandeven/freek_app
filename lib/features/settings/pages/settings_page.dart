@@ -80,6 +80,20 @@ class SettingsPage extends ConsumerWidget {
                 : null,
             onTap: () => _showColorPicker(context, ref),
           ),
+          SwitchListTile(
+            secondary: const Icon(Icons.image),
+            title: const Text('Image Previews in Lists'),
+            subtitle: const Text(
+              'Show thumbnail images in inventory and recipe lists',
+            ),
+            value: settings.showImagePreviews,
+            onChanged: (v) {
+              final updated = user.copyWith(
+                settings: settings.copyWith(showImagePreviews: v),
+              );
+              ref.read(authServiceProvider).updateProfile(updated);
+            },
+          ),
 
           const _SectionHeader('Preferences'),
           ListTile(

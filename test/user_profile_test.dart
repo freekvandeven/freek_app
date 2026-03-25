@@ -11,6 +11,7 @@ void main() {
       expect(settings.biometricEnabled, isTrue);
       expect(settings.customSeedColor, isNull);
       expect(settings.geminiModel, isNull);
+      expect(settings.showImagePreviews, isTrue);
     });
 
     test('toMap and fromMap round-trip', () {
@@ -21,6 +22,7 @@ void main() {
         biometricEnabled: false,
         customSeedColor: '#FF0000',
         geminiModel: 'gemini-pro',
+        showImagePreviews: false,
       );
       final map = settings.toMap();
       final restored = UserSettings.fromMap(map);
@@ -31,6 +33,7 @@ void main() {
       expect(restored.biometricEnabled, isFalse);
       expect(restored.customSeedColor, '#FF0000');
       expect(restored.geminiModel, 'gemini-pro');
+      expect(restored.showImagePreviews, isFalse);
     });
 
     test('fromMap uses defaults for missing keys', () {
@@ -39,6 +42,7 @@ void main() {
       expect(settings.notificationsEnabled, isTrue);
       expect(settings.defaultCurrency, 'EUR');
       expect(settings.biometricEnabled, isTrue);
+      expect(settings.showImagePreviews, isTrue);
     });
 
     test('copyWith replaces values', () {

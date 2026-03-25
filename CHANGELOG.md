@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file.
 - Admin page for invite code management — admin users can list, create, and delete invite codes via the More page; backed by a new `manageInviteCodes` Cloud Function with admin-only access control
 - Admin storage limit management — admins can view and update any user's storage limit from their public profile page; backed by a new `updateStorageLimit` Cloud Function with admin-only access control; Firestore rules updated to allow admin read access to user documents
 - Google Calendar integration — connect your Google Calendar from the sync menu on the calendar page; events are fetched via the Google Calendar API and displayed alongside tasks, finance, and custom events; supports silent re-authentication on app restart
+- Image preview toggle in settings — new "Image Previews in Lists" setting under Appearance; when enabled (default), inventory list shows item thumbnail images instead of letter avatars, and recipe list shows primary image; toggle persists in user settings
 
 ### Fixed
 - Pre-commit hook and VS Code test runner no longer hang on integration tests — `dart_test.yaml` restricts default test discovery to `test/` only; pre-commit hook explicitly runs `flutter test test/`; integration tests must be run separately via `scripts/run-integration-tests.sh`
