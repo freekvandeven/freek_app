@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/app_config.dart';
+import '../../../services/log_service.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../models/finance_models.dart';
 import '../services/finance_service.dart';
@@ -25,16 +26,21 @@ class TransactionListNotifier
 
   Future<void> addTransaction(FinancialTransaction transaction) async {
     await ref.read(financeServiceProvider).addTransaction(transaction);
+    LogService.instance.info(
+      'Transaction added: ${transaction.title} (${transaction.type.name})',
+    );
     ref.invalidateSelf();
   }
 
   Future<void> updateTransaction(FinancialTransaction transaction) async {
     await ref.read(financeServiceProvider).updateTransaction(transaction);
+    LogService.instance.info('Transaction updated: ${transaction.id}');
     ref.invalidateSelf();
   }
 
   Future<void> deleteTransaction(String id) async {
     await ref.read(financeServiceProvider).deleteTransaction(id);
+    LogService.instance.info('Transaction deleted: $id');
     ref.invalidateSelf();
   }
 }

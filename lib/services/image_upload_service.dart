@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
 import '../features/auth/providers/auth_providers.dart';
+import 'log_service.dart';
 
 final imageUploadServiceProvider = Provider<ImageUploadService>((ref) {
   final user = ref.watch(currentUserProvider);
@@ -134,7 +135,11 @@ class ImageUploadService {
     );
 
     await ref.putData(bytes, metadata);
-    return ref.getDownloadURL();
+    final url = await ref.getDownloadURL();
+    LogService.instance.info(
+      'Image uploaded: $folder/$storageName (${formatBytes(bytes.length)})',
+    );
+    return url;
   }
 
   /// Delete an image from Firebase Storage by its download URL.
@@ -142,6 +147,7 @@ class ImageUploadService {
     try {
       final ref = _storage.refFromURL(downloadUrl);
       await ref.delete();
+      LogService.instance.info('Image deleted: ${ref.fullPath}');
     } catch (_) {
       // Image may have already been deleted or URL is external
     }

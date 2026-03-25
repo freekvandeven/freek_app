@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../config/app_config.dart';
 import '../../../services/image_upload_service.dart';
+import '../../../services/log_service.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../models/recipe.dart';
 import '../services/firestore_recipe_service.dart';
@@ -31,11 +32,13 @@ class RecipeListNotifier extends AsyncNotifier<List<Recipe>> {
 
   Future<void> addRecipe(Recipe recipe) async {
     await _service.createRecipe(recipe);
+    LogService.instance.info('Recipe created: ${recipe.title}');
     ref.invalidateSelf();
   }
 
   Future<void> updateRecipe(Recipe recipe) async {
     await _service.updateRecipe(recipe);
+    LogService.instance.info('Recipe updated: ${recipe.id}');
     ref.invalidateSelf();
   }
 
@@ -54,6 +57,7 @@ class RecipeListNotifier extends AsyncNotifier<List<Recipe>> {
       }
     }
     await _service.deleteRecipe(id);
+    LogService.instance.info('Recipe deleted: $id');
     ref.invalidateSelf();
   }
 

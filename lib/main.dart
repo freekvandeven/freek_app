@@ -23,6 +23,7 @@ Future<void> main() async {
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   WakelockPlus.enable();
   LogService.instance.install();
+  LogService.instance.info('App starting');
 
   try {
     await dotenv.load(fileName: 'dotenv');
@@ -31,12 +32,14 @@ Future<void> main() async {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
+      LogService.instance.info('Firebase initialized');
 
       if (AppConfig.useEmulators) {
         final host = AppConfig.emulatorHost;
         FirebaseAuth.instance.useAuthEmulator(host, 9099);
         FirebaseFirestore.instance.useFirestoreEmulator(host, 8080);
         FirebaseStorage.instance.useStorageEmulator(host, 9199);
+        LogService.instance.info('Connected to Firebase emulators at $host');
         if (kDebugMode) {
           debugPrint('🔧 Connected to Firebase emulators at $host');
         }

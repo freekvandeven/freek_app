@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/app_config.dart';
 import '../../../services/image_upload_service.dart';
+import '../../../services/log_service.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../models/inventory_item.dart';
 import '../services/firestore_inventory_service.dart';
@@ -23,11 +24,13 @@ class InventoryListNotifier extends AsyncNotifier<List<InventoryItem>> {
 
   Future<void> addItem(InventoryItem item) async {
     await ref.read(inventoryServiceProvider).addItem(item);
+    LogService.instance.info('Inventory item added: ${item.name}');
     ref.invalidateSelf();
   }
 
   Future<void> updateItem(InventoryItem item) async {
     await ref.read(inventoryServiceProvider).updateItem(item);
+    LogService.instance.info('Inventory item updated: ${item.id}');
     ref.invalidateSelf();
   }
 
@@ -41,6 +44,7 @@ class InventoryListNotifier extends AsyncNotifier<List<InventoryItem>> {
       }
     }
     await ref.read(inventoryServiceProvider).deleteItem(id);
+    LogService.instance.info('Inventory item deleted: $id');
     ref.invalidateSelf();
   }
 }

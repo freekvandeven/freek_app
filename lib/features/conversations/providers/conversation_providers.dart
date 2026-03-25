@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/app_config.dart';
 import '../../../services/image_upload_service.dart';
+import '../../../services/log_service.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../models/conversation_topic.dart';
 import '../services/conversation_service.dart';
@@ -30,11 +31,13 @@ class ConversationListNotifier extends AsyncNotifier<List<ConversationTopic>> {
 
   Future<void> addTopic(ConversationTopic topic) async {
     await ref.read(conversationServiceProvider).addTopic(topic);
+    LogService.instance.info('Conversation topic added: ${topic.title}');
     ref.invalidateSelf();
   }
 
   Future<void> updateTopic(ConversationTopic topic) async {
     await ref.read(conversationServiceProvider).updateTopic(topic);
+    LogService.instance.info('Conversation topic updated: ${topic.id}');
     ref.invalidateSelf();
   }
 
@@ -48,6 +51,7 @@ class ConversationListNotifier extends AsyncNotifier<List<ConversationTopic>> {
       }
     }
     await ref.read(conversationServiceProvider).deleteTopic(id);
+    LogService.instance.info('Conversation topic deleted: $id');
     ref.invalidateSelf();
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/app_config.dart';
 import '../../../services/image_upload_service.dart';
+import '../../../services/log_service.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../models/feedback_entry.dart';
 import '../services/feedback_service.dart';
@@ -49,11 +50,15 @@ class FeedbackListNotifier extends AsyncNotifier<List<FeedbackEntry>> {
       );
     }
     await ref.read(feedbackServiceProvider).addEntry(entry);
+    LogService.instance.info(
+      'Feedback entry created: ${entry.referenceId} (${entry.type.name})',
+    );
     ref.invalidateSelf();
   }
 
   Future<void> updateEntry(FeedbackEntry entry) async {
     await ref.read(feedbackServiceProvider).updateEntry(entry);
+    LogService.instance.info('Feedback entry updated: ${entry.id}');
     ref.invalidateSelf();
   }
 
@@ -67,6 +72,7 @@ class FeedbackListNotifier extends AsyncNotifier<List<FeedbackEntry>> {
       }
     }
     await ref.read(feedbackServiceProvider).deleteEntry(id);
+    LogService.instance.info('Feedback entry deleted: $id');
     ref.invalidateSelf();
   }
 }

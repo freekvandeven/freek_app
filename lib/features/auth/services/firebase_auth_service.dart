@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 
 import '../../../config/app_config.dart';
+import '../../../services/log_service.dart';
 import '../models/user_profile.dart';
 import 'auth_service.dart';
 
@@ -89,6 +90,7 @@ class FirebaseAuthService implements AuthService {
         throw const AuthException('User profile not found after signup.');
       }
       _authStateController.add(_currentUser);
+      LogService.instance.info('User signed up: ${_currentUser!.id}');
       return _currentUser!;
     } on AuthException {
       rethrow;
@@ -113,6 +115,7 @@ class FirebaseAuthService implements AuthService {
       }
       _currentUser = profile;
       _authStateController.add(profile);
+      LogService.instance.info('User signed in: ${profile.id}');
       return profile;
     } on fb.FirebaseAuthException catch (e) {
       throw AuthException(_mapFirebaseError(e.code));
@@ -121,6 +124,7 @@ class FirebaseAuthService implements AuthService {
 
   @override
   Future<void> signOut() async {
+    LogService.instance.info('User signed out');
     await _auth.signOut();
     _currentUser = null;
     _authStateController.add(null);
@@ -129,6 +133,7 @@ class FirebaseAuthService implements AuthService {
   @override
   Future<void> resetPassword({required String email}) async {
     try {
+      LogService.instance.info('Password reset requested');
       await _auth.sendPasswordResetEmail(email: email);
     } on fb.FirebaseAuthException catch (e) {
       throw AuthException(_mapFirebaseError(e.code));
@@ -155,6 +160,7 @@ class FirebaseAuthService implements AuthService {
 
       // Update the password
       await fbUser.updatePassword(newPassword);
+      LogService.instance.info('Password changed');
     } on fb.FirebaseAuthException catch (e) {
       throw AuthException(_mapFirebaseError(e.code));
     }
@@ -182,6 +188,7 @@ class FirebaseAuthService implements AuthService {
       _currentUser = profile;
       _authStateController.add(profile);
     }
+    LogService.instance.info('Profile updated: ${profile.id}');
   }
 
   Future<UserProfile?> _loadProfile(String uid) async {

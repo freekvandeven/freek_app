@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/app_config.dart';
+import '../../../services/log_service.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../tasks/providers/task_providers.dart';
 import '../../finances/providers/finance_providers.dart';
@@ -68,16 +69,19 @@ class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
 
   Future<void> addEvent(CalendarEvent event) async {
     await ref.read(calendarServiceProvider).addEvent(event);
+    LogService.instance.info('Calendar event created: ${event.title}');
     ref.invalidateSelf();
   }
 
   Future<void> updateEvent(CalendarEvent event) async {
     await ref.read(calendarServiceProvider).updateEvent(event);
+    LogService.instance.info('Calendar event updated: ${event.id}');
     ref.invalidateSelf();
   }
 
   Future<void> deleteEvent(String id) async {
     await ref.read(calendarServiceProvider).deleteEvent(id);
+    LogService.instance.info('Calendar event deleted: $id');
     ref.invalidateSelf();
   }
 }

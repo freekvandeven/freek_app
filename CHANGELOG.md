@@ -35,6 +35,7 @@ All notable changes to this project will be documented in this file.
 - Storage usage tracking Cloud Functions (`onFileUploaded`/`onFileDeleted`) now correctly parse file size as a number before passing to `FieldValue.increment()`
 - Chinese Yuan (CNY ¥) restored to the currency picker — was inadvertently removed
 - Residual images in Firebase Storage — images are now properly deleted from Storage when removed from edit pages, when items are deleted, and when profile photos are updated; image uploads are deferred until the item is saved to prevent orphaned files from cancelled edits
+- Info logging throughout the app — added `LogService.instance.info()` calls to auth operations (sign up, sign in, sign out, password reset/change, profile update), all CRUD operations (tasks, inventory, recipes, calendar, conversations, feedback, finances), image upload/delete operations, and app startup; all logs are viewable on the developer page
 
 ## [0.6.0] - 2026-03-19
 

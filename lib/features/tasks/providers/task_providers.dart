@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../config/app_config.dart';
 import '../../../services/image_upload_service.dart';
+import '../../../services/log_service.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../models/task.dart';
 import '../services/firestore_task_service.dart';
@@ -30,11 +31,13 @@ class TaskListNotifier extends AsyncNotifier<List<Task>> {
 
   Future<void> addTask(Task task) async {
     await _service.createTask(task);
+    LogService.instance.info('Task created: ${task.title}');
     ref.invalidateSelf();
   }
 
   Future<void> updateTask(Task task) async {
     await _service.updateTask(task);
+    LogService.instance.info('Task updated: ${task.id}');
     ref.invalidateSelf();
   }
 
@@ -48,6 +51,7 @@ class TaskListNotifier extends AsyncNotifier<List<Task>> {
       }
     }
     await _service.deleteTask(id);
+    LogService.instance.info('Task deleted: $id');
     ref.invalidateSelf();
   }
 
@@ -59,6 +63,7 @@ class TaskListNotifier extends AsyncNotifier<List<Task>> {
         completedAt: DateTime.now(),
       );
       await _service.updateTask(updated);
+      LogService.instance.info('Task completed: ${task.id}');
 
       // If repeatable, create next instance
       final nextDue = task.nextDueDate;
