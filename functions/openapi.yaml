@@ -437,6 +437,64 @@ paths:
               schema:
                 $ref: "#/components/schemas/CallableError"
 
+  /setAdminClaim:
+    post:
+      operationId: setAdminClaim
+      summary: Grant admin privileges to a user
+      description: |
+        Admin-only function to grant the `admin` custom claim to another user.
+        Can only grant admin (set `admin: true`), cannot revoke. Merges with
+        existing custom claims. The caller must be authenticated with both
+        `inviteVerified` and `admin` custom claims.
+
+        **Type**: Firebase Callable (`onCall`)
+      tags:
+        - Admin
+      security:
+        - firebaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+                  required: [targetUid]
+                  properties:
+                    targetUid:
+                      type: string
+                      description: UID of the user to grant admin privileges
+                      example: "abc123def456"
+      responses:
+        "200":
+          description: Admin claim granted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                        example: true
+        "400":
+          description: Missing or invalid targetUid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallableError"
+        "403":
+          description: Caller is not an authenticated admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallableError"
+
 components:
   securitySchemes:
     firebaseAuth:

@@ -390,6 +390,50 @@ export const updateStorageLimit = onCall({ region: REGION }, async (request) => 
   return { success: true, storageLimitBytes };
 });
 
+// --- Admin: Set Admin Claim ---
+
+/**
+ * Admin-only callable function: grant admin custom claim to another user.
+ * Can only grant admin (set admin: true), cannot revoke.
+ *
+ * Expects: { targetUid: string }
+ */
+export const setAdminClaim = onCall({ region: REGION }, async (request) => {
+  if (!request.auth || !request.auth.token.inviteVerified) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only verified users can call this function."
+    );
+  }
+
+  const callerRecord = await getAuth().getUser(request.auth.uid);
+  if (!callerRecord.customClaims?.admin) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only admin users can grant admin privileges."
+    );
+  }
+
+  const { targetUid } = request.data;
+  if (typeof targetUid !== "string" || !targetUid.trim()) {
+    throw new HttpsError("invalid-argument", "targetUid is required.");
+  }
+
+  const trimmedUid = targetUid.trim();
+
+  // Verify the target user exists
+  const targetRecord = await getAuth().getUser(trimmedUid);
+
+  // Merge admin: true into the user's existing custom claims
+  const existingClaims = targetRecord.customClaims ?? {};
+  await getAuth().setCustomUserClaims(trimmedUid, {
+    ...existingClaims,
+    admin: true,
+  });
+
+  return { success: true };
+});
+
 // --- Storage usage tracking ---
 
 /**

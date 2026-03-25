@@ -102,6 +102,47 @@ class _PublicProfilePageState extends ConsumerState<PublicProfilePage> {
     }
   }
 
+  Future<void> _showGrantAdminDialog() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Grant Admin'),
+        content: const Text(
+          'Are you sure you want to make this user an admin? '
+          'This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Grant Admin'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        final adminService = ref.read(adminServiceProvider);
+        await adminService.setAdminClaim(targetUid: widget.userId);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Admin privileges granted')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -244,6 +285,18 @@ class _PublicProfilePageState extends ConsumerState<PublicProfilePage> {
                 icon: const Icon(Icons.edit_rounded),
                 onPressed: () =>
                     _showUpdateStorageLimitDialog(storageLimitBytes),
+              ),
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.admin_panel_settings,
+                color: colorScheme.primary,
+              ),
+              title: const Text('Grant Admin'),
+              subtitle: const Text('Make this user an admin'),
+              trailing: IconButton(
+                icon: const Icon(Icons.shield_rounded),
+                onPressed: () => _showGrantAdminDialog(),
               ),
             ),
           ],
