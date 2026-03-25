@@ -237,6 +237,7 @@ class SettingsPage extends ConsumerWidget {
     'USD': '\$',
     'GBP': '£',
     'CHF': 'Fr',
+    'CNY': '¥',
     'JPY': '¥',
     'CAD': 'CA\$',
     'AUD': 'A\$',

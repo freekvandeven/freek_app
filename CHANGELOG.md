@@ -33,6 +33,7 @@ All notable changes to this project will be documented in this file.
 - Changelog "Latest" badge renamed to "Current" and now highlights the entry matching the running app version, rather than always the first entry
 - Admin menu item now reliably appears for admin users — fixed token refresh to force-fetch latest custom claims instead of using potentially stale cached token
 - Storage usage tracking Cloud Functions (`onFileUploaded`/`onFileDeleted`) now correctly parse file size as a number before passing to `FieldValue.increment()`
+- Chinese Yuan (CNY ¥) restored to the currency picker — was inadvertently removed
 
 ## [0.6.0] - 2026-03-19
 
