@@ -2,11 +2,11 @@ import 'dart:typed_data';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
 import '../../../services/image_upload_service.dart';
@@ -136,7 +136,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
 
       // Delete removed images from Storage
       for (final url in _removedImageUrls) {
-        uploader.deleteImage(url);
+        await uploader.deleteImage(url);
       }
 
       if (mounted) context.pop();

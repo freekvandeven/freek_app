@@ -261,7 +261,7 @@ class _TestDataPageState extends ConsumerState<TestDataPage> {
       'Finance',
       'Learning',
     ];
-    final priorities = TaskPriority.values;
+    const priorities = TaskPriority.values;
 
     for (final title in titles) {
       yield Task(
@@ -316,9 +316,9 @@ class _TestDataPageState extends ConsumerState<TestDataPage> {
           ),
         ),
         instructions: [
-          RecipeInstruction(text: 'Prepare all ingredients.'),
-          RecipeInstruction(text: 'Cook according to the recipe.'),
-          RecipeInstruction(text: 'Serve and enjoy.'),
+          const RecipeInstruction(text: 'Prepare all ingredients.'),
+          const RecipeInstruction(text: 'Cook according to the recipe.'),
+          const RecipeInstruction(text: 'Serve and enjoy.'),
         ],
         tags: tags,
         isFavorite: rng.nextBool(),
@@ -604,7 +604,7 @@ class _TestDataPageState extends ConsumerState<TestDataPage> {
       ('Volunteer work', 'Sign up for charity event', 'Community'),
       ('Tech setup', 'Help with new laptop', 'Colleague'),
     ];
-    final priorities = TopicPriority.values;
+    const priorities = TopicPriority.values;
 
     for (final (title, description, person) in topics) {
       yield ConversationTopic(

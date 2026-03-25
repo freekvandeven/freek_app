@@ -46,6 +46,7 @@ class GeminiService {
       final body = jsonDecode(response.body) as Map<String, dynamic>;
       final models = body['models'] as List<dynamic>;
       return models
+          .cast<Map<String, dynamic>>()
           .where((m) {
             final methods =
                 (m['supportedGenerationMethods'] as List<dynamic>?) ?? [];

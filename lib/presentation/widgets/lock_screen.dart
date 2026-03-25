@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../features/auth/services/biometric_service.dart';
@@ -85,7 +87,7 @@ class _LockScreenState extends State<LockScreen> with WidgetsBindingObserver {
     // silently fail; stopAuthentication() ensures a clean state.
     await BiometricService.stopAuthentication();
     _authenticating = false;
-    _authenticate();
+    unawaited(_authenticate());
   }
 
   @override

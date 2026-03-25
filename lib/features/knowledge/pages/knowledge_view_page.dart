@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
+import '../models/knowledge_page.dart';
 import '../providers/knowledge_providers.dart';
 
 class KnowledgeViewPage extends ConsumerWidget {
@@ -83,9 +84,9 @@ class KnowledgeViewPage extends ConsumerWidget {
   Widget _buildBody(
     BuildContext context,
     WidgetRef ref,
-    dynamic page,
-    AsyncValue<List<dynamic>> breadcrumbs,
-    AsyncValue<List<dynamic>> children,
+    KnowledgePage page,
+    AsyncValue<List<KnowledgePage>> breadcrumbs,
+    AsyncValue<List<KnowledgePage>> children,
   ) {
     final crumbs = breadcrumbs.valueOrNull ?? [];
     final childPages = children.valueOrNull ?? [];
@@ -109,7 +110,7 @@ class KnowledgeViewPage extends ConsumerWidget {
                     GestureDetector(
                       onTap: () => context.push('/knowledge/${crumbs[i].id}'),
                       child: Text(
-                        crumbs[i].title as String,
+                        crumbs[i].title,
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.primary,
                           decoration: TextDecoration.underline,
@@ -118,7 +119,7 @@ class KnowledgeViewPage extends ConsumerWidget {
                     )
                   else
                     Text(
-                      crumbs[i].title as String,
+                      crumbs[i].title,
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                 ],
@@ -127,10 +128,10 @@ class KnowledgeViewPage extends ConsumerWidget {
           ),
 
         // Tags
-        if ((page.tags as List).isNotEmpty) ...[
+        if (page.tags.isNotEmpty) ...[
           Wrap(
             spacing: 6,
-            children: (page.tags as List<String>)
+            children: page.tags
                 .map(
                   (t) => Chip(
                     label: Text(t),
@@ -143,7 +144,7 @@ class KnowledgeViewPage extends ConsumerWidget {
         ],
 
         // Markdown content
-        MarkdownBody(data: page.content as String, selectable: true),
+        MarkdownBody(data: page.content, selectable: true),
 
         // Child pages
         if (childPages.isNotEmpty) ...[
@@ -154,7 +155,7 @@ class KnowledgeViewPage extends ConsumerWidget {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.article_outlined),
-              title: Text(child.title as String),
+              title: Text(child.title),
               onTap: () => context.push('/knowledge/${child.id}'),
             ),
         ],

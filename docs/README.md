@@ -81,3 +81,19 @@ docs/
 | Non-Functional Reqs | ✅ Complete |
 | Tech Decisions | ✅ Complete |
 | ADRs (3) | ✅ Complete |
+
+## Generated Documentation
+
+Auto-generated API documentation can be produced with:
+
+```bash
+./scripts/generate-docs.sh
+```
+
+| Output | Generator | Command |
+|--------|-----------|---------|
+| `docs/generated/dart/` | `dart doc` | `dart doc --output docs/generated/dart` |
+| `functions/docs/` | `typedoc` | `cd functions && npm run docs` |
+| `functions/openapi.yaml` | Hand-maintained | OpenAPI 3.0 spec for Cloud Functions |
+
+Generated output is git-ignored. Run the script locally to browse the HTML docs.

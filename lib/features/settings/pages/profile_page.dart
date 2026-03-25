@@ -1,11 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
-import '../../../services/image_upload_service.dart';
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
+import '../../../services/image_upload_service.dart';
 import '../../auth/providers/auth_providers.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
@@ -92,7 +92,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       // Delete old profile photo from Storage
       final oldPhotoUrl = user.photoUrl;
       if (oldPhotoUrl != null && oldPhotoUrl.isNotEmpty) {
-        uploadService.deleteImage(oldPhotoUrl);
+        await uploadService.deleteImage(oldPhotoUrl);
       }
 
       final url = await uploadService.uploadImageBytes(

@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
-
 import 'package:personal_app/features/auth/providers/auth_providers.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../../../services/version_check_service.dart';
 import '../../calendar/models/calendar_event.dart';
 import '../../calendar/providers/calendar_providers.dart';
@@ -240,76 +240,76 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
   Widget _buildFeatureGrid(BuildContext context, ColorScheme colorScheme) {
     final features = [
-      _FeatureTile(
+      const _FeatureTile(
         icon: Icons.check_circle_rounded,
         label: 'Tasks',
         color: Colors.blue,
         route: '/tasks',
         isShellBranch: true,
       ),
-      _FeatureTile(
+      const _FeatureTile(
         icon: Icons.calendar_month_rounded,
         label: 'Calendar',
         color: Colors.purple,
         route: '/calendar',
         isShellBranch: true,
       ),
-      _FeatureTile(
+      const _FeatureTile(
         icon: Icons.account_balance_wallet_rounded,
         label: 'Finance',
         color: Colors.green,
         route: '/finance',
         isShellBranch: true,
       ),
-      _FeatureTile(
+      const _FeatureTile(
         icon: Icons.restaurant_menu_rounded,
         label: 'Recipes',
         color: Colors.orange,
         route: '/recipes',
       ),
-      _FeatureTile(
+      const _FeatureTile(
         icon: Icons.lock_rounded,
         label: 'Passwords',
         color: Colors.red,
         route: '/passwords',
       ),
-      _FeatureTile(
+      const _FeatureTile(
         icon: Icons.inventory_2_rounded,
         label: 'Inventory',
         color: Colors.teal,
         route: '/inventory',
       ),
-      _FeatureTile(
+      const _FeatureTile(
         icon: Icons.menu_book_rounded,
         label: 'Knowledge',
         color: Colors.indigo,
         route: '/knowledge',
       ),
-      _FeatureTile(
+      const _FeatureTile(
         icon: Icons.feedback_rounded,
         label: 'Feedback',
         color: Colors.amber,
         route: '/feedback',
       ),
-      _FeatureTile(
+      const _FeatureTile(
         icon: Icons.link_rounded,
         label: 'Connections',
         color: Colors.cyan,
         route: '/connections',
       ),
-      _FeatureTile(
+      const _FeatureTile(
         icon: Icons.auto_awesome_rounded,
         label: 'Gemini AI',
         color: Colors.deepPurple,
         route: '/gemini',
       ),
-      _FeatureTile(
+      const _FeatureTile(
         icon: Icons.forum_rounded,
         label: 'Conversations',
         color: Colors.pink,
         route: '/conversations',
       ),
-      _FeatureTile(
+      const _FeatureTile(
         icon: Icons.people_rounded,
         label: 'People',
         color: Colors.brown,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
 import '../../admin/providers/admin_providers.dart';
 
@@ -17,60 +17,60 @@ class MorePage extends ConsumerWidget {
       body: ListView(
         children: [
           _buildSection(context, 'Features', [
-            _MenuItem(
+            const _MenuItem(
               icon: Icons.restaurant_menu_rounded,
               label: 'Recipes',
               route: '/recipes',
             ),
-            _MenuItem(
+            const _MenuItem(
               icon: Icons.lock_rounded,
               label: 'Password Vault',
               route: '/passwords',
             ),
-            _MenuItem(
+            const _MenuItem(
               icon: Icons.inventory_2_rounded,
               label: 'Inventory',
               route: '/inventory',
             ),
-            _MenuItem(
+            const _MenuItem(
               icon: Icons.menu_book_rounded,
               label: 'Knowledge Bank',
               route: '/knowledge',
             ),
-            _MenuItem(
+            const _MenuItem(
               icon: Icons.feedback_rounded,
               label: 'Feedback',
               route: '/feedback',
             ),
-            _MenuItem(
+            const _MenuItem(
               icon: Icons.forum_rounded,
               label: 'Conversations',
               route: '/conversations',
             ),
-            _MenuItem(
+            const _MenuItem(
               icon: Icons.link_rounded,
               label: 'Connections',
               route: '/connections',
             ),
-            _MenuItem(
+            const _MenuItem(
               icon: Icons.auto_awesome_rounded,
               label: 'Gemini AI',
               route: '/gemini',
             ),
-            _MenuItem(
+            const _MenuItem(
               icon: Icons.people_rounded,
               label: 'People',
               route: '/people',
             ),
           ]),
           _buildSection(context, 'App', [
-            _MenuItem(
+            const _MenuItem(
               icon: Icons.settings_rounded,
               label: 'Settings',
               route: '/settings',
             ),
             if (isAdmin)
-              _MenuItem(
+              const _MenuItem(
                 icon: Icons.admin_panel_settings_rounded,
                 label: 'Admin',
                 route: '/admin',

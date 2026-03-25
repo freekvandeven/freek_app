@@ -50,9 +50,9 @@ CLOUD_FUNCTIONS_REGION=europe-west4
     ),
   );
 
-  FirebaseAuth.instance.useAuthEmulator(emulatorHost, authPort);
+  await FirebaseAuth.instance.useAuthEmulator(emulatorHost, authPort);
   FirebaseFirestore.instance.useFirestoreEmulator(emulatorHost, firestorePort);
-  FirebaseStorage.instance.useStorageEmulator(emulatorHost, storagePort);
+  await FirebaseStorage.instance.useStorageEmulator(emulatorHost, storagePort);
 
   _initialized = true;
 }
@@ -86,7 +86,7 @@ Future<UserCredential> createTestUser({
   }
 
   final body = jsonDecode(response.body) as Map<String, dynamic>;
-  final token = body['result']['token'] as String;
+  final token = (body['result'] as Map<String, dynamic>)['token'] as String;
 
   // Sign in with the custom token returned by the function
   return FirebaseAuth.instance.signInWithCustomToken(token);

@@ -1,0 +1,489 @@
+openapi: 3.0.3
+info:
+  title: Freek App Cloud Functions API
+  description: |
+    Cloud Functions for the Freek App personal life-management application.
+    Deployed to Firebase Cloud Functions (2nd Gen) in `europe-west4`.
+
+    ## Authentication
+
+    **Callable functions** (`onCall`) use Firebase Authentication. The client SDK
+    automatically attaches the user's ID token. When calling via HTTP directly,
+    include the Firebase ID token as a Bearer token in the `Authorization` header.
+
+    **HTTP functions** (`onRequest`) use a custom API key passed as a Bearer token.
+
+    ## Firebase Callable Protocol
+
+    All `onCall` functions use the Firebase callable protocol:
+    - **Request**: `POST` with body `{ "data": { ... } }`
+    - **Response**: `{ "result": { ... } }` on success
+    - **Error**: `{ "error": { "status": "<CODE>", "message": "<MESSAGE>" } }`
+
+    ## Storage Triggers
+
+    Storage triggers (`onFileUploaded`, `onFileDeleted`) fire automatically when
+    files are added to or removed from Cloud Storage. They are not callable via HTTP.
+
+  version: 0.6.0
+  contact:
+    name: Freek App
+  license:
+    name: Private
+servers:
+  - url: https://europe-west4-freek-personal-app.cloudfunctions.net
+    description: Production (Cloud Functions 2nd Gen)
+
+paths:
+  /createUserWithInvite:
+    post:
+      operationId: createUserWithInvite
+      summary: Create a new user with an invite code
+      description: |
+        Registers a new user via Firebase Auth (Admin SDK) using a valid single-use
+        invite code. On success, the invite code is consumed and a custom token is
+        returned for client sign-in.
+
+        **Type**: Firebase Callable (`onCall`)
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+                  required: [email, password, inviteCode]
+                  properties:
+                    email:
+                      type: string
+                      format: email
+                      example: "user@example.com"
+                    password:
+                      type: string
+                      minLength: 6
+                      example: "SecurePass123!"
+                    inviteCode:
+                      type: string
+                      example: "ABC12345"
+      responses:
+        "200":
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        description: Firebase custom token for client sign-in
+        "400":
+          description: Invalid arguments (missing or invalid fields, password too short)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallableError"
+        "403":
+          description: Invalid invite code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallableError"
+        "409":
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallableError"
+
+  /setInviteVerifiedClaim:
+    post:
+      operationId: setInviteVerifiedClaim
+      summary: Set inviteVerified claim on a user
+      description: |
+        Admin-only function to set the `inviteVerified` custom claim on an existing
+        Firebase Auth user. The caller must be authenticated with both `inviteVerified`
+        and `admin` custom claims.
+
+        **Type**: Firebase Callable (`onCall`)
+      tags:
+        - Admin
+      security:
+        - firebaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+                  required: [targetUid]
+                  properties:
+                    targetUid:
+                      type: string
+                      description: UID of the user to grant the inviteVerified claim
+                      example: "abc123def456"
+      responses:
+        "200":
+          description: Claim set successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                        example: true
+        "400":
+          description: Missing or invalid targetUid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallableError"
+        "403":
+          description: Caller is not an authenticated admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallableError"
+
+  /manageInviteCodes:
+    post:
+      operationId: manageInviteCodes
+      summary: Manage invite codes (list, create, delete)
+      description: |
+        Admin-only function for invite code management. Supports three actions:
+        - `list`: Returns all invite codes
+        - `create`: Creates a new invite code (auto-generated or custom)
+        - `delete`: Deletes an existing invite code
+
+        The caller must be authenticated with both `inviteVerified` and `admin`
+        custom claims.
+
+        **Type**: Firebase Callable (`onCall`)
+      tags:
+        - Admin
+      security:
+        - firebaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  oneOf:
+                    - title: List invite codes
+                      type: object
+                      required: [action]
+                      properties:
+                        action:
+                          type: string
+                          enum: [list]
+                    - title: Create invite code
+                      type: object
+                      required: [action]
+                      properties:
+                        action:
+                          type: string
+                          enum: [create]
+                        code:
+                          type: string
+                          description: Optional custom code. If omitted, a random 8-character code is generated.
+                          example: "MYCODE01"
+                    - title: Delete invite code
+                      type: object
+                      required: [action, code]
+                      properties:
+                        action:
+                          type: string
+                          enum: [delete]
+                        code:
+                          type: string
+                          description: The invite code to delete
+                          example: "ABC12345"
+      responses:
+        "200":
+          description: Action completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    oneOf:
+                      - title: List result
+                        type: object
+                        properties:
+                          codes:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                code:
+                                  type: string
+                                createdAt:
+                                  type: string
+                                  format: date-time
+                                createdBy:
+                                  type: string
+                                  description: UID of the admin who created the code
+                      - title: Create result
+                        type: object
+                        properties:
+                          code:
+                            type: string
+                            description: The created invite code
+                      - title: Delete result
+                        type: object
+                        properties:
+                          success:
+                            type: boolean
+        "400":
+          description: Invalid action or missing parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallableError"
+        "403":
+          description: Caller is not an authenticated admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallableError"
+        "404":
+          description: Invite code not found (delete action)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallableError"
+        "409":
+          description: Invite code already exists (create action)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallableError"
+
+  /updateFeedbackSummary:
+    post:
+      operationId: updateFeedbackSummary
+      summary: Update a feedback document with an AI summary
+      description: |
+        HTTP endpoint that updates a feedback document's `aiSummary` field.
+        Searches both the public `feedback/` collection and all user-private
+        `users/{uid}/feedback/` collections for a matching `referenceId`.
+
+        **Type**: HTTP Request (`onRequest`)
+      tags:
+        - Feedback
+      security:
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [referenceId, summary]
+              properties:
+                referenceId:
+                  type: string
+                  description: The feedback reference ID (e.g., BUG-0001, WISH-0005)
+                  example: "WISH-0005"
+                summary:
+                  type: string
+                  description: AI-generated summary of what was done
+                  example: "Added recipe tag management with autocomplete UI."
+      responses:
+        "200":
+          description: Summary updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  collection:
+                    type: string
+                    description: The Firestore collection where the document was found
+                    example: "users/abc123/feedback"
+                  id:
+                    type: string
+                    description: The Firestore document ID
+        "400":
+          description: Missing or invalid referenceId/summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Unauthorized"
+        "404":
+          description: No feedback found with the given referenceId
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "405":
+          description: Method not allowed (only POST accepted)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Method not allowed"
+
+  /updateStorageLimit:
+    post:
+      operationId: updateStorageLimit
+      summary: Update a user's storage limit
+      description: |
+        Admin-only function to update the `storageLimitBytes` field on a user's
+        Firestore profile document. The caller must be authenticated with both
+        `inviteVerified` and `admin` custom claims.
+
+        **Type**: Firebase Callable (`onCall`)
+      tags:
+        - Admin
+      security:
+        - firebaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+                  required: [targetUserId, storageLimitBytes]
+                  properties:
+                    targetUserId:
+                      type: string
+                      description: UID of the user whose limit to update
+                      example: "abc123def456"
+                    storageLimitBytes:
+                      type: number
+                      minimum: 0
+                      description: New storage limit in bytes
+                      example: 209715200
+      responses:
+        "200":
+          description: Storage limit updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                        example: true
+                      storageLimitBytes:
+                        type: number
+                        example: 209715200
+        "400":
+          description: Missing or invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallableError"
+        "403":
+          description: Caller is not an authenticated admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallableError"
+        "404":
+          description: Target user not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallableError"
+
+components:
+  securitySchemes:
+    firebaseAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Firebase ID Token
+      description: Firebase Authentication ID token (automatically attached by Firebase client SDK)
+    apiKeyAuth:
+      type: http
+      scheme: bearer
+      description: API key for service-to-service authentication (FEEDBACK_API_KEY secret)
+
+  schemas:
+    CallableError:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            status:
+              type: string
+              description: gRPC-style error code
+              enum:
+                - INVALID_ARGUMENT
+                - PERMISSION_DENIED
+                - ALREADY_EXISTS
+                - NOT_FOUND
+                - INTERNAL
+              example: INVALID_ARGUMENT
+            message:
+              type: string
+              description: Human-readable error message
+              example: "Missing required fields."
+
+tags:
+  - name: Authentication
+    description: User registration and authentication
+  - name: Admin
+    description: Admin-only management functions (require `admin` custom claim)
+  - name: Feedback
+    description: Feedback management endpoints
+  - name: Storage Triggers
+    description: |
+      Automatic storage event handlers (not callable via HTTP).
+
+      - **onFileUploaded**: Increments `storageUsedBytes` on the user's profile
+        when a file is uploaded to `users/{userId}/...` in Cloud Storage.
+
+      - **onFileDeleted**: Decrements `storageUsedBytes` on the user's profile
+        when a file is deleted from `users/{userId}/...` in Cloud Storage.

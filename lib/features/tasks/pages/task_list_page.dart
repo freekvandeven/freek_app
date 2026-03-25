@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
 import '../models/task.dart';
 import '../providers/task_providers.dart';
@@ -205,7 +205,11 @@ class _TaskTile extends ConsumerWidget {
   Widget _priorityIcon(TaskPriority priority, ColorScheme colorScheme) {
     return switch (priority) {
       TaskPriority.high => Icon(Icons.flag, color: colorScheme.error, size: 20),
-      TaskPriority.medium => Icon(Icons.flag, color: Colors.orange, size: 20),
+      TaskPriority.medium => const Icon(
+        Icons.flag,
+        color: Colors.orange,
+        size: 20,
+      ),
       TaskPriority.low => Icon(
         Icons.flag_outlined,
         color: colorScheme.outline,

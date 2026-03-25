@@ -61,7 +61,7 @@ class MockAuthService implements AuthService {
     final users = await _loadUsers();
     final existing = users.values.where((u) => u.email == email);
     if (existing.isNotEmpty) {
-      throw AuthException('An account with this email already exists.');
+      throw const AuthException('An account with this email already exists.');
     }
 
     final now = DateTime.now();
@@ -86,7 +86,7 @@ class MockAuthService implements AuthService {
     final users = await _loadUsers();
     final match = users.values.where((u) => u.email == email);
     if (match.isEmpty) {
-      throw AuthException('No account found with this email.');
+      throw const AuthException('No account found with this email.');
     }
     final profile = match.first;
     await _setCurrentUser(profile);

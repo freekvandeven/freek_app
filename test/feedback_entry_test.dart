@@ -75,10 +75,13 @@ void main() {
       final after = DateTime.now();
 
       expect(
-        entry.createdAt.isAfter(before.subtract(Duration(seconds: 1))),
+        entry.createdAt.isAfter(before.subtract(const Duration(seconds: 1))),
         isTrue,
       );
-      expect(entry.createdAt.isBefore(after.add(Duration(seconds: 1))), isTrue);
+      expect(
+        entry.createdAt.isBefore(after.add(const Duration(seconds: 1))),
+        isTrue,
+      );
     });
 
     test('copyWith replaces fields', () {

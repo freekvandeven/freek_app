@@ -2,12 +2,12 @@ import 'dart:typed_data';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
-import '../../../services/image_upload_service.dart';
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
+import '../../../services/image_upload_service.dart';
 import '../models/recipe.dart';
 import '../providers/recipe_providers.dart';
 import '../utils/video_link_parser.dart';
@@ -183,7 +183,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
 
       // Delete removed images from Storage
       for (final url in _removedImageUrls) {
-        uploader.deleteImage(url);
+        await uploader.deleteImage(url);
       }
 
       if (mounted) context.pop();

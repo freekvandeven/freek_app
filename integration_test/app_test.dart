@@ -144,7 +144,7 @@ void main() {
 
       expect(response.statusCode, 200);
       final body = jsonDecode(response.body) as Map<String, dynamic>;
-      final token = body['result']['token'] as String;
+      final token = (body['result'] as Map<String, dynamic>)['token'] as String;
       expect(token, isNotEmpty);
 
       // Sign in with the custom token returned by the Cloud Function

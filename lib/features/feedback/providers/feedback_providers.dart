@@ -68,7 +68,7 @@ class FeedbackListNotifier extends AsyncNotifier<List<FeedbackEntry>> {
     if (entry != null && entry.imageUrls.isNotEmpty) {
       final uploader = ref.read(imageUploadServiceProvider);
       for (final url in entry.imageUrls) {
-        uploader.deleteImage(url);
+        await uploader.deleteImage(url);
       }
     }
     await ref.read(feedbackServiceProvider).deleteEntry(id);

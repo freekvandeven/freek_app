@@ -1,9 +1,9 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
 import '../providers/finance_providers.dart';
 
@@ -126,7 +126,7 @@ class FinanceOverviewPage extends ConsumerWidget {
               final total = data.values.fold<double>(0, (s, v) => s + v);
               final entries = data.entries.toList()
                 ..sort((a, b) => b.value.compareTo(a.value));
-              final colors = _chartColors;
+              const colors = _chartColors;
 
               return Card(
                 child: Padding(

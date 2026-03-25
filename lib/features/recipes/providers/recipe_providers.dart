@@ -48,11 +48,11 @@ class RecipeListNotifier extends AsyncNotifier<List<Recipe>> {
     if (recipe != null) {
       final uploader = ref.read(imageUploadServiceProvider);
       for (final url in recipe.images) {
-        uploader.deleteImage(url);
+        await uploader.deleteImage(url);
       }
       for (final instruction in recipe.instructions) {
         if (instruction.imageUrl != null) {
-          uploader.deleteImage(instruction.imageUrl!);
+          await uploader.deleteImage(instruction.imageUrl!);
         }
       }
     }

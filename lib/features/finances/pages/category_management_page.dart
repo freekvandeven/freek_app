@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
 import '../models/finance_models.dart';
 import '../providers/finance_providers.dart';

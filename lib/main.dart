@@ -21,7 +21,7 @@ import 'services/log_service.dart';
 Future<void> main() async {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
-  WakelockPlus.enable();
+  await WakelockPlus.enable();
   LogService.instance.install();
   LogService.instance.info('App starting');
 
@@ -36,9 +36,9 @@ Future<void> main() async {
 
       if (AppConfig.useEmulators) {
         final host = AppConfig.emulatorHost;
-        FirebaseAuth.instance.useAuthEmulator(host, 9099);
+        await FirebaseAuth.instance.useAuthEmulator(host, 9099);
         FirebaseFirestore.instance.useFirestoreEmulator(host, 8080);
-        FirebaseStorage.instance.useStorageEmulator(host, 9199);
+        await FirebaseStorage.instance.useStorageEmulator(host, 9199);
         LogService.instance.info('Connected to Firebase emulators at $host');
         if (kDebugMode) {
           debugPrint('🔧 Connected to Firebase emulators at $host');

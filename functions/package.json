@@ -9,6 +9,7 @@
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
+    "docs": "typedoc",
     "update-version": "npx ts-node src/update-version.ts"
   },
   "engines": {
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "ts-node": "^10.9.2",
+    "typedoc": "^0.28.18",
     "typescript": "^5.7.0"
   },
   "private": true

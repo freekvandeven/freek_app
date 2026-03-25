@@ -1,11 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
-import '../../../services/image_upload_service.dart';
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
+import '../../../services/image_upload_service.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../models/feedback_entry.dart';
 import '../providers/feedback_providers.dart';
@@ -210,7 +210,7 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
   Future<void> _removeImage(int index) async {
     final url = _imageUrls[index];
     setState(() => _imageUrls = List.from(_imageUrls)..removeAt(index));
-    ref.read(imageUploadServiceProvider).deleteImage(url);
+    await ref.read(imageUploadServiceProvider).deleteImage(url);
   }
 
   @override

@@ -142,7 +142,7 @@ void main() {
       final profile = createProfile();
       final map = profile.toMap();
       expect(map['settings'], isA<Map<String, dynamic>>());
-      expect(map['settings']['themeMode'], 'dark');
+      expect((map['settings'] as Map<String, dynamic>)['themeMode'], 'dark');
     });
 
     test('default storage fields', () {

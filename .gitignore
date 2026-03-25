@@ -52,3 +52,7 @@ dotenv
 
 # Scripts
 scripts/.feedback-api-key
+
+# Generated documentation
+docs/generated/
+functions/docs/

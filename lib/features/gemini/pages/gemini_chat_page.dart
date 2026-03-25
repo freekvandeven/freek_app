@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
 import '../providers/gemini_providers.dart';
 

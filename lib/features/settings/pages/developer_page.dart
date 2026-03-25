@@ -78,7 +78,7 @@ class _DeveloperPageState extends ConsumerState<DeveloperPage> {
         padding: const EdgeInsets.all(16),
         children: [
           // --- App Info ---
-          _SectionHeader('App Info'),
+          const _SectionHeader('App Info'),
           _InfoRow('App Name', AppConfig.appName),
           _InfoRow(
             'Storage Backend',
@@ -91,7 +91,7 @@ class _DeveloperPageState extends ConsumerState<DeveloperPage> {
           const Divider(height: 32),
 
           // --- Firebase Info ---
-          _SectionHeader('Firebase'),
+          const _SectionHeader('Firebase'),
           _InfoRow('Project ID', AppConfig.firebaseProjectId),
           _InfoRow('Auth UID', user?.uid ?? 'Not signed in'),
           _InfoRow('Email', user?.email ?? '-'),
@@ -130,7 +130,7 @@ class _DeveloperPageState extends ConsumerState<DeveloperPage> {
           const Divider(height: 32),
 
           // --- Actions ---
-          _SectionHeader('Actions'),
+          const _SectionHeader('Actions'),
           Wrap(
             spacing: 8,
             runSpacing: 8,

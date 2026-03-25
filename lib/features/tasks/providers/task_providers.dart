@@ -47,7 +47,7 @@ class TaskListNotifier extends AsyncNotifier<List<Task>> {
     if (task != null && task.attachments.isNotEmpty) {
       final uploader = ref.read(imageUploadServiceProvider);
       for (final url in task.attachments) {
-        uploader.deleteImage(url);
+        await uploader.deleteImage(url);
       }
     }
     await _service.deleteTask(id);

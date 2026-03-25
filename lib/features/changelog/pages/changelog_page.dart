@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
-import 'package:flutter/services.dart' show rootBundle;
 
 import '../data/changelog_parser.dart';
 import '../models/changelog_entry.dart';

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
 import '../models/feedback_entry.dart';
 import '../providers/feedback_providers.dart';
@@ -314,7 +314,7 @@ class _FeedbackTile extends ConsumerWidget {
             onSelected: (value) async {
               switch (value) {
                 case 'copy':
-                  Clipboard.setData(
+                  await Clipboard.setData(
                     ClipboardData(text: entry.toClipboardText()),
                   );
                   if (context.mounted) {

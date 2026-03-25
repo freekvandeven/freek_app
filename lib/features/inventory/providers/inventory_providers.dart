@@ -40,7 +40,7 @@ class InventoryListNotifier extends AsyncNotifier<List<InventoryItem>> {
     if (item != null && item.imageUrls.isNotEmpty) {
       final uploader = ref.read(imageUploadServiceProvider);
       for (final url in item.imageUrls) {
-        uploader.deleteImage(url);
+        await uploader.deleteImage(url);
       }
     }
     await ref.read(inventoryServiceProvider).deleteItem(id);

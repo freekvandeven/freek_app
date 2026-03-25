@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../services/admin_service.dart';
 import '../providers/admin_providers.dart';
+import '../services/admin_service.dart';
 
 class AdminPage extends ConsumerStatefulWidget {
   const AdminPage({super.key});
@@ -84,7 +84,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Created invite code: $code')));
-      _loadCodes();
+      await _loadCodes();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -123,7 +123,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Invite code deleted')));
-      _loadCodes();
+      await _loadCodes();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(

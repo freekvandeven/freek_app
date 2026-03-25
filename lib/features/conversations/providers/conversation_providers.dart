@@ -47,7 +47,7 @@ class ConversationListNotifier extends AsyncNotifier<List<ConversationTopic>> {
     if (topic != null && topic.imageUrls.isNotEmpty) {
       final uploader = ref.read(imageUploadServiceProvider);
       for (final url in topic.imageUrls) {
-        uploader.deleteImage(url);
+        await uploader.deleteImage(url);
       }
     }
     await ref.read(conversationServiceProvider).deleteTopic(id);

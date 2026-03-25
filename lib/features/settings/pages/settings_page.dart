@@ -1,19 +1,19 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:convert';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
+import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
-import '../../auth/providers/auth_providers.dart';
+import '../../../presentation/theme/app_theme.dart';
+import '../../../services/version_check_service.dart';
 import '../../auth/models/user_profile.dart';
+import '../../auth/providers/auth_providers.dart';
 import '../../auth/services/biometric_service.dart';
 import '../../gemini/providers/gemini_providers.dart';
 import '../../gemini/services/gemini_service.dart';
-import '../../../presentation/theme/app_theme.dart';
-import '../../../services/version_check_service.dart';
 import '../providers/settings_providers.dart';
 
 class SettingsPage extends ConsumerWidget {
@@ -122,7 +122,7 @@ class SettingsPage extends ConsumerWidget {
               final updated = user.copyWith(
                 settings: settings.copyWith(biometricEnabled: v),
               );
-              ref.read(authServiceProvider).updateProfile(updated);
+              await ref.read(authServiceProvider).updateProfile(updated);
             },
           ),
           ListTile(
