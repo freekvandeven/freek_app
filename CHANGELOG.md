@@ -39,6 +39,7 @@ All notable changes to this project will be documented in this file.
 - Stricter Flutter lint rules — added ~50 lint rules with `strict-casts` and `strict-raw-types` enabled; auto-fixed 75 issues with `dart fix`, manually resolved all `unawaited_futures` and `avoid_dynamic_calls` warnings across lib/, test/, and integration_test/
 - OpenAPI 3.0 specification for Cloud Functions (`functions/openapi.yaml`) — documents all 5 callable/HTTP endpoints with request/response schemas, authentication, and error codes
 - Auto-generated documentation setup — `dart doc` for Flutter API docs, `typedoc` for Cloud Functions; run `./scripts/generate-docs.sh` to generate both; output is git-ignored
+- Calendar event image attachments — custom events now support multiple image attachments via gallery or camera; images are uploaded to Firebase Storage with compression preview; images are automatically deleted from Storage when an event is deleted or images are removed
 
 ## [0.6.0] - 2026-03-19
 

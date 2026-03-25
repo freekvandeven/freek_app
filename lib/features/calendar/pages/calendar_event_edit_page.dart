@@ -1,8 +1,13 @@
+import 'dart:typed_data';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../presentation/widgets/image_upload_preview_dialog.dart';
+import '../../../services/image_upload_service.dart';
 import '../models/calendar_event.dart';
 import '../providers/calendar_providers.dart';
 
@@ -28,6 +33,11 @@ class _CalendarEventEditPageState extends ConsumerState<CalendarEventEditPage> {
   TimeOfDay? _endTime;
   bool _isAllDay = true;
   bool _hasEndDate = false;
+
+  List<String> _savedImageUrls = [];
+  List<({Uint8List bytes, String fileName})> _pendingImages = [];
+  final List<String> _removedImageUrls = [];
+  bool _isUploading = false;
 
   bool get _isEditing => widget.eventId != null;
   CalendarEvent? _existingEvent;
@@ -58,6 +68,7 @@ class _CalendarEventEditPageState extends ConsumerState<CalendarEventEditPage> {
     _startDate = DateTime(event.date.year, event.date.month, event.date.day);
     _startTime = TimeOfDay(hour: event.date.hour, minute: event.date.minute);
     _isAllDay = event.isAllDay;
+    _savedImageUrls = List.of(event.imageUrls);
     if (event.endDate != null) {
       _hasEndDate = true;
       _endDate = DateTime(
@@ -195,8 +206,85 @@ class _CalendarEventEditPageState extends ConsumerState<CalendarEventEditPage> {
             ],
 
             const SizedBox(height: 24),
+
+            // Images
+            Text('Images', style: Theme.of(context).textTheme.labelLarge),
+            const SizedBox(height: 8),
+            if (_savedImageUrls.isNotEmpty || _pendingImages.isNotEmpty)
+              SizedBox(
+                height: 100,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _savedImageUrls.length + _pendingImages.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (context, index) {
+                    final isExisting = index < _savedImageUrls.length;
+                    return Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: isExisting
+                              ? CachedNetworkImage(
+                                  imageUrl: _savedImageUrls[index],
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                )
+                              : Image.memory(
+                                  _pendingImages[index - _savedImageUrls.length]
+                                      .bytes,
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                ),
+                        ),
+                        Positioned(
+                          top: 2,
+                          right: 2,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                if (index < _savedImageUrls.length) {
+                                  _removedImageUrls.add(_savedImageUrls[index]);
+                                  _savedImageUrls = List.of(_savedImageUrls)
+                                    ..removeAt(index);
+                                } else {
+                                  final pendingIndex =
+                                      index - _savedImageUrls.length;
+                                  _pendingImages = List.of(_pendingImages)
+                                    ..removeAt(pendingIndex);
+                                }
+                              });
+                            },
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(4),
+                              child: const Icon(
+                                Icons.close,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: _addImage,
+              icon: const Icon(Icons.add_photo_alternate),
+              label: const Text('Add image'),
+            ),
+
+            const SizedBox(height: 24),
             FilledButton.icon(
-              onPressed: _save,
+              onPressed: _isUploading ? null : _save,
               icon: const Icon(Icons.save),
               label: Text(_isEditing ? 'Update' : 'Create'),
             ),
@@ -239,62 +327,138 @@ class _CalendarEventEditPageState extends ConsumerState<CalendarEventEditPage> {
     }
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final startDateTime = _isAllDay
-        ? DateTime(_startDate.year, _startDate.month, _startDate.day)
-        : DateTime(
-            _startDate.year,
-            _startDate.month,
-            _startDate.day,
-            _startTime.hour,
-            _startTime.minute,
-          );
+    setState(() => _isUploading = true);
+    try {
+      // Upload pending images
+      final uploader = ref.read(imageUploadServiceProvider);
+      for (final pending in _pendingImages) {
+        final url = await uploader.uploadImageBytes(
+          pending.bytes,
+          fileName: pending.fileName,
+          folder: 'calendar',
+        );
+        _savedImageUrls.add(url);
+      }
 
-    DateTime? endDateTime;
-    if (_hasEndDate && _endDate != null) {
-      endDateTime = _isAllDay
-          ? DateTime(_endDate!.year, _endDate!.month, _endDate!.day)
+      final startDateTime = _isAllDay
+          ? DateTime(_startDate.year, _startDate.month, _startDate.day)
           : DateTime(
-              _endDate!.year,
-              _endDate!.month,
-              _endDate!.day,
-              _endTime?.hour ?? _startTime.hour,
-              _endTime?.minute ?? _startTime.minute,
+              _startDate.year,
+              _startDate.month,
+              _startDate.day,
+              _startTime.hour,
+              _startTime.minute,
             );
+
+      DateTime? endDateTime;
+      if (_hasEndDate && _endDate != null) {
+        endDateTime = _isAllDay
+            ? DateTime(_endDate!.year, _endDate!.month, _endDate!.day)
+            : DateTime(
+                _endDate!.year,
+                _endDate!.month,
+                _endDate!.day,
+                _endTime?.hour ?? _startTime.hour,
+                _endTime?.minute ?? _startTime.minute,
+              );
+      }
+
+      final description = _descriptionController.text.trim().isEmpty
+          ? null
+          : _descriptionController.text.trim();
+
+      if (_isEditing && _existingEvent != null) {
+        final updated = _existingEvent!.copyWith(
+          title: _titleController.text.trim(),
+          description: description,
+          date: startDateTime,
+          endDate: endDateTime,
+          isAllDay: _isAllDay,
+          imageUrls: _savedImageUrls,
+          clearDescription: description == null,
+          clearEndDate: !_hasEndDate,
+        );
+        await ref.read(calendarEventsProvider.notifier).updateEvent(updated);
+      } else {
+        await ref
+            .read(calendarEventsProvider.notifier)
+            .addEvent(
+              CalendarEvent(
+                title: _titleController.text.trim(),
+                description: description,
+                date: startDateTime,
+                endDate: endDateTime,
+                isAllDay: _isAllDay,
+                imageUrls: _savedImageUrls,
+              ),
+            );
+      }
+
+      // Delete removed images from Storage
+      for (final url in _removedImageUrls) {
+        await uploader.deleteImage(url);
+      }
+
+      if (mounted) context.pop();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Save failed: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
     }
+  }
 
-    final description = _descriptionController.text.trim().isEmpty
-        ? null
-        : _descriptionController.text.trim();
-
-    if (_isEditing && _existingEvent != null) {
-      final updated = _existingEvent!.copyWith(
-        title: _titleController.text.trim(),
-        description: description,
-        date: startDateTime,
-        endDate: endDateTime,
-        isAllDay: _isAllDay,
-        clearDescription: description == null,
-        clearEndDate: !_hasEndDate,
-      );
-      ref.read(calendarEventsProvider.notifier).updateEvent(updated);
-    } else {
-      ref
-          .read(calendarEventsProvider.notifier)
-          .addEvent(
-            CalendarEvent(
-              title: _titleController.text.trim(),
-              description: description,
-              date: startDateTime,
-              endDate: endDateTime,
-              isAllDay: _isAllDay,
+  Future<void> _addImage() async {
+    final source = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Gallery'),
+              onTap: () => Navigator.pop(ctx, 'gallery'),
             ),
-          );
-    }
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Camera'),
+              onTap: () => Navigator.pop(ctx, 'camera'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null || !mounted) return;
 
-    context.pop();
+    final uploader = ref.read(imageUploadServiceProvider);
+    final file = source == 'gallery'
+        ? await uploader.pickImage()
+        : await uploader.captureImage();
+    if (file == null || !mounted) return;
+
+    final bytes = await file.readAsBytes();
+    if (!mounted) return;
+
+    final result = await showImageUploadPreviewDialog(
+      context: context,
+      originalBytes: bytes,
+      fileName: file.name,
+    );
+    if (result == null || !mounted) return;
+
+    setState(() {
+      _pendingImages = [
+        ..._pendingImages,
+        (bytes: result.bytes, fileName: result.fileName),
+      ];
+    });
   }
 
   void _confirmDelete() {

@@ -201,6 +201,7 @@ Stored at: `users/{userId}/calendarEvents/{eventId}`
 | type | String | Yes | `custom`, `task`, `financial` |
 | linkedEntityId | String | No | ID of the linked Task or Financial Transaction |
 | color | String | No | Hex color override |
+| imageUrls | List\\<String\\> | No | Firebase Storage download URLs for attached images |
 | createdAt | Timestamp | Yes | Creation timestamp |
 | updatedAt | Timestamp | Yes | Last update timestamp |
 

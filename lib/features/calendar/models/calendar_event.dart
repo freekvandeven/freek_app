@@ -12,6 +12,7 @@ class CalendarEvent {
   final EventType type;
   final String? sourceId;
   final String? color;
+  final List<String> imageUrls;
   final DateTime createdAt;
 
   CalendarEvent({
@@ -24,6 +25,7 @@ class CalendarEvent {
     this.type = EventType.custom,
     this.sourceId,
     this.color,
+    this.imageUrls = const [],
     DateTime? createdAt,
   }) : id = id ?? const Uuid().v4(),
        createdAt = createdAt ?? DateTime.now();
@@ -36,6 +38,7 @@ class CalendarEvent {
     bool? isAllDay,
     EventType? type,
     String? color,
+    List<String>? imageUrls,
     bool clearDescription = false,
     bool clearEndDate = false,
     bool clearColor = false,
@@ -50,6 +53,7 @@ class CalendarEvent {
       type: type ?? this.type,
       sourceId: sourceId,
       color: clearColor ? null : (color ?? this.color),
+      imageUrls: imageUrls ?? this.imageUrls,
       createdAt: createdAt,
     );
   }
@@ -64,6 +68,7 @@ class CalendarEvent {
     'type': type.name,
     'sourceId': sourceId,
     'color': color,
+    'imageUrls': imageUrls,
     'createdAt': createdAt.toIso8601String(),
   };
 
@@ -83,6 +88,9 @@ class CalendarEvent {
       ),
       sourceId: map['sourceId'] as String?,
       color: map['color'] as String?,
+      imageUrls: map['imageUrls'] is List
+          ? (map['imageUrls'] as List<dynamic>).map((e) => e as String).toList()
+          : const [],
       createdAt: DateTime.parse(map['createdAt'] as String),
     );
   }

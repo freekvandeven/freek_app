@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/app_config.dart';
+import '../../../services/image_upload_service.dart';
 import '../../../services/log_service.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../finances/models/finance_models.dart';
@@ -80,6 +81,15 @@ class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
   }
 
   Future<void> deleteEvent(String id) async {
+    // Delete associated images from Storage
+    final events = state.valueOrNull ?? [];
+    final event = events.where((e) => e.id == id).firstOrNull;
+    if (event != null && event.imageUrls.isNotEmpty) {
+      final uploader = ref.read(imageUploadServiceProvider);
+      for (final url in event.imageUrls) {
+        await uploader.deleteImage(url);
+      }
+    }
     await ref.read(calendarServiceProvider).deleteEvent(id);
     LogService.instance.info('Calendar event deleted: $id');
     ref.invalidateSelf();
