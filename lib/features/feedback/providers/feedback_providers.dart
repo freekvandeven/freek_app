@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/app_config.dart';
+import '../../../services/image_upload_service.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../models/feedback_entry.dart';
 import '../services/feedback_service.dart';
@@ -57,6 +58,14 @@ class FeedbackListNotifier extends AsyncNotifier<List<FeedbackEntry>> {
   }
 
   Future<void> deleteEntry(String id) async {
+    // Delete associated images from Storage
+    final entry = await ref.read(feedbackServiceProvider).getEntry(id);
+    if (entry != null && entry.imageUrls.isNotEmpty) {
+      final uploader = ref.read(imageUploadServiceProvider);
+      for (final url in entry.imageUrls) {
+        uploader.deleteImage(url);
+      }
+    }
     await ref.read(feedbackServiceProvider).deleteEntry(id);
     ref.invalidateSelf();
   }

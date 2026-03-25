@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
@@ -32,7 +34,9 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
   List<Ingredient> _ingredients = [];
   List<RecipeInstruction> _instructions = [];
   List<String> _tags = [];
-  List<String> _images = [];
+  List<String> _savedImageUrls = [];
+  List<({Uint8List bytes, String fileName})> _pendingImages = [];
+  final List<String> _removedImageUrls = [];
   int _primaryImageIndex = 0;
   List<String> _videoLinks = [];
   bool _isEditing = false;
@@ -62,7 +66,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
         _ingredients = List.from(recipe.ingredients);
         _instructions = List.from(recipe.instructions);
         _tags = recipe.tags.map((t) => t.toLowerCase()).toList();
-        _images = List.from(recipe.images);
+        _savedImageUrls = List.from(recipe.images);
         _primaryImageIndex = recipe.primaryImageIndex;
         _videoLinks = List.from(recipe.videoLinks);
       });
@@ -117,54 +121,81 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
       if (action == 'add') _addTag();
     }
 
-    final description = _descriptionController.text.trim();
-    final source = _sourceController.text.trim();
-    final notes = _notesController.text.trim();
+    setState(() => _isUploading = true);
+    try {
+      // Upload pending images
+      final uploader = ref.read(imageUploadServiceProvider);
+      for (final pending in _pendingImages) {
+        final url = await uploader.uploadImageBytes(
+          pending.bytes,
+          fileName: pending.fileName,
+          folder: 'recipes',
+        );
+        _savedImageUrls.add(url);
+      }
 
-    if (_isEditing) {
-      final service = ref.read(recipeServiceProvider);
-      final existing = await service.getRecipe(widget.recipeId!);
-      if (existing != null) {
-        final updated = existing.copyWith(
+      final description = _descriptionController.text.trim();
+      final source = _sourceController.text.trim();
+      final notes = _notesController.text.trim();
+
+      if (_isEditing) {
+        final service = ref.read(recipeServiceProvider);
+        final existing = await service.getRecipe(widget.recipeId!);
+        if (existing != null) {
+          final updated = existing.copyWith(
+            title: _titleController.text.trim(),
+            description: description.isEmpty ? null : description,
+            clearDescription: description.isEmpty,
+            servings: int.tryParse(_servingsController.text),
+            prepTimeMinutes: int.tryParse(_prepTimeController.text),
+            cookTimeMinutes: int.tryParse(_cookTimeController.text),
+            ingredients: _ingredients,
+            instructions: _instructions,
+            tags: _tags,
+            images: _savedImageUrls,
+            primaryImageIndex: _primaryImageIndex,
+            videoLinks: _videoLinks,
+            source: source.isEmpty ? null : source,
+            clearSource: source.isEmpty,
+            notes: notes.isEmpty ? null : notes,
+            clearNotes: notes.isEmpty,
+          );
+          await ref.read(recipeListProvider.notifier).updateRecipe(updated);
+        }
+      } else {
+        final recipe = Recipe(
           title: _titleController.text.trim(),
           description: description.isEmpty ? null : description,
-          clearDescription: description.isEmpty,
           servings: int.tryParse(_servingsController.text),
           prepTimeMinutes: int.tryParse(_prepTimeController.text),
           cookTimeMinutes: int.tryParse(_cookTimeController.text),
           ingredients: _ingredients,
           instructions: _instructions,
           tags: _tags,
-          images: _images,
+          images: _savedImageUrls,
           primaryImageIndex: _primaryImageIndex,
           videoLinks: _videoLinks,
           source: source.isEmpty ? null : source,
-          clearSource: source.isEmpty,
           notes: notes.isEmpty ? null : notes,
-          clearNotes: notes.isEmpty,
         );
-        await ref.read(recipeListProvider.notifier).updateRecipe(updated);
+        await ref.read(recipeListProvider.notifier).addRecipe(recipe);
       }
-    } else {
-      final recipe = Recipe(
-        title: _titleController.text.trim(),
-        description: description.isEmpty ? null : description,
-        servings: int.tryParse(_servingsController.text),
-        prepTimeMinutes: int.tryParse(_prepTimeController.text),
-        cookTimeMinutes: int.tryParse(_cookTimeController.text),
-        ingredients: _ingredients,
-        instructions: _instructions,
-        tags: _tags,
-        images: _images,
-        primaryImageIndex: _primaryImageIndex,
-        videoLinks: _videoLinks,
-        source: source.isEmpty ? null : source,
-        notes: notes.isEmpty ? null : notes,
-      );
-      await ref.read(recipeListProvider.notifier).addRecipe(recipe);
-    }
 
-    if (mounted) context.pop();
+      // Delete removed images from Storage
+      for (final url in _removedImageUrls) {
+        uploader.deleteImage(url);
+      }
+
+      if (mounted) context.pop();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Save failed: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
   }
 
   void _addIngredient() {
@@ -376,23 +407,12 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     );
     if (result == null || !mounted) return;
 
-    setState(() => _isUploading = true);
-    try {
-      final url = await service.uploadImageBytes(
-        result.bytes,
-        fileName: result.fileName,
-        folder: 'recipes',
-      );
-      if (mounted) setState(() => _images.add(url));
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Image upload failed: $e')));
-      }
-    } finally {
-      if (mounted) setState(() => _isUploading = false);
-    }
+    setState(() {
+      _pendingImages = [
+        ..._pendingImages,
+        (bytes: result.bytes, fileName: result.fileName),
+      ];
+    });
   }
 
   Future<void> _captureImage() async {
@@ -410,23 +430,12 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     );
     if (result == null || !mounted) return;
 
-    setState(() => _isUploading = true);
-    try {
-      final url = await service.uploadImageBytes(
-        result.bytes,
-        fileName: result.fileName,
-        folder: 'recipes',
-      );
-      if (mounted) setState(() => _images.add(url));
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Image upload failed: $e')));
-      }
-    } finally {
-      if (mounted) setState(() => _isUploading = false);
-    }
+    setState(() {
+      _pendingImages = [
+        ..._pendingImages,
+        (bytes: result.bytes, fileName: result.fileName),
+      ];
+    });
   }
 
   void _addImageByUrl() {
@@ -450,7 +459,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
           TextButton(
             onPressed: () {
               if (ctrl.text.trim().isNotEmpty) {
-                setState(() => _images.add(ctrl.text.trim()));
+                setState(() => _savedImageUrls.add(ctrl.text.trim()));
               }
               Navigator.pop(ctx);
             },
@@ -512,7 +521,18 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
         title: QuickActionsTitle(
           child: Text(_isEditing ? 'Edit Recipe' : 'New Recipe'),
         ),
-        actions: [TextButton(onPressed: _save, child: const Text('Save'))],
+        actions: [
+          TextButton(
+            onPressed: _isUploading ? null : _save,
+            child: _isUploading
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Save'),
+          ),
+        ],
       ),
       body: Form(
         key: _formKey,
@@ -719,101 +739,120 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Images', style: Theme.of(context).textTheme.titleMedium),
-                _isUploading
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : TextButton.icon(
-                        onPressed: _addImage,
-                        icon: const Icon(Icons.add_photo_alternate, size: 18),
-                        label: const Text('Add'),
-                      ),
+                TextButton.icon(
+                  onPressed: _addImage,
+                  icon: const Icon(Icons.add_photo_alternate, size: 18),
+                  label: const Text('Add'),
+                ),
               ],
             ),
-            if (_images.isNotEmpty)
+            if (_savedImageUrls.isNotEmpty || _pendingImages.isNotEmpty)
               SizedBox(
                 height: 80,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  itemCount: _images.length,
-                  itemBuilder: (context, index) => Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: Stack(
-                      children: [
-                        GestureDetector(
-                          onTap: () =>
-                              setState(() => _primaryImageIndex = index),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: CachedNetworkImage(
-                              imageUrl: _images[index],
-                              width: 80,
-                              height: 80,
-                              fit: BoxFit.cover,
-                              errorWidget: (_, __, ___) => Container(
-                                width: 80,
-                                height: 80,
-                                color: Colors.grey[300],
-                                child: const Icon(Icons.broken_image),
-                              ),
+                  itemCount: _savedImageUrls.length + _pendingImages.length,
+                  itemBuilder: (context, index) {
+                    final isExisting = index < _savedImageUrls.length;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Stack(
+                        children: [
+                          GestureDetector(
+                            onTap: () =>
+                                setState(() => _primaryImageIndex = index),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: isExisting
+                                  ? CachedNetworkImage(
+                                      imageUrl: _savedImageUrls[index],
+                                      width: 80,
+                                      height: 80,
+                                      fit: BoxFit.cover,
+                                      errorWidget: (_, __, ___) => Container(
+                                        width: 80,
+                                        height: 80,
+                                        color: Colors.grey[300],
+                                        child: const Icon(Icons.broken_image),
+                                      ),
+                                    )
+                                  : Image.memory(
+                                      _pendingImages[index -
+                                              _savedImageUrls.length]
+                                          .bytes,
+                                      width: 80,
+                                      height: 80,
+                                      fit: BoxFit.cover,
+                                    ),
                             ),
                           ),
-                        ),
-                        if (index == _primaryImageIndex)
+                          if (index == _primaryImageIndex)
+                            Positioned(
+                              top: 2,
+                              left: 2,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 1,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'Primary',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                  ),
+                                ),
+                              ),
+                            ),
                           Positioned(
-                            top: 2,
-                            left: 2,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                                vertical: 1,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primary,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Text(
-                                'Primary',
-                                style: TextStyle(
+                            top: 0,
+                            right: 0,
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  final totalCount =
+                                      _savedImageUrls.length +
+                                      _pendingImages.length;
+                                  if (isExisting) {
+                                    _removedImageUrls.add(
+                                      _savedImageUrls[index],
+                                    );
+                                    _savedImageUrls.removeAt(index);
+                                  } else {
+                                    _pendingImages.removeAt(
+                                      index - _savedImageUrls.length,
+                                    );
+                                  }
+                                  final newTotal = totalCount - 1;
+                                  if (_primaryImageIndex >= newTotal) {
+                                    _primaryImageIndex = newTotal <= 0
+                                        ? 0
+                                        : newTotal - 1;
+                                  }
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: const BoxDecoration(
+                                  color: Colors.black54,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.close,
+                                  size: 14,
                                   color: Colors.white,
-                                  fontSize: 9,
                                 ),
                               ),
                             ),
                           ),
-                        Positioned(
-                          top: 0,
-                          right: 0,
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _images.removeAt(index);
-                                if (_primaryImageIndex >= _images.length) {
-                                  _primaryImageIndex = _images.isEmpty
-                                      ? 0
-                                      : _images.length - 1;
-                                }
-                              });
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(2),
-                              decoration: const BoxDecoration(
-                                color: Colors.black54,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.close,
-                                size: 14,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
             const SizedBox(height: 16),

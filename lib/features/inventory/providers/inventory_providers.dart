@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/app_config.dart';
+import '../../../services/image_upload_service.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../models/inventory_item.dart';
 import '../services/firestore_inventory_service.dart';
@@ -31,6 +32,14 @@ class InventoryListNotifier extends AsyncNotifier<List<InventoryItem>> {
   }
 
   Future<void> deleteItem(String id) async {
+    // Delete associated images from Storage
+    final item = await ref.read(inventoryServiceProvider).getItem(id);
+    if (item != null && item.imageUrls.isNotEmpty) {
+      final uploader = ref.read(imageUploadServiceProvider);
+      for (final url in item.imageUrls) {
+        uploader.deleteImage(url);
+      }
+    }
     await ref.read(inventoryServiceProvider).deleteItem(id);
     ref.invalidateSelf();
   }

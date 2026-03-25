@@ -89,6 +89,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
     setState(() => _uploadingPhoto = true);
     try {
+      // Delete old profile photo from Storage
+      final oldPhotoUrl = user.photoUrl;
+      if (oldPhotoUrl != null && oldPhotoUrl.isNotEmpty) {
+        uploadService.deleteImage(oldPhotoUrl);
+      }
+
       final url = await uploadService.uploadImageBytes(
         result.bytes,
         fileName: result.fileName,

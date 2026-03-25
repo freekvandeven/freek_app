@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -33,7 +35,9 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
 
   DateTime? _purchaseDate;
   DateTime? _expiryDate;
-  List<String> _imageUrls = [];
+  List<String> _savedImageUrls = [];
+  List<({Uint8List bytes, String fileName})> _pendingImages = [];
+  final List<String> _removedImageUrls = [];
   bool _isUploading = false;
   bool _isLoading = true;
   bool _isScanning = false;
@@ -63,7 +67,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
         _barcodeController.text = item.barcode ?? '';
         _purchaseDate = item.purchaseDate;
         _expiryDate = item.expiryDate;
-        _imageUrls = List.of(item.imageUrls);
+        _savedImageUrls = List.of(item.imageUrls);
         _isLoading = false;
       });
     } else {
@@ -86,38 +90,65 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final item = InventoryItem(
-      id: widget.itemId,
-      name: _nameController.text.trim(),
-      description: _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim(),
-      category: _categoryController.text.trim().isEmpty
-          ? null
-          : _categoryController.text.trim(),
-      location: _locationController.text.trim().isEmpty
-          ? null
-          : _locationController.text.trim(),
-      quantity: int.tryParse(_quantityController.text.trim()) ?? 1,
-      purchasePrice: _priceController.text.trim().isNotEmpty
-          ? double.tryParse(_priceController.text.trim())
-          : null,
-      purchaseDate: _purchaseDate,
-      expiryDate: _expiryDate,
-      imageUrls: _imageUrls,
-      barcode: _barcodeController.text.trim().isEmpty
-          ? null
-          : _barcodeController.text.trim(),
-    );
+    setState(() => _isUploading = true);
+    try {
+      // Upload pending images
+      final uploader = ref.read(imageUploadServiceProvider);
+      for (final pending in _pendingImages) {
+        final url = await uploader.uploadImageBytes(
+          pending.bytes,
+          fileName: pending.fileName,
+          folder: 'inventory',
+        );
+        _savedImageUrls.add(url);
+      }
 
-    final notifier = ref.read(inventoryListProvider.notifier);
-    if (widget.itemId != null) {
-      await notifier.updateItem(item);
-    } else {
-      await notifier.addItem(item);
+      final item = InventoryItem(
+        id: widget.itemId,
+        name: _nameController.text.trim(),
+        description: _descriptionController.text.trim().isEmpty
+            ? null
+            : _descriptionController.text.trim(),
+        category: _categoryController.text.trim().isEmpty
+            ? null
+            : _categoryController.text.trim(),
+        location: _locationController.text.trim().isEmpty
+            ? null
+            : _locationController.text.trim(),
+        quantity: int.tryParse(_quantityController.text.trim()) ?? 1,
+        purchasePrice: _priceController.text.trim().isNotEmpty
+            ? double.tryParse(_priceController.text.trim())
+            : null,
+        purchaseDate: _purchaseDate,
+        expiryDate: _expiryDate,
+        imageUrls: _savedImageUrls,
+        barcode: _barcodeController.text.trim().isEmpty
+            ? null
+            : _barcodeController.text.trim(),
+      );
+
+      final notifier = ref.read(inventoryListProvider.notifier);
+      if (widget.itemId != null) {
+        await notifier.updateItem(item);
+      } else {
+        await notifier.addItem(item);
+      }
+
+      // Delete removed images from Storage
+      for (final url in _removedImageUrls) {
+        uploader.deleteImage(url);
+      }
+
+      if (mounted) context.pop();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Save failed: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
     }
-
-    if (mounted) context.pop();
   }
 
   Future<void> _scanWithAi() async {
@@ -223,7 +254,16 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
             tooltip: 'Scan with AI',
             onPressed: _isScanning ? null : _scanWithAi,
           ),
-          TextButton(onPressed: _save, child: const Text('Save')),
+          TextButton(
+            onPressed: _isUploading ? null : _save,
+            child: _isUploading
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Save'),
+          ),
         ],
       ),
       body: Form(
@@ -409,62 +449,76 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
             // Images
             Text('Images', style: Theme.of(context).textTheme.labelLarge),
             const SizedBox(height: 8),
-            if (_imageUrls.isNotEmpty)
+            if (_savedImageUrls.isNotEmpty || _pendingImages.isNotEmpty)
               SizedBox(
                 height: 100,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  itemCount: _imageUrls.length,
+                  itemCount: _savedImageUrls.length + _pendingImages.length,
                   separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemBuilder: (context, index) => Stack(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: CachedNetworkImage(
-                          imageUrl: _imageUrls[index],
-                          width: 100,
-                          height: 100,
-                          fit: BoxFit.cover,
+                  itemBuilder: (context, index) {
+                    final isExisting = index < _savedImageUrls.length;
+                    return Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: isExisting
+                              ? CachedNetworkImage(
+                                  imageUrl: _savedImageUrls[index],
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                )
+                              : Image.memory(
+                                  _pendingImages[index - _savedImageUrls.length]
+                                      .bytes,
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                ),
                         ),
-                      ),
-                      Positioned(
-                        top: 2,
-                        right: 2,
-                        child: GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _imageUrls = List.of(_imageUrls)..removeAt(index);
-                            });
-                          },
-                          child: Container(
-                            decoration: const BoxDecoration(
-                              color: Colors.black54,
-                              shape: BoxShape.circle,
-                            ),
-                            padding: const EdgeInsets.all(4),
-                            child: const Icon(
-                              Icons.close,
-                              size: 16,
-                              color: Colors.white,
+                        Positioned(
+                          top: 2,
+                          right: 2,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                if (index < _savedImageUrls.length) {
+                                  _removedImageUrls.add(_savedImageUrls[index]);
+                                  _savedImageUrls = List.of(_savedImageUrls)
+                                    ..removeAt(index);
+                                } else {
+                                  final pendingIndex =
+                                      index - _savedImageUrls.length;
+                                  _pendingImages = List.of(_pendingImages)
+                                    ..removeAt(pendingIndex);
+                                }
+                              });
+                            },
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(4),
+                              child: const Icon(
+                                Icons.close,
+                                size: 16,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    );
+                  },
                 ),
               ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
-              onPressed: _isUploading ? null : _addImage,
-              icon: _isUploading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.add_photo_alternate),
-              label: Text(_isUploading ? 'Uploading...' : 'Add image'),
+              onPressed: _addImage,
+              icon: const Icon(Icons.add_photo_alternate),
+              label: const Text('Add image'),
             ),
             const SizedBox(height: 16),
 
@@ -520,24 +574,11 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
     );
     if (result == null || !mounted) return;
 
-    setState(() => _isUploading = true);
-    try {
-      final url = await uploader.uploadImageBytes(
-        result.bytes,
-        fileName: result.fileName,
-        folder: 'inventory',
-      );
-      if (mounted) {
-        setState(() => _imageUrls = [..._imageUrls, url]);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
-      }
-    } finally {
-      if (mounted) setState(() => _isUploading = false);
-    }
+    setState(() {
+      _pendingImages = [
+        ..._pendingImages,
+        (bytes: result.bytes, fileName: result.fileName),
+      ];
+    });
   }
 }

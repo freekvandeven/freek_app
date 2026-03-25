@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../config/app_config.dart';
+import '../../../services/image_upload_service.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../models/recipe.dart';
 import '../services/firestore_recipe_service.dart';
@@ -39,6 +40,19 @@ class RecipeListNotifier extends AsyncNotifier<List<Recipe>> {
   }
 
   Future<void> deleteRecipe(String id) async {
+    // Delete associated images from Storage
+    final recipe = await _service.getRecipe(id);
+    if (recipe != null) {
+      final uploader = ref.read(imageUploadServiceProvider);
+      for (final url in recipe.images) {
+        uploader.deleteImage(url);
+      }
+      for (final instruction in recipe.instructions) {
+        if (instruction.imageUrl != null) {
+          uploader.deleteImage(instruction.imageUrl!);
+        }
+      }
+    }
     await _service.deleteRecipe(id);
     ref.invalidateSelf();
   }

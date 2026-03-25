@@ -34,6 +34,7 @@ All notable changes to this project will be documented in this file.
 - Admin menu item now reliably appears for admin users — fixed token refresh to force-fetch latest custom claims instead of using potentially stale cached token
 - Storage usage tracking Cloud Functions (`onFileUploaded`/`onFileDeleted`) now correctly parse file size as a number before passing to `FieldValue.increment()`
 - Chinese Yuan (CNY ¥) restored to the currency picker — was inadvertently removed
+- Residual images in Firebase Storage — images are now properly deleted from Storage when removed from edit pages, when items are deleted, and when profile photos are updated; image uploads are deferred until the item is saved to prevent orphaned files from cancelled edits
 
 ## [0.6.0] - 2026-03-19
 

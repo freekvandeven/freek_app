@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/app_config.dart';
+import '../../../services/image_upload_service.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../models/conversation_topic.dart';
 import '../services/conversation_service.dart';
@@ -38,6 +39,14 @@ class ConversationListNotifier extends AsyncNotifier<List<ConversationTopic>> {
   }
 
   Future<void> deleteTopic(String id) async {
+    // Delete associated images from Storage
+    final topic = await ref.read(conversationServiceProvider).getTopic(id);
+    if (topic != null && topic.imageUrls.isNotEmpty) {
+      final uploader = ref.read(imageUploadServiceProvider);
+      for (final url in topic.imageUrls) {
+        uploader.deleteImage(url);
+      }
+    }
     await ref.read(conversationServiceProvider).deleteTopic(id);
     ref.invalidateSelf();
   }

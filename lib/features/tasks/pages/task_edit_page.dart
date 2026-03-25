@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
@@ -27,7 +29,9 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
   DateTime? _dueDate;
   TimeOfDay? _dueTime;
   bool _hasDueTime = false;
-  List<String> _attachments = [];
+  List<String> _savedImageUrls = [];
+  List<({Uint8List bytes, String fileName})> _pendingImages = [];
+  final List<String> _removedImageUrls = [];
   bool _isUploading = false;
   bool _isRepeatable = false;
   RepeatType _repeatType = RepeatType.daily;
@@ -61,7 +65,7 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
             minute: task.dueDate!.minute,
           );
         }
-        _attachments = List.of(task.attachments);
+        _savedImageUrls = List.of(task.attachments);
         _isRepeatable = task.isRepeatable;
         _repeatType = task.repeatType ?? RepeatType.daily;
         _repeatInterval = task.repeatInterval;
@@ -94,63 +98,90 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final category = _categoryController.text.trim();
-    final description = _descriptionController.text.trim();
+    setState(() => _isUploading = true);
+    try {
+      // Upload pending images
+      final uploader = ref.read(imageUploadServiceProvider);
+      for (final pending in _pendingImages) {
+        final url = await uploader.uploadImageBytes(
+          pending.bytes,
+          fileName: pending.fileName,
+          folder: 'tasks',
+        );
+        _savedImageUrls.add(url);
+      }
 
-    // Build due date with optional time
-    DateTime? dueDate = _dueDate;
-    if (dueDate != null && _hasDueTime && _dueTime != null) {
-      dueDate = DateTime(
-        dueDate.year,
-        dueDate.month,
-        dueDate.day,
-        _dueTime!.hour,
-        _dueTime!.minute,
-      );
-    }
+      final category = _categoryController.text.trim();
+      final description = _descriptionController.text.trim();
 
-    if (_isEditing) {
-      final service = ref.read(taskServiceProvider);
-      final existing = await service.getTask(widget.taskId!);
-      if (existing != null) {
-        final updated = existing.copyWith(
+      // Build due date with optional time
+      DateTime? dueDate = _dueDate;
+      if (dueDate != null && _hasDueTime && _dueTime != null) {
+        dueDate = DateTime(
+          dueDate.year,
+          dueDate.month,
+          dueDate.day,
+          _dueTime!.hour,
+          _dueTime!.minute,
+        );
+      }
+
+      if (_isEditing) {
+        final service = ref.read(taskServiceProvider);
+        final existing = await service.getTask(widget.taskId!);
+        if (existing != null) {
+          final updated = existing.copyWith(
+            title: _titleController.text.trim(),
+            description: description.isEmpty ? null : description,
+            clearDescription: description.isEmpty,
+            priority: _priority,
+            dueDate: dueDate,
+            hasDueTime: _hasDueTime,
+            clearDueDate: _dueDate == null,
+            category: category.isEmpty ? null : category,
+            clearCategory: category.isEmpty,
+            attachments: _savedImageUrls,
+            isRepeatable: _isRepeatable,
+            repeatType: _isRepeatable ? _repeatType : null,
+            clearRepeatType: !_isRepeatable,
+            repeatInterval: _isRepeatable ? _repeatInterval : 1,
+            repeatEndDate: _isRepeatable ? _repeatEndDate : null,
+            clearRepeatEndDate: !_isRepeatable,
+          );
+          await ref.read(taskListProvider.notifier).updateTask(updated);
+        }
+      } else {
+        final task = Task(
           title: _titleController.text.trim(),
           description: description.isEmpty ? null : description,
-          clearDescription: description.isEmpty,
           priority: _priority,
           dueDate: dueDate,
           hasDueTime: _hasDueTime,
-          clearDueDate: _dueDate == null,
           category: category.isEmpty ? null : category,
-          clearCategory: category.isEmpty,
-          attachments: _attachments,
+          attachments: _savedImageUrls,
           isRepeatable: _isRepeatable,
           repeatType: _isRepeatable ? _repeatType : null,
-          clearRepeatType: !_isRepeatable,
           repeatInterval: _isRepeatable ? _repeatInterval : 1,
           repeatEndDate: _isRepeatable ? _repeatEndDate : null,
-          clearRepeatEndDate: !_isRepeatable,
         );
-        await ref.read(taskListProvider.notifier).updateTask(updated);
+        await ref.read(taskListProvider.notifier).addTask(task);
       }
-    } else {
-      final task = Task(
-        title: _titleController.text.trim(),
-        description: description.isEmpty ? null : description,
-        priority: _priority,
-        dueDate: dueDate,
-        hasDueTime: _hasDueTime,
-        category: category.isEmpty ? null : category,
-        attachments: _attachments,
-        isRepeatable: _isRepeatable,
-        repeatType: _isRepeatable ? _repeatType : null,
-        repeatInterval: _isRepeatable ? _repeatInterval : 1,
-        repeatEndDate: _isRepeatable ? _repeatEndDate : null,
-      );
-      await ref.read(taskListProvider.notifier).addTask(task);
-    }
 
-    if (mounted) context.pop();
+      // Delete removed images from Storage
+      for (final url in _removedImageUrls) {
+        uploader.deleteImage(url);
+      }
+
+      if (mounted) context.pop();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Save failed: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
   }
 
   @override
@@ -162,7 +193,18 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
         title: QuickActionsTitle(
           child: Text(_isEditing ? 'Edit Task' : 'New Task'),
         ),
-        actions: [TextButton(onPressed: _save, child: const Text('Save'))],
+        actions: [
+          TextButton(
+            onPressed: _isUploading ? null : _save,
+            child: _isUploading
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Save'),
+          ),
+        ],
       ),
       body: Form(
         key: _formKey,
@@ -292,58 +334,63 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
             // Attachments
             Text('Attachments', style: Theme.of(context).textTheme.labelLarge),
             const SizedBox(height: 8),
-            if (_attachments.isNotEmpty)
+            if (_savedImageUrls.isNotEmpty || _pendingImages.isNotEmpty)
               SizedBox(
                 height: 100,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  itemCount: _attachments.length,
+                  itemCount: _savedImageUrls.length + _pendingImages.length,
                   separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemBuilder: (context, index) => Stack(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: CachedNetworkImage(
-                          imageUrl: _attachments[index],
-                          width: 100,
-                          height: 100,
-                          fit: BoxFit.cover,
+                  itemBuilder: (context, index) {
+                    final isExisting = index < _savedImageUrls.length;
+                    return Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: isExisting
+                              ? CachedNetworkImage(
+                                  imageUrl: _savedImageUrls[index],
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                )
+                              : Image.memory(
+                                  _pendingImages[index - _savedImageUrls.length]
+                                      .bytes,
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                ),
                         ),
-                      ),
-                      Positioned(
-                        top: 2,
-                        right: 2,
-                        child: GestureDetector(
-                          onTap: () => _removeAttachment(index),
-                          child: Container(
-                            decoration: const BoxDecoration(
-                              color: Colors.black54,
-                              shape: BoxShape.circle,
-                            ),
-                            padding: const EdgeInsets.all(4),
-                            child: const Icon(
-                              Icons.close,
-                              size: 16,
-                              color: Colors.white,
+                        Positioned(
+                          top: 2,
+                          right: 2,
+                          child: GestureDetector(
+                            onTap: () => _removeAttachment(index),
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(4),
+                              child: const Icon(
+                                Icons.close,
+                                size: 16,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    );
+                  },
                 ),
               ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
-              onPressed: _isUploading ? null : _addAttachment,
-              icon: _isUploading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.add_photo_alternate),
-              label: Text(_isUploading ? 'Uploading...' : 'Add image'),
+              onPressed: _addAttachment,
+              icon: const Icon(Icons.add_photo_alternate),
+              label: const Text('Add image'),
             ),
             const SizedBox(height: 16),
 
@@ -457,30 +504,23 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
     );
     if (result == null || !mounted) return;
 
-    setState(() => _isUploading = true);
-    try {
-      final url = await uploader.uploadImageBytes(
-        result.bytes,
-        fileName: result.fileName,
-        folder: 'tasks',
-      );
-      if (mounted) {
-        setState(() => _attachments = [..._attachments, url]);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
-      }
-    } finally {
-      if (mounted) setState(() => _isUploading = false);
-    }
+    setState(() {
+      _pendingImages = [
+        ..._pendingImages,
+        (bytes: result.bytes, fileName: result.fileName),
+      ];
+    });
   }
 
   void _removeAttachment(int index) {
     setState(() {
-      _attachments = List.of(_attachments)..removeAt(index);
+      if (index < _savedImageUrls.length) {
+        _removedImageUrls.add(_savedImageUrls[index]);
+        _savedImageUrls = List.of(_savedImageUrls)..removeAt(index);
+      } else {
+        final pendingIndex = index - _savedImageUrls.length;
+        _pendingImages = List.of(_pendingImages)..removeAt(pendingIndex);
+      }
     });
   }
 }
