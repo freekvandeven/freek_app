@@ -1,0 +1,58 @@
+name: Deploy Documentation
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - run: flutter pub get
+
+      - name: Generate Dart API docs
+        run: dart doc --output docs/generated/dart
+
+      - name: Generate Cloud Functions docs
+        run: cd functions && npm ci && npm run docs
+
+      - name: Assemble site
+        run: |
+          mkdir -p _site/dart _site/functions
+          cp -r docs/generated/dart/* _site/dart/
+          cp -r functions/docs/* _site/functions/
+          cp docs/pages/index.html _site/index.html
+
+      - uses: actions/upload-pages-artifact@v3
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

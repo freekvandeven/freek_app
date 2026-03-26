@@ -42,6 +42,7 @@ All notable changes to this project will be documented in this file.
 - OpenAPI 3.0 specification for Cloud Functions (`functions/openapi.yaml`) — documents all 5 callable/HTTP endpoints with request/response schemas, authentication, and error codes
 - Auto-generated documentation setup — `dart doc` for Flutter API docs, `typedoc` for Cloud Functions; run `./scripts/generate-docs.sh` to generate both; output is git-ignored
 - Calendar event image attachments — custom events now support multiple image attachments via gallery or camera; images are uploaded to Firebase Storage with compression preview; images are automatically deleted from Storage when an event is deleted or images are removed
+- GitHub Pages documentation — GitHub Actions workflow auto-builds and deploys Dart API docs and Cloud Functions docs to GitHub Pages on every push to master; no generated files committed to git
 
 ## [0.6.0] - 2026-03-19
 
