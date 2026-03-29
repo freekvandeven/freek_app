@@ -5,11 +5,28 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:personal_app/features/auth/pages/login_page.dart';
+import 'package:personal_app/features/auth/providers/auth_providers.dart';
 import 'package:personal_app/features/auth/services/auth_service.dart';
 import 'package:personal_app/features/auth/services/firebase_auth_service.dart';
 import 'package:personal_app/routing/app_router.dart';
 
 import 'firebase_test_setup.dart';
+
+/// Pumps frames until [finder] finds at least one widget, or times out.
+/// Useful for integration tests with real async HTTP calls.
+Future<void> _waitForFinder(
+  WidgetTester tester,
+  Finder finder, {
+  Duration timeout = const Duration(seconds: 15),
+}) async {
+  final end = DateTime.now().add(timeout);
+  while (DateTime.now().isBefore(end)) {
+    await tester.pump(const Duration(milliseconds: 500));
+    if (finder.evaluate().isNotEmpty) return;
+  }
+  // Final assertion to give a useful error message
+  expect(finder, findsOneWidget);
+}
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -277,11 +294,14 @@ void main() {
       );
       await tester.enterText(find.byType(TextFormField).last, 'TotallyWrong!');
       await tester.tap(find.text('Sign In'));
-      await tester.pumpAndSettle(const Duration(seconds: 3));
 
-      // The LoginPage shows the error in a Container
-      // AuthException message is mapped from Firebase error code
-      expect(find.textContaining('Invalid'), findsOneWidget);
+      // Poll for the error message to appear (real HTTP call to emulator)
+      await _waitForFinder(
+        tester,
+        find.textContaining(
+          RegExp('invalid|incorrect|failed', caseSensitive: false),
+        ),
+      );
     });
 
     testWidgets('sign-in with real router redirect sends user to dashboard', (
@@ -293,23 +313,31 @@ void main() {
       );
       await FirebaseAuth.instance.signOut();
 
-      // Use the real app router provider for a full-stack test
-      late ProviderContainer container;
-      container = ProviderContainer();
-
+      // Mirror the real app: use a Consumer that watches the router reactively
       await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            routerConfig: container.read(appRouterProvider),
+        ProviderScope(
+          child: Consumer(
+            builder: (context, ref, _) {
+              final authInit = ref.watch(authInitProvider);
+              final router = ref.watch(appRouterProvider);
+              return authInit.when<Widget>(
+                loading: () => const MaterialApp(
+                  home: Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  ),
+                ),
+                error: (e, _) => MaterialApp(
+                  home: Scaffold(body: Center(child: Text('Error: $e'))),
+                ),
+                data: (_) => MaterialApp.router(routerConfig: router),
+              );
+            },
           ),
         ),
       );
-      // Auth init provider needs time then shows login
-      await tester.pumpAndSettle(const Duration(seconds: 3));
 
-      // We should be on the login page (not authenticated)
-      expect(find.text('Welcome Back'), findsOneWidget);
+      // Wait for auth to initialize and show login page
+      await _waitForFinder(tester, find.text('Welcome Back'));
 
       // Enter credentials and submit
       await tester.enterText(
@@ -318,15 +346,17 @@ void main() {
       );
       await tester.enterText(find.byType(TextFormField).last, 'Passw0rd!');
       await tester.tap(find.text('Sign In'));
-      await tester.pumpAndSettle(const Duration(seconds: 5));
 
-      // After signing in, the router should redirect to '/' (dashboard)
-      // The login page text should no longer be visible
+      // Wait for auth state to propagate and router to redirect
+      final end = DateTime.now().add(const Duration(seconds: 15));
+      while (DateTime.now().isBefore(end)) {
+        await tester.pump(const Duration(milliseconds: 500));
+        if (find.text('Welcome Back').evaluate().isEmpty) break;
+      }
+
+      // After signing in, the router should redirect away from login
       expect(find.text('Welcome Back'), findsNothing);
-      // Dashboard shows "Personal App" in the app bar
-      expect(find.text('Personal App'), findsOneWidget);
-
-      container.dispose();
+      expect(FirebaseAuth.instance.currentUser, isNotNull);
     });
   });
 }

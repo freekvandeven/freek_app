@@ -7,10 +7,12 @@
 # Prerequisites:
 #   - Firebase CLI installed (npm install -g firebase-tools)
 #   - Java runtime (required by Firestore emulator)
+#   - chromedriver (npm install -g chromedriver)
 
 set -e
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
+CHROMEDRIVER_PORT=4444
 
 # Ports used by emulators (must match firebase.json and firebase_test_setup.dart)
 AUTH_PORT=9099
@@ -23,9 +25,20 @@ if ! command -v java &>/dev/null; then
   exit 1
 fi
 
+# chromedriver is required for web-based integration tests
+if ! command -v chromedriver &>/dev/null; then
+  echo "ERROR: chromedriver is required but was not found."
+  echo "Install it with: npm install -g chromedriver"
+  exit 1
+fi
+
 cleanup() {
   echo ""
-  echo "=== Stopping Firebase emulators ==="
+  echo "=== Stopping chromedriver and Firebase emulators ==="
+  if [ -n "$CHROMEDRIVER_PID" ]; then
+    kill "$CHROMEDRIVER_PID" 2>/dev/null || true
+    wait "$CHROMEDRIVER_PID" 2>/dev/null || true
+  fi
   if [ -n "$EMULATOR_PID" ]; then
     kill "$EMULATOR_PID" 2>/dev/null || true
     wait "$EMULATOR_PID" 2>/dev/null || true
@@ -36,6 +49,12 @@ trap cleanup EXIT
 # Build Cloud Functions so the functions emulator can load them
 echo "=== Building Cloud Functions ==="
 (cd "$REPO_ROOT/functions" && npm run build)
+
+# Start chromedriver in background
+echo "=== Starting chromedriver ==="
+chromedriver --port=$CHROMEDRIVER_PORT &
+CHROMEDRIVER_PID=$!
+sleep 1
 
 # Check if emulators are already running
 if curl -sf "http://localhost:$AUTH_PORT/" >/dev/null 2>&1; then
@@ -67,4 +86,20 @@ fi
 
 echo ""
 echo "=== Running integration tests ==="
-(cd "$REPO_ROOT" && flutter test integration_test/)
+TEST_FILES=($(find "$REPO_ROOT/integration_test" -name '*_test.dart' -type f))
+FAILED=0
+for target in "${TEST_FILES[@]}"; do
+  echo "--- Running $(basename "$target") ---"
+  (cd "$REPO_ROOT" && flutter drive \
+    --driver=test_driver/integration_test.dart \
+    --target="$target" \
+    -d web-server) || FAILED=1
+done
+
+if [ $FAILED -ne 0 ]; then
+  echo ""
+  echo "=== Some integration tests failed ==="
+  exit 1
+fi
+echo ""
+echo "=== All integration tests passed ==="

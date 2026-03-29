@@ -28,6 +28,8 @@ All notable changes to this project will be documented in this file.
 - Grant admin privileges — admins can make other users admin from the public profile page via a new `setAdminClaim` Cloud Function; action is grant-only (cannot revoke) with confirmation dialog; backed by admin-only access control
 
 ### Fixed
+- Integration test script now uses `flutter drive` with chromedriver for reliable web-based testing — replaces `flutter test` which had Firestore emulator connectivity issues on Windows desktop
+- Integration test UI assertions now poll for async results instead of relying on `pumpAndSettle` timeouts — fixes flaky tests when real HTTP calls to emulators take longer than expected
 - Pre-commit hook and VS Code test runner no longer hang on integration tests — `dart_test.yaml` restricts default test discovery to `test/` only; pre-commit hook explicitly runs `flutter test test/`; integration tests must be run separately via `scripts/run-integration-tests.sh`
 - Recipe edit page now warns the user when there is unsaved text in the tag field before saving, with options to add the tag, discard it, or cancel
 - Changelog page now shows the `[Unreleased]` section when it contains entries — displays an "unreleased build" banner and lists all pending changes so testers can see what's new before the next release
