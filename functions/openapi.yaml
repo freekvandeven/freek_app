@@ -495,6 +495,63 @@ paths:
               schema:
                 $ref: "#/components/schemas/CallableError"
 
+  /checkAdminStatus:
+    post:
+      operationId: checkAdminStatus
+      summary: Check if a user has admin privileges
+      description: |
+        Admin-only function to check whether a target user has the `admin`
+        custom claim. Reads the claim directly from Firebase Auth. The caller
+        must be authenticated with both `inviteVerified` and `admin` claims.
+
+        **Type**: Firebase Callable (`onCall`)
+      tags:
+        - Admin
+      security:
+        - firebaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+                  required: [targetUid]
+                  properties:
+                    targetUid:
+                      type: string
+                      description: UID of the user to check
+                      example: "abc123def456"
+      responses:
+        "200":
+          description: Admin status returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+                    properties:
+                      isAdmin:
+                        type: boolean
+                        example: true
+        "400":
+          description: Missing or invalid targetUid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallableError"
+        "403":
+          description: Caller is not an authenticated admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallableError"
+
 components:
   securitySchemes:
     firebaseAuth:

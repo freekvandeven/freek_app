@@ -16,6 +16,13 @@ REPO_ROOT="$(git rev-parse --show-toplevel)"
 AUTH_PORT=9099
 FIRESTORE_PORT=8080
 
+# Firestore emulator requires Java
+if ! command -v java &>/dev/null; then
+  echo "ERROR: Java is required for the Firestore emulator but was not found."
+  echo "Install a JDK (e.g. temurin-21) and ensure 'java' is on your PATH."
+  exit 1
+fi
+
 cleanup() {
   echo ""
   echo "=== Stopping Firebase emulators ==="
@@ -26,6 +33,10 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# Build Cloud Functions so the functions emulator can load them
+echo "=== Building Cloud Functions ==="
+(cd "$REPO_ROOT/functions" && npm run build)
+
 # Check if emulators are already running
 if curl -sf "http://localhost:$AUTH_PORT/" >/dev/null 2>&1; then
   echo "=== Firebase emulators already running ==="
@@ -35,15 +46,21 @@ else
   (cd "$REPO_ROOT" && firebase emulators:start --only auth,firestore,storage,functions) &
   EMULATOR_PID=$!
 
-  # Wait for emulators to be ready (timeout after 60s)
+  # Wait for both Auth and Firestore emulators to be ready (timeout after 90s)
   echo "Waiting for emulators to start..."
   SECONDS=0
-  until curl -sf "http://localhost:$AUTH_PORT/" >/dev/null 2>&1; do
-    if [ $SECONDS -ge 60 ]; then
-      echo "ERROR: Emulators did not start within 60 seconds"
+  until curl -sf "http://localhost:$AUTH_PORT/" >/dev/null 2>&1 \
+     && curl -sf "http://localhost:$FIRESTORE_PORT/" >/dev/null 2>&1; do
+    if [ $SECONDS -ge 90 ]; then
+      echo "ERROR: Emulators did not start within 90 seconds"
       exit 1
     fi
-    sleep 1
+    # Check if the emulator process died
+    if ! kill -0 "$EMULATOR_PID" 2>/dev/null; then
+      echo "ERROR: Emulator process exited unexpectedly"
+      exit 1
+    fi
+    sleep 2
   done
   echo "Emulators are ready (took ${SECONDS}s)"
 fi

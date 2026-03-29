@@ -19,6 +19,7 @@ class PublicProfilePage extends ConsumerStatefulWidget {
 class _PublicProfilePageState extends ConsumerState<PublicProfilePage> {
   Future<DocumentSnapshot<Map<String, dynamic>>>? _profileFuture;
   int? _currentLimitBytes;
+  bool? _targetIsAdmin;
 
   @override
   void initState() {
@@ -27,6 +28,23 @@ class _PublicProfilePageState extends ConsumerState<PublicProfilePage> {
         .collection('publicProfiles')
         .doc(widget.userId)
         .get();
+    _fetchTargetAdminStatus();
+  }
+
+  Future<void> _fetchTargetAdminStatus() async {
+    try {
+      final adminService = ref.read(adminServiceProvider);
+      final isAdmin = await adminService.checkAdminStatus(
+        targetUid: widget.userId,
+      );
+      if (mounted) {
+        setState(() {
+          _targetIsAdmin = isAdmin;
+        });
+      }
+    } catch (_) {
+      // Caller is not admin or request failed — leave _targetIsAdmin as null
+    }
   }
 
   String _formatBytes(int bytes) {
@@ -129,6 +147,9 @@ class _PublicProfilePageState extends ConsumerState<PublicProfilePage> {
         final adminService = ref.read(adminServiceProvider);
         await adminService.setAdminClaim(targetUid: widget.userId);
         if (mounted) {
+          setState(() {
+            _targetIsAdmin = true;
+          });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Admin privileges granted')),
           );
@@ -168,6 +189,7 @@ class _PublicProfilePageState extends ConsumerState<PublicProfilePage> {
           final displayName = data['displayName'] as String? ?? 'Anonymous';
           final bio = data['bio'] as String?;
           final photoUrl = data['photoUrl'] as String?;
+          final targetIsAdmin = _targetIsAdmin ?? false;
           final createdAtStr = data['createdAt'] as String?;
           final createdAt = createdAtStr != null
               ? DateTime.tryParse(createdAtStr)
@@ -222,7 +244,7 @@ class _PublicProfilePageState extends ConsumerState<PublicProfilePage> {
                   ),
                 ),
               ],
-              if (isAdmin) _buildAdminSection(context),
+              if (isAdmin) _buildAdminSection(context, targetIsAdmin),
             ],
           );
         },
@@ -230,7 +252,7 @@ class _PublicProfilePageState extends ConsumerState<PublicProfilePage> {
     );
   }
 
-  Widget _buildAdminSection(BuildContext context) {
+  Widget _buildAdminSection(BuildContext context, bool targetIsAdmin) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
@@ -287,18 +309,32 @@ class _PublicProfilePageState extends ConsumerState<PublicProfilePage> {
                     _showUpdateStorageLimitDialog(storageLimitBytes),
               ),
             ),
-            ListTile(
-              leading: Icon(
-                Icons.admin_panel_settings,
-                color: colorScheme.primary,
+            if (targetIsAdmin)
+              ListTile(
+                leading: Icon(
+                  Icons.admin_panel_settings,
+                  color: colorScheme.primary,
+                ),
+                title: const Text('Admin'),
+                subtitle: const Text('This user is an admin'),
+                trailing: Icon(
+                  Icons.check_circle_rounded,
+                  color: colorScheme.primary,
+                ),
+              )
+            else
+              ListTile(
+                leading: Icon(
+                  Icons.admin_panel_settings,
+                  color: colorScheme.primary,
+                ),
+                title: const Text('Grant Admin'),
+                subtitle: const Text('Make this user an admin'),
+                trailing: IconButton(
+                  icon: const Icon(Icons.shield_rounded),
+                  onPressed: () => _showGrantAdminDialog(),
+                ),
               ),
-              title: const Text('Grant Admin'),
-              subtitle: const Text('Make this user an admin'),
-              trailing: IconButton(
-                icon: const Icon(Icons.shield_rounded),
-                onPressed: () => _showGrantAdminDialog(),
-              ),
-            ),
           ],
         );
       },

@@ -146,4 +146,33 @@ class AdminService {
       throw Exception(message);
     }
   }
+
+  Future<bool> checkAdminStatus({required String targetUid}) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('Not authenticated');
+
+    final token = await user.getIdToken();
+    final response = await http.post(
+      Uri.parse('$_functionsBaseUrl/checkAdminStatus'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'data': {'targetUid': targetUid},
+      }),
+    );
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (response.statusCode != 200) {
+      final error = body['error'] as Map<String, dynamic>?;
+      final message =
+          error?['message'] as String? ?? 'Failed to check admin status.';
+      throw Exception(message);
+    }
+
+    final result = body['result'] as Map<String, dynamic>;
+    return result['isAdmin'] as bool? ?? false;
+  }
 }

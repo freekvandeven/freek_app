@@ -390,6 +390,39 @@ export const updateStorageLimit = onCall({ region: REGION }, async (request) => 
   return { success: true, storageLimitBytes };
 });
 
+// --- Admin: Check Admin Status ---
+
+/**
+ * Admin-only callable function: check whether a target user has admin privileges.
+ *
+ * Expects: { targetUid: string }
+ * Returns: { isAdmin: boolean }
+ */
+export const checkAdminStatus = onCall({ region: REGION }, async (request) => {
+  if (!request.auth || !request.auth.token.inviteVerified) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only verified users can call this function."
+    );
+  }
+
+  const callerRecord = await getAuth().getUser(request.auth.uid);
+  if (!callerRecord.customClaims?.admin) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only admin users can check admin status."
+    );
+  }
+
+  const { targetUid } = request.data;
+  if (typeof targetUid !== "string" || !targetUid.trim()) {
+    throw new HttpsError("invalid-argument", "targetUid is required.");
+  }
+
+  const targetRecord = await getAuth().getUser(targetUid.trim());
+  return { isAdmin: targetRecord.customClaims?.admin === true };
+});
+
 // --- Admin: Set Admin Claim ---
 
 /**
@@ -430,6 +463,12 @@ export const setAdminClaim = onCall({ region: REGION }, async (request) => {
     ...existingClaims,
     admin: true,
   });
+
+  // Also flag the user as admin in their public profile for UI display
+  await getFirestore()
+    .collection("publicProfiles")
+    .doc(trimmedUid)
+    .set({ isAdmin: true }, { merge: true });
 
   return { success: true };
 });
