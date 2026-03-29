@@ -33,6 +33,16 @@ class MorePage extends ConsumerWidget {
               route: '/inventory',
             ),
             const _MenuItem(
+              icon: Icons.auto_stories_rounded,
+              label: 'Catalog',
+              route: '/catalog',
+            ),
+            const _MenuItem(
+              icon: Icons.shopping_cart_rounded,
+              label: 'Shopping List',
+              route: '/shopping',
+            ),
+            const _MenuItem(
               icon: Icons.menu_book_rounded,
               label: 'Knowledge Bank',
               route: '/knowledge',

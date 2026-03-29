@@ -12,6 +12,7 @@ class InventoryItem {
   final DateTime? expiryDate;
   final List<String> imageUrls;
   final String? barcode;
+  final String? catalogItemId;
   final Map<String, String> customFields;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -28,6 +29,7 @@ class InventoryItem {
     this.expiryDate,
     this.imageUrls = const [],
     this.barcode,
+    this.catalogItemId,
     this.customFields = const {},
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -46,6 +48,7 @@ class InventoryItem {
     DateTime? expiryDate,
     List<String>? imageUrls,
     String? barcode,
+    String? catalogItemId,
     Map<String, String>? customFields,
     bool clearDescription = false,
     bool clearCategory = false,
@@ -54,6 +57,7 @@ class InventoryItem {
     bool clearPurchaseDate = false,
     bool clearExpiryDate = false,
     bool clearBarcode = false,
+    bool clearCatalogItemId = false,
   }) {
     return InventoryItem(
       id: id,
@@ -71,6 +75,9 @@ class InventoryItem {
       expiryDate: clearExpiryDate ? null : (expiryDate ?? this.expiryDate),
       imageUrls: imageUrls ?? this.imageUrls,
       barcode: clearBarcode ? null : (barcode ?? this.barcode),
+      catalogItemId: clearCatalogItemId
+          ? null
+          : (catalogItemId ?? this.catalogItemId),
       customFields: customFields ?? this.customFields,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
@@ -89,6 +96,7 @@ class InventoryItem {
     'expiryDate': expiryDate?.toIso8601String(),
     'imageUrls': imageUrls,
     'barcode': barcode,
+    'catalogItemId': catalogItemId,
     'customFields': customFields,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
@@ -121,6 +129,7 @@ class InventoryItem {
           : null,
       imageUrls: urls,
       barcode: map['barcode'] as String?,
+      catalogItemId: map['catalogItemId'] as String?,
       customFields: map['customFields'] != null
           ? Map<String, String>.from(map['customFields'] as Map)
           : {},

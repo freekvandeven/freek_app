@@ -4,13 +4,20 @@ class Ingredient {
   final String name;
   final double? quantity;
   final String? unit;
+  final String? catalogItemId;
 
-  const Ingredient({required this.name, this.quantity, this.unit});
+  const Ingredient({
+    required this.name,
+    this.quantity,
+    this.unit,
+    this.catalogItemId,
+  });
 
   Map<String, dynamic> toMap() => {
     'name': name,
     'quantity': quantity,
     'unit': unit,
+    'catalogItemId': catalogItemId,
   };
 
   factory Ingredient.fromMap(Map<String, dynamic> map) {
@@ -18,6 +25,7 @@ class Ingredient {
       name: map['name'] as String,
       quantity: (map['quantity'] as num?)?.toDouble(),
       unit: map['unit'] as String?,
+      catalogItemId: map['catalogItemId'] as String?,
     );
   }
 }

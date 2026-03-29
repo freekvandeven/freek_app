@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- Item catalog — create catalog items with title, description, price, link, and multiple images; catalog items serve as the central reference for products across the app
+- Inventory-catalog linking — link inventory items to catalog items from the edit page; auto-fills name, description, price, and shares image URLs without storage duplication
+- Recipe-catalog linking — pick catalog items when adding recipe ingredients; pre-fills ingredient name and stores the catalog reference
+- Shopping list — checklist-style feature (like tasks without due dates) with toggle completion, quantity/unit, catalog item linking, and "clear completed" action; accessible from the More menu
 - Static code analysis pipeline — ESLint with typescript-eslint for Cloud Functions, CodeQL security scanning workflow, test coverage reporting via Codecov; all zero-cost via GitHub Actions
 - Calendar month/year picker — tap the month header in the calendar to jump to any year and month via a date picker dialog
 - Storage usage tracking — user profile now tracks `storageUsedBytes` and `storageLimitBytes`; Cloud Functions (`onFileUploaded`/`onFileDeleted`) automatically update usage on storage events; Settings page shows a storage usage bar with percentage; client-side limit check prevents uploads that would exceed the quota

@@ -8,6 +8,8 @@ import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
 import '../../../services/image_upload_service.dart';
+import '../../catalog/models/catalog_item.dart';
+import '../../catalog/providers/catalog_providers.dart';
 import '../models/recipe.dart';
 import '../providers/recipe_providers.dart';
 import '../utils/video_link_parser.dart';
@@ -202,6 +204,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     final nameCtrl = TextEditingController();
     final qtyCtrl = TextEditingController();
     final unitCtrl = TextEditingController();
+    String? catalogItemId;
 
     showDialog(
       context: context,
@@ -234,6 +237,30 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () async {
+                  final catalogItems = await ref
+                      .read(catalogServiceProvider)
+                      .getItems();
+                  if (!ctx.mounted || catalogItems.isEmpty) return;
+                  final picked = await showModalBottomSheet<CatalogItem>(
+                    context: ctx,
+                    isScrollControlled: true,
+                    builder: (c) =>
+                        _RecipeCatalogPickerSheet(items: catalogItems),
+                  );
+                  if (picked != null) {
+                    nameCtrl.text = picked.title;
+                    catalogItemId = picked.id;
+                  }
+                },
+                icon: const Icon(Icons.auto_stories, size: 18),
+                label: const Text('Pick from catalog'),
+              ),
+            ),
           ],
         ),
         actions: [
@@ -252,6 +279,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                       unit: unitCtrl.text.trim().isEmpty
                           ? null
                           : unitCtrl.text.trim(),
+                      catalogItemId: catalogItemId,
                     ),
                   );
                 });
@@ -915,6 +943,94 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _RecipeCatalogPickerSheet extends StatefulWidget {
+  final List<CatalogItem> items;
+  const _RecipeCatalogPickerSheet({required this.items});
+
+  @override
+  State<_RecipeCatalogPickerSheet> createState() =>
+      _RecipeCatalogPickerSheetState();
+}
+
+class _RecipeCatalogPickerSheetState extends State<_RecipeCatalogPickerSheet> {
+  String _search = '';
+
+  List<CatalogItem> get _filtered {
+    if (_search.isEmpty) return widget.items;
+    final q = _search.toLowerCase();
+    return widget.items
+        .where(
+          (i) =>
+              i.title.toLowerCase().contains(q) ||
+              (i.description?.toLowerCase().contains(q) ?? false),
+        )
+        .toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.6,
+      maxChildSize: 0.9,
+      builder: (context, scrollController) => Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Search catalog...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onChanged: (v) => setState(() => _search = v),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              controller: scrollController,
+              itemCount: _filtered.length,
+              itemBuilder: (context, index) {
+                final item = _filtered[index];
+                return ListTile(
+                  leading: item.imageUrls.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: CachedNetworkImage(
+                            imageUrl: item.imageUrls.first,
+                            width: 40,
+                            height: 40,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : CircleAvatar(
+                          child: Text(
+                            item.title.isNotEmpty
+                                ? item.title[0].toUpperCase()
+                                : '?',
+                          ),
+                        ),
+                  title: Text(item.title),
+                  subtitle: item.description != null
+                      ? Text(
+                          item.description!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                      : null,
+                  onTap: () => Navigator.pop(context, item),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -42,6 +42,10 @@
 | S036 | Conversation List | List of conversation topics with filters by person/status and sorting by priority/date | F013 | Yes |
 | S037 | Conversation Edit | Create or edit a conversation topic with priority, person/group, images | F013 | Yes |
 | S038 | Changelog | Shows all released versions and unreleased changes; highlights current version and unreleased build indicator | F010 | Yes |
+| S039 | Catalog List | Browse and search catalog items with images, prices, and links | F014 | Yes |
+| S040 | Catalog Detail | View a catalog item with image gallery, price, description, and link | F014 | Yes |
+| S041 | Catalog Edit | Create or edit a catalog item with multiple images, price, and link | F014 | Yes |
+| S042 | Shopping List | Checklist of shopping items with toggle completion, catalog linking, and clear completed | F014 | Yes |
 
 ## Navigation Structure
 
@@ -73,6 +77,8 @@ Long-pressing any AppBar title across the entire app brings up a Quick Actions b
 | Conversations | S036 |
 | Connections | S034 |
 | Gemini AI | S035 |
+| Catalog | S039 |
+| Shopping List | S042 |
 | Settings | S031 |
 
 ## Navigation Map

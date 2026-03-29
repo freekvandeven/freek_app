@@ -9,6 +9,9 @@ import '../features/auth/pages/signup_page.dart';
 import '../features/auth/providers/auth_providers.dart';
 import '../features/calendar/pages/calendar_event_edit_page.dart';
 import '../features/calendar/pages/calendar_page.dart';
+import '../features/catalog/pages/catalog_detail_page.dart';
+import '../features/catalog/pages/catalog_edit_page.dart';
+import '../features/catalog/pages/catalog_list_page.dart';
 import '../features/changelog/pages/changelog_page.dart';
 import '../features/connections/pages/connections_page.dart';
 import '../features/conversations/pages/conversation_edit_page.dart';
@@ -44,6 +47,7 @@ import '../features/settings/pages/data_export_page.dart';
 import '../features/settings/pages/developer_page.dart';
 import '../features/settings/pages/profile_page.dart';
 import '../features/settings/pages/settings_page.dart';
+import '../features/shopping/pages/shopping_list_page.dart';
 import '../features/tasks/pages/task_edit_page.dart';
 import '../features/tasks/pages/task_list_page.dart';
 import '../presentation/shell/app_shell.dart';
@@ -343,6 +347,32 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 ConversationEditPage(topicId: state.pathParameters['topicId']),
           ),
         ],
+      ),
+      GoRoute(
+        path: '/catalog',
+        builder: (context, state) => const CatalogListPage(),
+        routes: [
+          GoRoute(
+            path: 'new',
+            builder: (context, state) => const CatalogEditPage(),
+          ),
+          GoRoute(
+            path: ':itemId',
+            builder: (context, state) =>
+                CatalogDetailPage(itemId: state.pathParameters['itemId']!),
+            routes: [
+              GoRoute(
+                path: 'edit',
+                builder: (context, state) =>
+                    CatalogEditPage(itemId: state.pathParameters['itemId']),
+              ),
+            ],
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/shopping',
+        builder: (context, state) => const ShoppingListPage(),
       ),
       GoRoute(path: '/admin', builder: (context, state) => const AdminPage()),
       GoRoute(

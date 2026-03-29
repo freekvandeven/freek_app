@@ -10,6 +10,8 @@ import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
 import '../../../services/image_upload_service.dart';
+import '../../catalog/models/catalog_item.dart';
+import '../../catalog/providers/catalog_providers.dart';
 import '../../gemini/providers/gemini_providers.dart';
 import '../../settings/providers/settings_providers.dart';
 import '../models/inventory_item.dart';
@@ -41,6 +43,8 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
   bool _isUploading = false;
   bool _isLoading = true;
   bool _isScanning = false;
+  String? _catalogItemId;
+  CatalogItem? _linkedCatalogItem;
 
   @override
   void initState() {
@@ -68,8 +72,18 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
         _purchaseDate = item.purchaseDate;
         _expiryDate = item.expiryDate;
         _savedImageUrls = List.of(item.imageUrls);
+        _catalogItemId = item.catalogItemId;
         _isLoading = false;
       });
+      // Load linked catalog item
+      if (item.catalogItemId != null) {
+        final catalogItem = await ref
+            .read(catalogServiceProvider)
+            .getItem(item.catalogItemId!);
+        if (catalogItem != null && mounted) {
+          setState(() => _linkedCatalogItem = catalogItem);
+        }
+      }
     } else {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -125,6 +139,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
         barcode: _barcodeController.text.trim().isEmpty
             ? null
             : _barcodeController.text.trim(),
+        catalogItemId: _catalogItemId,
       );
 
       final notifier = ref.read(inventoryListProvider.notifier);
@@ -290,6 +305,10 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
               ),
               maxLines: 3,
             ),
+            const SizedBox(height: 16),
+
+            // Catalog item link
+            _buildCatalogLinkSection(),
             const SizedBox(height: 16),
 
             // Category autocomplete
@@ -535,6 +554,85 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
     );
   }
 
+  Widget _buildCatalogLinkSection() {
+    if (_linkedCatalogItem != null) {
+      return Card(
+        child: ListTile(
+          leading: _linkedCatalogItem!.imageUrls.isNotEmpty
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: CachedNetworkImage(
+                    imageUrl: _linkedCatalogItem!.imageUrls.first,
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.cover,
+                  ),
+                )
+              : const CircleAvatar(child: Icon(Icons.auto_stories)),
+          title: Text(_linkedCatalogItem!.title),
+          subtitle: const Text('Linked catalog item'),
+          trailing: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () {
+              setState(() {
+                _catalogItemId = null;
+                _linkedCatalogItem = null;
+              });
+            },
+          ),
+        ),
+      );
+    }
+
+    return OutlinedButton.icon(
+      onPressed: _showCatalogPicker,
+      icon: const Icon(Icons.auto_stories),
+      label: const Text('Link Catalog Item'),
+    );
+  }
+
+  Future<void> _showCatalogPicker() async {
+    final catalogItems = await ref.read(catalogServiceProvider).getItems();
+
+    if (!mounted || catalogItems.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No catalog items available')),
+        );
+      }
+      return;
+    }
+
+    final picked = await showModalBottomSheet<CatalogItem>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => _CatalogPickerSheet(items: catalogItems),
+    );
+
+    if (picked != null && mounted) {
+      setState(() {
+        _catalogItemId = picked.id;
+        _linkedCatalogItem = picked;
+        // Add catalog images to item (referencing same URLs — no storage duplication)
+        if (picked.imageUrls.isNotEmpty &&
+            _savedImageUrls.isEmpty &&
+            _pendingImages.isEmpty) {
+          _savedImageUrls = List.of(picked.imageUrls);
+        }
+        // Auto-fill name if empty
+        if (_nameController.text.isEmpty) {
+          _nameController.text = picked.title;
+        }
+        if (_descriptionController.text.isEmpty && picked.description != null) {
+          _descriptionController.text = picked.description!;
+        }
+        if (_priceController.text.isEmpty && picked.price != null) {
+          _priceController.text = picked.price!.toStringAsFixed(2);
+        }
+      });
+    }
+  }
+
   Future<void> _addImage() async {
     final source = await showModalBottomSheet<String>(
       context: context,
@@ -580,5 +678,92 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
         (bytes: result.bytes, fileName: result.fileName),
       ];
     });
+  }
+}
+
+class _CatalogPickerSheet extends StatefulWidget {
+  final List<CatalogItem> items;
+  const _CatalogPickerSheet({required this.items});
+
+  @override
+  State<_CatalogPickerSheet> createState() => _CatalogPickerSheetState();
+}
+
+class _CatalogPickerSheetState extends State<_CatalogPickerSheet> {
+  String _search = '';
+
+  List<CatalogItem> get _filtered {
+    if (_search.isEmpty) return widget.items;
+    final q = _search.toLowerCase();
+    return widget.items
+        .where(
+          (i) =>
+              i.title.toLowerCase().contains(q) ||
+              (i.description?.toLowerCase().contains(q) ?? false),
+        )
+        .toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.6,
+      maxChildSize: 0.9,
+      builder: (context, scrollController) => Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Search catalog...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onChanged: (v) => setState(() => _search = v),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              controller: scrollController,
+              itemCount: _filtered.length,
+              itemBuilder: (context, index) {
+                final item = _filtered[index];
+                return ListTile(
+                  leading: item.imageUrls.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: CachedNetworkImage(
+                            imageUrl: item.imageUrls.first,
+                            width: 40,
+                            height: 40,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : CircleAvatar(
+                          child: Text(
+                            item.title.isNotEmpty
+                                ? item.title[0].toUpperCase()
+                                : '?',
+                          ),
+                        ),
+                  title: Text(item.title),
+                  subtitle: item.description != null
+                      ? Text(
+                          item.description!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                      : null,
+                  onTap: () => Navigator.pop(context, item),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
