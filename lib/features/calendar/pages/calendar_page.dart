@@ -65,6 +65,24 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
     }
   }
 
+  Future<void> _showMonthYearPicker() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _focusedDay,
+      firstDate: DateTime.utc(2020, 1, 1),
+      lastDate: DateTime.utc(2100, 12, 31),
+      initialDatePickerMode: DatePickerMode.year,
+    );
+    if (picked != null && mounted) {
+      setState(() => _focusedDay = picked);
+      ref.read(selectedDayProvider.notifier).state = DateTime(
+        picked.year,
+        picked.month,
+        picked.day,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final selectedDay = ref.watch(selectedDayProvider);
@@ -175,6 +193,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
               ),
             ),
             headerStyle: const HeaderStyle(formatButtonShowsNext: false),
+            onHeaderTapped: (_) => _showMonthYearPicker(),
           ),
 
           const Divider(height: 1),

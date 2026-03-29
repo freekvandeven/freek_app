@@ -263,6 +263,7 @@ S004 Home/Dashboard
 - Weekly/daily detail view
 - Color-coded by event type (task, financial, custom)
 - Tap a day to see events
+- Tap the month header to open a year/month picker for quick navigation
 - FAB to add a custom event
 
 ---
