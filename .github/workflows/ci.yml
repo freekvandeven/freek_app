@@ -28,8 +28,33 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
-      - name: Unit tests
-        run: flutter test
+      - name: Unit tests with coverage
+        run: flutter test --coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage/lcov.info
+          fail_ci_if_error: false
+
+  cloud-functions-lint:
+    name: Cloud Functions Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: cd functions && npm ci
+
+      - name: Build
+        run: cd functions && npm run build
+
+      - name: Lint
+        run: cd functions && npm run lint
 
   integration:
     name: Integration Tests (Firebase Emulators)

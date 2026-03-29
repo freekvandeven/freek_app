@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- Static code analysis pipeline — ESLint with typescript-eslint for Cloud Functions, CodeQL security scanning workflow, test coverage reporting via Codecov; all zero-cost via GitHub Actions
 - Calendar month/year picker — tap the month header in the calendar to jump to any year and month via a date picker dialog
 - Storage usage tracking — user profile now tracks `storageUsedBytes` and `storageLimitBytes`; Cloud Functions (`onFileUploaded`/`onFileDeleted`) automatically update usage on storage events; Settings page shows a storage usage bar with percentage; client-side limit check prevents uploads that would exceed the quota
 - Image compression before upload — all image uploads now show a preview dialog with file size and quality presets (Original / Good / Compressed); users can compress images before uploading to save storage space; uses the `image` package for cross-platform JPEG re-encoding
