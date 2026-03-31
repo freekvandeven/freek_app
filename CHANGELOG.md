@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- Android release signing — local keystore with Gradle signing config; `key.properties` and `*.jks` excluded from git; fingerprints documented in README
 - Item catalog — create catalog items with title, description, price, link, and multiple images; catalog items serve as the central reference for products across the app
 - Inventory-catalog linking — link inventory items to catalog items from the edit page; auto-fills name, description, price, and shares image URLs without storage duplication
 - Recipe-catalog linking — pick catalog items when adding recipe ingredients; pre-fills ingredient name and stores the catalog reference

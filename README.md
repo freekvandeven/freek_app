@@ -137,3 +137,53 @@ GitHub Actions runs on every push/PR to `master`:
 
 - **quality** job: format check, `flutter analyze`, unit tests
 - **integration** job: starts Firebase emulators, runs integration tests on Chrome
+
+## Android Release Signing
+
+Release builds are signed with a local keystore that is **not** checked into git. The keystore and its passwords are excluded via `android/.gitignore` (`key.properties`, `**/*.jks`, `**/*.keystore`).
+
+### Files involved
+
+| File | Purpose | In git? |
+|------|---------|---------|
+| `android/app/release-keystore.jks` | Release keystore (RSA 2048-bit, valid ~27 years) | No |
+| `android/key.properties` | Passwords and path for Gradle to find the keystore | No |
+| `android/app/build.gradle.kts` | Reads `key.properties` and configures the `release` signing config | Yes |
+
+### Release fingerprints
+
+These fingerprints are needed when configuring Firebase, Google Sign-In, or Play App Signing:
+
+```
+SHA-1:   09:1A:99:D0:E8:E3:36:E8:4F:34:55:E1:94:16:B8:12:6C:8A:F4:37
+SHA-256: 58:B7:AB:1D:A9:84:E9:CA:DE:95:1A:43:83:00:0A:73:13:66:41:3C:D7:CB:84:D4:D5:99:03:88:3B:B5:71:18
+```
+
+Add the SHA-1 fingerprint to the Firebase Console under **Project Settings → Your Apps → Android app → SHA certificate fingerprints** (required for Google Sign-In and other Google APIs).
+
+### Re-generating a keystore (new machine / lost key)
+
+If you need to set up release signing from scratch:
+
+```bash
+# 1. Generate a new keystore
+keytool -genkey -v \
+  -keystore android/app/release-keystore.jks \
+  -keyalg RSA -keysize 2048 -validity 10000 \
+  -alias release
+
+# 2. Create android/key.properties with your chosen passwords:
+#    storePassword=<password>
+#    keyPassword=<password>
+#    keyAlias=release
+#    storeFile=app/release-keystore.jks
+
+# 3. Print the new fingerprints
+keytool -list -v \
+  -keystore android/app/release-keystore.jks \
+  -alias release
+
+# 4. Update the SHA-1 fingerprint in Firebase Console
+```
+
+> **Important:** If you re-generate the keystore, existing installations signed with the old key cannot be updated in-place. For Play Store apps, use Play App Signing to avoid this.
