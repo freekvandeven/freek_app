@@ -12,7 +12,16 @@
           "package_name": "nl.freekvandeven.personal_app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "90391184253-ievcbm6vk9jpt5850rcgl6u5dk9va02f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "nl.freekvandeven.personal_app",
+            "certificate_hash": "091a99d0e8e336e84f3455e19416b8126c8af437"
+          }
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAgDVo2ILFBr-6Bt8FQjJN2Qs9OBo5UMnM"
