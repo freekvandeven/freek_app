@@ -13,6 +13,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'config/app_config.dart';
 import 'features/auth/providers/auth_providers.dart';
+import 'features/notifications/providers/notification_providers.dart';
 import 'features/settings/providers/settings_providers.dart';
 import 'firebase_options.dart';
 import 'presentation/widgets/lock_screen.dart';
@@ -98,6 +99,9 @@ class PersonalApp extends ConsumerWidget {
         final user = ref.watch(currentUserProvider);
         final biometricEnabled = user?.settings.biometricEnabled ?? false;
         final seedColor = ref.watch(customSeedColorProvider);
+
+        // Initialize push notifications when authenticated
+        ref.watch(notificationInitProvider);
 
         return MaterialApp.router(
           title: 'Freek App',

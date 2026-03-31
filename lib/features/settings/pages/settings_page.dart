@@ -123,6 +123,23 @@ class SettingsPage extends ConsumerWidget {
                 ref.read(authServiceProvider).updateProfile(updated);
               },
             ),
+            if (settings.notificationsEnabled)
+              ListTile(
+                leading: const SizedBox(width: 24),
+                title: const Text('Expiry Reminders'),
+                subtitle: Text(
+                  settings.expiryReminderDays.isEmpty
+                      ? 'Disabled'
+                      : settings.expiryReminderDays
+                            .map(
+                              (d) => d == 1 ? '1 day before' : '$d days before',
+                            )
+                            .join(', '),
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () =>
+                    _showExpiryReminderDialog(context, ref, user, settings),
+              ),
             SwitchListTile(
               secondary: const Icon(Icons.fingerprint),
               title: const Text('Biometric Lock'),
@@ -294,6 +311,70 @@ class SettingsPage extends ConsumerWidget {
 
   String _currencySymbol(String code) {
     return _currencies[code] ?? code;
+  }
+
+  void _showExpiryReminderDialog(
+    BuildContext context,
+    WidgetRef ref,
+    UserProfile user,
+    UserSettings settings,
+  ) {
+    final options = [1, 2, 3, 7, 14, 30];
+    final selected = Set<int>.from(settings.expiryReminderDays);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Expiry Reminders'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Get notified before inventory items expire:',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 12),
+              ...options.map(
+                (days) => CheckboxListTile(
+                  title: Text(days == 1 ? '1 day before' : '$days days before'),
+                  value: selected.contains(days),
+                  onChanged: (checked) {
+                    setDialogState(() {
+                      if (checked == true) {
+                        selected.add(days);
+                      } else {
+                        selected.remove(days);
+                      }
+                    });
+                  },
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                final sorted = selected.toList()..sort();
+                final updated = user.copyWith(
+                  settings: settings.copyWith(expiryReminderDays: sorted),
+                );
+                ref.read(authServiceProvider).updateProfile(updated);
+                Navigator.pop(ctx);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _confirmLogout(BuildContext context, WidgetRef ref) {

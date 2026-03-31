@@ -6,6 +6,7 @@ class UserSettings {
   final String? customSeedColor;
   final String? geminiModel;
   final bool showImagePreviews;
+  final List<int> expiryReminderDays;
 
   const UserSettings({
     this.themeMode = 'system',
@@ -15,6 +16,7 @@ class UserSettings {
     this.customSeedColor,
     this.geminiModel,
     this.showImagePreviews = true,
+    this.expiryReminderDays = const [7, 1],
   });
 
   UserSettings copyWith({
@@ -27,6 +29,7 @@ class UserSettings {
     String? geminiModel,
     bool clearGeminiModel = false,
     bool? showImagePreviews,
+    List<int>? expiryReminderDays,
   }) {
     return UserSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -38,6 +41,7 @@ class UserSettings {
           : (customSeedColor ?? this.customSeedColor),
       geminiModel: clearGeminiModel ? null : (geminiModel ?? this.geminiModel),
       showImagePreviews: showImagePreviews ?? this.showImagePreviews,
+      expiryReminderDays: expiryReminderDays ?? this.expiryReminderDays,
     );
   }
 
@@ -49,6 +53,7 @@ class UserSettings {
     'customSeedColor': customSeedColor,
     'geminiModel': geminiModel,
     'showImagePreviews': showImagePreviews,
+    'expiryReminderDays': expiryReminderDays,
   };
 
   factory UserSettings.fromMap(Map<String, dynamic> map) {
@@ -60,6 +65,11 @@ class UserSettings {
       customSeedColor: map['customSeedColor'] as String?,
       geminiModel: map['geminiModel'] as String?,
       showImagePreviews: map['showImagePreviews'] as bool? ?? true,
+      expiryReminderDays:
+          (map['expiryReminderDays'] as List<dynamic>?)
+              ?.map((e) => e as int)
+              .toList() ??
+          const [7, 1],
     );
   }
 }
@@ -76,6 +86,7 @@ class UserProfile {
   final UserSettings settings;
   final int storageUsedBytes;
   final int storageLimitBytes;
+  final List<String> fcmTokens;
 
   /// Default storage limit: 100 MB
   static const int defaultStorageLimitBytes = 100 * 1024 * 1024;
@@ -92,6 +103,7 @@ class UserProfile {
     this.settings = const UserSettings(),
     this.storageUsedBytes = 0,
     this.storageLimitBytes = defaultStorageLimitBytes,
+    this.fcmTokens = const [],
   });
 
   UserProfile copyWith({
@@ -103,6 +115,7 @@ class UserProfile {
     UserSettings? settings,
     int? storageUsedBytes,
     int? storageLimitBytes,
+    List<String>? fcmTokens,
     bool clearBio = false,
     bool clearPhone = false,
     bool clearPhotoUrl = false,
@@ -119,6 +132,7 @@ class UserProfile {
       settings: settings ?? this.settings,
       storageUsedBytes: storageUsedBytes ?? this.storageUsedBytes,
       storageLimitBytes: storageLimitBytes ?? this.storageLimitBytes,
+      fcmTokens: fcmTokens ?? this.fcmTokens,
     );
   }
 
@@ -134,6 +148,7 @@ class UserProfile {
     'settings': settings.toMap(),
     'storageUsedBytes': storageUsedBytes,
     'storageLimitBytes': storageLimitBytes,
+    'fcmTokens': fcmTokens,
   };
 
   /// Returns client-writable fields only (excludes server-managed storage tracking).
@@ -174,6 +189,11 @@ class UserProfile {
       storageUsedBytes: map['storageUsedBytes'] as int? ?? 0,
       storageLimitBytes:
           map['storageLimitBytes'] as int? ?? defaultStorageLimitBytes,
+      fcmTokens:
+          (map['fcmTokens'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
     );
   }
 }
