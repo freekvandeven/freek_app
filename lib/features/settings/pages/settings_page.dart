@@ -15,6 +15,7 @@ import '../../auth/providers/auth_providers.dart';
 import '../../auth/services/biometric_service.dart';
 import '../../gemini/providers/gemini_providers.dart';
 import '../../gemini/services/gemini_service.dart';
+import '../../passwords/providers/vault_providers.dart';
 import '../providers/settings_providers.dart';
 
 class SettingsPage extends ConsumerWidget {
@@ -400,6 +401,8 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _GeminiApiKeyTile extends ConsumerWidget {
+  static const _vaultEntryTitle = 'Gemini API Key';
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hasKey = ref.watch(geminiApiKeyAvailableProvider);
@@ -434,18 +437,42 @@ class _GeminiApiKeyTile extends ConsumerWidget {
 
   void _showApiKeyDialog(BuildContext context, WidgetRef ref) {
     final controller = TextEditingController();
+    final vaultLocked = ref.read(vaultLockedProvider);
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Gemini API Key'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'API Key',
-            hintText: 'Enter your Gemini API key',
-          ),
-          obscureText: true,
-          autofocus: true,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: 'API Key',
+                hintText: 'Enter your Gemini API key',
+              ),
+              obscureText: true,
+              autofocus: true,
+            ),
+            const SizedBox(height: 16),
+            if (!vaultLocked)
+              OutlinedButton.icon(
+                icon: const Icon(Icons.lock_open, size: 18),
+                label: const Text('Load from Password Vault'),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _loadFromVault(context, ref);
+                },
+              ),
+            if (vaultLocked)
+              Text(
+                'Unlock your Password Vault to load or save the key there.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+          ],
         ),
         actions: [
           TextButton(
@@ -460,12 +487,111 @@ class _GeminiApiKeyTile extends ConsumerWidget {
               ref.invalidate(geminiApiKeyAvailableProvider);
               ref.read(geminiServiceProvider).configure(key);
               if (ctx.mounted) Navigator.pop(ctx);
+              if (!vaultLocked && context.mounted) {
+                _offerSaveToVault(context, ref, key);
+              }
             },
             child: const Text('Save'),
           ),
         ],
       ),
     ).then((_) => controller.dispose());
+  }
+
+  void _loadFromVault(BuildContext context, WidgetRef ref) {
+    final entries = ref.read(vaultEntriesProvider).valueOrNull ?? [];
+    final geminiEntries = entries
+        .where((e) => e.title.toLowerCase().contains('gemini'))
+        .toList();
+
+    if (geminiEntries.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No Gemini API key found in vault. '
+            'Save one first by entering a key manually.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (geminiEntries.length == 1) {
+      _applyVaultEntry(context, ref, geminiEntries.first.password);
+      return;
+    }
+
+    // Multiple matches — let the user pick
+    showDialog(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Select Vault Entry'),
+        children: geminiEntries
+            .map(
+              (e) => SimpleDialogOption(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _applyVaultEntry(context, ref, e.password);
+                },
+                child: ListTile(
+                  leading: const Icon(Icons.key),
+                  title: Text(e.title),
+                  subtitle: e.username != null ? Text(e.username!) : null,
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+
+  void _applyVaultEntry(BuildContext context, WidgetRef ref, String key) {
+    ref.read(geminiApiKeyServiceProvider).setApiKey(key);
+    ref.invalidate(geminiApiKeyAvailableProvider);
+    ref.read(geminiServiceProvider).configure(key);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Gemini API key loaded from vault')),
+    );
+  }
+
+  void _offerSaveToVault(BuildContext context, WidgetRef ref, String key) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Save to Password Vault?'),
+        content: const Text(
+          'Would you like to save the Gemini API key to your '
+          'Password Vault for easy access on other devices?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('No thanks'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await ref
+                  .read(vaultEntriesProvider.notifier)
+                  .addEntry(
+                    title: _vaultEntryTitle,
+                    password: key,
+                    url: 'https://aistudio.google.com/apikey',
+                    category: 'API Keys',
+                  );
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Gemini API key saved to vault'),
+                  ),
+                );
+              }
+            },
+            child: const Text('Save to Vault'),
+          ),
+        ],
+      ),
+    );
   }
 }
 
