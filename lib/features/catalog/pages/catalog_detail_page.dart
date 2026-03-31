@@ -6,19 +6,16 @@ import 'package:intl/intl.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../settings/providers/currency_providers.dart';
 import '../providers/catalog_providers.dart';
 
 class CatalogDetailPage extends ConsumerWidget {
   final String itemId;
   const CatalogDetailPage({super.key, required this.itemId});
 
-  static final _currencyFormat = NumberFormat.currency(
-    symbol: '\u20AC',
-    decimalDigits: 2,
-  );
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final converter = ref.watch(currencyConverterProvider);
     final items = ref.watch(catalogListProvider);
     final theme = Theme.of(context);
 
@@ -79,7 +76,7 @@ class CatalogDetailPage extends ConsumerWidget {
                 // Price
                 if (item.price != null) ...[
                   Text(
-                    _currencyFormat.format(item.price),
+                    converter.format(item.price!),
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),

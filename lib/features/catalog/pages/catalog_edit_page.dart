@@ -10,6 +10,7 @@ import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
 import '../../../services/image_upload_service.dart';
+import '../../settings/providers/currency_providers.dart';
 import '../models/catalog_item.dart';
 import '../providers/catalog_providers.dart';
 
@@ -50,7 +51,12 @@ class _CatalogEditPageState extends ConsumerState<CatalogEditPage> {
       setState(() {
         _titleController.text = item.title;
         _descriptionController.text = item.description ?? '';
-        _priceController.text = item.price?.toStringAsFixed(2) ?? '';
+        _priceController.text = item.price != null
+            ? ref
+                  .read(currencyConverterProvider)
+                  .fromEur(item.price!)
+                  .toStringAsFixed(2)
+            : '';
         _linkController.text = item.link ?? '';
         _savedImageUrls = List.of(item.imageUrls);
         _isLoading = false;
@@ -121,8 +127,9 @@ class _CatalogEditPageState extends ConsumerState<CatalogEditPage> {
         await uploader.deleteImage(url);
       }
 
+      final converter = ref.read(currencyConverterProvider);
       final price = _priceController.text.isNotEmpty
-          ? double.tryParse(_priceController.text)
+          ? converter.toEur(double.tryParse(_priceController.text) ?? 0)
           : null;
 
       final item = CatalogItem(
@@ -193,10 +200,10 @@ class _CatalogEditPageState extends ConsumerState<CatalogEditPage> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _priceController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Price',
-                  border: OutlineInputBorder(),
-                  prefixText: '\u20AC ',
+                  border: const OutlineInputBorder(),
+                  prefixText: '${ref.watch(currencyConverterProvider).symbol} ',
                 ),
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,

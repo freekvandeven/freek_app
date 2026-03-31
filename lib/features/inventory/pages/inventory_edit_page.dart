@@ -14,6 +14,7 @@ import '../../../services/image_upload_service.dart';
 import '../../catalog/models/catalog_item.dart';
 import '../../catalog/providers/catalog_providers.dart';
 import '../../gemini/providers/gemini_providers.dart';
+import '../../settings/providers/currency_providers.dart';
 import '../../settings/providers/settings_providers.dart';
 import '../models/inventory_item.dart';
 import '../providers/inventory_providers.dart';
@@ -68,7 +69,12 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
         _categoryController.text = item.category ?? '';
         _locationController.text = item.location ?? '';
         _quantityController.text = item.quantity.toString();
-        _priceController.text = item.purchasePrice?.toStringAsFixed(2) ?? '';
+        _priceController.text = item.purchasePrice != null
+            ? ref
+                  .read(currencyConverterProvider)
+                  .fromEur(item.purchasePrice!)
+                  .toStringAsFixed(2)
+            : '';
         _barcodeController.text = item.barcode ?? '';
         _purchaseDate = item.purchaseDate;
         _expiryDate = item.expiryDate;
@@ -132,7 +138,9 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
             : _locationController.text.trim(),
         quantity: int.tryParse(_quantityController.text.trim()) ?? 1,
         purchasePrice: _priceController.text.trim().isNotEmpty
-            ? double.tryParse(_priceController.text.trim())
+            ? ref
+                  .read(currencyConverterProvider)
+                  .toEur(double.tryParse(_priceController.text.trim()) ?? 0)
             : null,
         purchaseDate: _purchaseDate,
         expiryDate: _expiryDate,
@@ -388,10 +396,11 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
                   Expanded(
                     child: TextFormField(
                       controller: _priceController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Price',
-                        border: OutlineInputBorder(),
-                        prefixText: '\u20AC ',
+                        border: const OutlineInputBorder(),
+                        prefixText:
+                            '${ref.watch(currencyConverterProvider).symbol} ',
                       ),
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,

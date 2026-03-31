@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
+import '../../settings/providers/currency_providers.dart';
 import '../models/finance_models.dart';
 import '../providers/finance_providers.dart';
 
@@ -21,7 +22,6 @@ class _AssetEditPageState extends ConsumerState<AssetEditPage> {
   final _descriptionController = TextEditingController();
 
   AssetType _type = AssetType.bankAccount;
-  String _currency = 'EUR';
   bool _isLoading = true;
 
   @override
@@ -41,10 +41,12 @@ class _AssetEditPageState extends ConsumerState<AssetEditPage> {
     if (asset != null && mounted) {
       setState(() {
         _nameController.text = asset.name;
-        _valueController.text = asset.currentValue.toStringAsFixed(2);
+        _valueController.text = ref
+            .read(currencyConverterProvider)
+            .fromEur(asset.currentValue)
+            .toStringAsFixed(2);
         _descriptionController.text = asset.description ?? '';
         _type = asset.type;
-        _currency = asset.currency;
         _isLoading = false;
       });
     } else {
@@ -67,8 +69,10 @@ class _AssetEditPageState extends ConsumerState<AssetEditPage> {
       id: widget.assetId,
       name: _nameController.text.trim(),
       type: _type,
-      currentValue: double.parse(_valueController.text.trim()),
-      currency: _currency,
+      currentValue: ref
+          .read(currencyConverterProvider)
+          .toEur(double.parse(_valueController.text.trim())),
+      currency: 'EUR',
       description: _descriptionController.text.trim().isEmpty
           ? null
           : _descriptionController.text.trim(),
@@ -146,10 +150,10 @@ class _AssetEditPageState extends ConsumerState<AssetEditPage> {
 
             TextFormField(
               controller: _valueController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Current Value',
-                border: OutlineInputBorder(),
-                prefixText: '\u20AC ',
+                border: const OutlineInputBorder(),
+                prefixText: '${ref.watch(currencyConverterProvider).symbol} ',
               ),
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
@@ -158,23 +162,6 @@ class _AssetEditPageState extends ConsumerState<AssetEditPage> {
                 if (v == null || v.trim().isEmpty) return 'Required';
                 if (double.tryParse(v.trim()) == null) return 'Invalid number';
                 return null;
-              },
-            ),
-            const SizedBox(height: 16),
-
-            DropdownButtonFormField<String>(
-              initialValue: _currency,
-              decoration: const InputDecoration(
-                labelText: 'Currency',
-                border: OutlineInputBorder(),
-              ),
-              items: const [
-                DropdownMenuItem(value: 'EUR', child: Text('EUR (\u20AC)')),
-                DropdownMenuItem(value: 'USD', child: Text('USD (\$)')),
-                DropdownMenuItem(value: 'GBP', child: Text('GBP (\u00A3)')),
-              ],
-              onChanged: (v) {
-                if (v != null) setState(() => _currency = v);
               },
             ),
             const SizedBox(height: 16),

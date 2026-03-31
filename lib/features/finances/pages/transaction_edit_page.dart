@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
+import '../../settings/providers/currency_providers.dart';
 import '../models/finance_models.dart';
 import '../providers/finance_providers.dart';
 
@@ -48,7 +49,10 @@ class _TransactionEditPageState extends ConsumerState<TransactionEditPage> {
     if (t != null && mounted) {
       setState(() {
         _titleController.text = t.title;
-        _amountController.text = t.amount.toStringAsFixed(2);
+        _amountController.text = ref
+            .read(currencyConverterProvider)
+            .fromEur(t.amount)
+            .toStringAsFixed(2);
         _descriptionController.text = t.description ?? '';
         _type = t.type;
         _categoryId = t.categoryId;
@@ -80,7 +84,9 @@ class _TransactionEditPageState extends ConsumerState<TransactionEditPage> {
       description: _descriptionController.text.trim().isEmpty
           ? null
           : _descriptionController.text.trim(),
-      amount: double.parse(_amountController.text.trim()),
+      amount: ref
+          .read(currencyConverterProvider)
+          .toEur(double.parse(_amountController.text.trim())),
       type: _type,
       categoryId: _categoryId,
       date: _date,
@@ -164,10 +170,10 @@ class _TransactionEditPageState extends ConsumerState<TransactionEditPage> {
 
             TextFormField(
               controller: _amountController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Amount',
-                border: OutlineInputBorder(),
-                prefixText: '\u20AC ',
+                border: const OutlineInputBorder(),
+                prefixText: '${ref.watch(currencyConverterProvider).symbol} ',
               ),
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,

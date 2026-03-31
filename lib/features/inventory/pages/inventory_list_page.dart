@@ -7,18 +7,15 @@ import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
 import '../../auth/providers/auth_providers.dart';
+import '../../settings/providers/currency_providers.dart';
 import '../providers/inventory_providers.dart';
 
 class InventoryListPage extends ConsumerWidget {
   const InventoryListPage({super.key});
 
-  static final _currencyFormat = NumberFormat.currency(
-    symbol: '\u20AC',
-    decimalDigits: 2,
-  );
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final converter = ref.watch(currencyConverterProvider);
     final items = ref.watch(filteredInventoryProvider);
     final search = ref.watch(inventorySearchProvider);
     final totalValue = ref.watch(inventoryTotalValueProvider);
@@ -72,7 +69,7 @@ class InventoryListPage extends ConsumerWidget {
                   vertical: 8,
                 ),
                 child: Text(
-                  'Total value: ${_currencyFormat.format(value)}',
+                  'Total value: ${converter.format(value)}',
                   style: theme.textTheme.bodySmall,
                 ),
               ),
@@ -169,7 +166,7 @@ class InventoryListPage extends ConsumerWidget {
                           ),
                           trailing: item.purchasePrice != null
                               ? Text(
-                                  _currencyFormat.format(item.purchasePrice),
+                                  converter.format(item.purchasePrice!),
                                   style: theme.textTheme.bodySmall,
                                 )
                               : null,

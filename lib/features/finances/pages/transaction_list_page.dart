@@ -4,20 +4,18 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
+import '../../settings/providers/currency_providers.dart';
 import '../models/finance_models.dart';
 import '../providers/finance_providers.dart';
 
 class TransactionListPage extends ConsumerWidget {
   const TransactionListPage({super.key});
 
-  static final _currencyFormat = NumberFormat.currency(
-    symbol: '\u20AC',
-    decimalDigits: 2,
-  );
   static final _dateFormat = DateFormat.yMMMd();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final converter = ref.watch(currencyConverterProvider);
     final transactions = ref.watch(filteredTransactionsProvider);
     final typeFilter = ref.watch(transactionTypeFilterProvider);
     final categories = ref.watch(categoryListProvider);
@@ -92,7 +90,7 @@ class TransactionListPage extends ConsumerWidget {
                       children: [
                         Text(month, style: theme.textTheme.titleSmall),
                         Text(
-                          _currencyFormat.format(monthTotal),
+                          converter.format(monthTotal),
                           style: theme.textTheme.titleSmall?.copyWith(
                             color: monthTotal >= 0 ? Colors.green : Colors.red,
                           ),
@@ -158,7 +156,7 @@ class TransactionListPage extends ConsumerWidget {
                           ].where((s) => s.isNotEmpty).join(' \u2022 '),
                         ),
                         trailing: Text(
-                          '${isExpense ? '-' : '+'}${_currencyFormat.format(t.amount)}',
+                          '${isExpense ? '-' : '+'}${converter.format(t.amount)}',
                           style: TextStyle(
                             color: isExpense ? Colors.red : Colors.green,
                             fontWeight: FontWeight.w600,

@@ -2,22 +2,18 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
+import '../../settings/providers/currency_providers.dart';
 import '../providers/catalog_providers.dart';
 
 class CatalogListPage extends ConsumerWidget {
   const CatalogListPage({super.key});
 
-  static final _currencyFormat = NumberFormat.currency(
-    symbol: '\u20AC',
-    decimalDigits: 2,
-  );
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final converter = ref.watch(currencyConverterProvider);
     final items = ref.watch(filteredCatalogProvider);
     final search = ref.watch(catalogSearchProvider);
     final theme = Theme.of(context);
@@ -136,14 +132,14 @@ class CatalogListPage extends ConsumerWidget {
                                   item.description!.isNotEmpty)
                                 item.description!,
                               if (item.price != null)
-                                _currencyFormat.format(item.price),
+                                converter.format(item.price!),
                             ].join(' \u2022 '),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           trailing: item.price != null
                               ? Text(
-                                  _currencyFormat.format(item.price),
+                                  converter.format(item.price!),
                                   style: theme.textTheme.bodySmall,
                                 )
                               : null,

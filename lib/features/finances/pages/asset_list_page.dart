@@ -1,22 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
+import '../../settings/providers/currency_providers.dart';
 import '../models/finance_models.dart';
 import '../providers/finance_providers.dart';
 
 class AssetListPage extends ConsumerWidget {
   const AssetListPage({super.key});
 
-  static final _currencyFormat = NumberFormat.currency(
-    symbol: '\u20AC',
-    decimalDigits: 2,
-  );
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final converter = ref.watch(currencyConverterProvider);
     final assets = ref.watch(assetListProvider);
     final totalValue = ref.watch(totalAssetsValueProvider);
     final theme = Theme.of(context);
@@ -36,7 +32,7 @@ class AssetListPage extends ConsumerWidget {
                 const SizedBox(height: 4),
                 totalValue.when(
                   data: (v) => Text(
-                    _currencyFormat.format(v),
+                    converter.format(v),
                     style: theme.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -112,7 +108,7 @@ class AssetListPage extends ConsumerWidget {
                               asset.type.name.substring(1),
                         ),
                         trailing: Text(
-                          _currencyFormat.format(asset.currentValue),
+                          converter.format(asset.currentValue),
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                         onTap: () =>

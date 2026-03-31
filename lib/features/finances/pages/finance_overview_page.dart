@@ -2,22 +2,18 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
+import '../../settings/providers/currency_providers.dart';
 import '../providers/finance_providers.dart';
 
 class FinanceOverviewPage extends ConsumerWidget {
   const FinanceOverviewPage({super.key});
 
-  static final _currencyFormat = NumberFormat.currency(
-    symbol: '\u20AC',
-    decimalDigits: 2,
-  );
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final converter = ref.watch(currencyConverterProvider);
     final summary = ref.watch(monthlySummaryProvider);
     final expenseByCategory = ref.watch(expenseByCategoryProvider);
     final totalAssets = ref.watch(totalAssetsValueProvider);
@@ -52,7 +48,7 @@ class FinanceOverviewPage extends ConsumerWidget {
                       Expanded(
                         child: _SummaryCard(
                           label: 'Income',
-                          amount: s.totalIncome,
+                          formattedAmount: converter.format(s.totalIncome),
                           color: Colors.green,
                           icon: Icons.arrow_downward,
                         ),
@@ -61,7 +57,7 @@ class FinanceOverviewPage extends ConsumerWidget {
                       Expanded(
                         child: _SummaryCard(
                           label: 'Expenses',
-                          amount: s.totalExpense,
+                          formattedAmount: converter.format(s.totalExpense),
                           color: Colors.red,
                           icon: Icons.arrow_upward,
                         ),
@@ -74,7 +70,7 @@ class FinanceOverviewPage extends ConsumerWidget {
                       Expanded(
                         child: _SummaryCard(
                           label: 'Net Savings',
-                          amount: s.netSavings,
+                          formattedAmount: converter.format(s.netSavings),
                           color: s.netSavings >= 0 ? Colors.green : Colors.red,
                           icon: Icons.savings,
                         ),
@@ -84,19 +80,19 @@ class FinanceOverviewPage extends ConsumerWidget {
                         child: totalAssets.when(
                           data: (value) => _SummaryCard(
                             label: 'Total Assets',
-                            amount: value,
+                            formattedAmount: converter.format(value),
                             color: theme.colorScheme.primary,
                             icon: Icons.account_balance_wallet,
                           ),
                           loading: () => const _SummaryCard(
                             label: 'Total Assets',
-                            amount: 0,
+                            formattedAmount: '...',
                             color: Colors.grey,
                             icon: Icons.account_balance_wallet,
                           ),
                           error: (_, _) => const _SummaryCard(
                             label: 'Total Assets',
-                            amount: 0,
+                            formattedAmount: '—',
                             color: Colors.grey,
                             icon: Icons.account_balance_wallet,
                           ),
@@ -178,7 +174,7 @@ class FinanceOverviewPage extends ConsumerWidget {
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(child: Text(entry.key)),
-                                Text(_currencyFormat.format(entry.value)),
+                                Text(converter.format(entry.value)),
                               ],
                             ),
                           );
@@ -226,13 +222,13 @@ class FinanceOverviewPage extends ConsumerWidget {
 
 class _SummaryCard extends StatelessWidget {
   final String label;
-  final double amount;
+  final String formattedAmount;
   final Color color;
   final IconData icon;
 
   const _SummaryCard({
     required this.label,
-    required this.amount,
+    required this.formattedAmount,
     required this.color,
     required this.icon,
   });
@@ -254,10 +250,7 @@ class _SummaryCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              NumberFormat.currency(
-                symbol: '\u20AC',
-                decimalDigits: 2,
-              ).format(amount),
+              formattedAmount,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: color,
                 fontWeight: FontWeight.bold,
