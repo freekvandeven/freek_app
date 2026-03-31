@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:personal_app/features/auth/providers/auth_providers.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
+import 'package:personal_app/presentation/widgets/responsive_center.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../services/version_check_service.dart';
@@ -119,27 +120,34 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text(
-            'Hi, ${user?.displayName ?? user?.email.split('@').first ?? 'there'}!',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'What would you like to do today?',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 24),
-          _buildThisWeek(context, ref),
-          const SizedBox(height: 24),
-          _buildFeatureGrid(context, colorScheme),
-          const SizedBox(height: 16),
-          Center(
-            child: TextButton.icon(
-              onPressed: () => context.push('/settings/changelog'),
-              icon: const Icon(Icons.new_releases_outlined),
-              label: const Text("What's New"),
+          ResponsiveCenter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Hi, ${user?.displayName ?? user?.email.split('@').first ?? 'there'}!',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'What would you like to do today?',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                _buildThisWeek(context, ref),
+                const SizedBox(height: 24),
+                _buildFeatureGrid(context, colorScheme),
+                const SizedBox(height: 16),
+                Center(
+                  child: TextButton.icon(
+                    onPressed: () => context.push('/settings/changelog'),
+                    icon: const Icon(Icons.new_releases_outlined),
+                    label: const Text("What's New"),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -320,8 +328,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 220,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
         childAspectRatio: 1.4,
