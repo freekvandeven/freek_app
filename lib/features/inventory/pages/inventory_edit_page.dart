@@ -203,7 +203,12 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
     try {
       final bytes = await image.readAsBytes();
       final mimeType = image.mimeType ?? 'image/jpeg';
-      final result = await service.analyzeInventoryImage(bytes, mimeType);
+      final result = await service.analyzeInventoryImage(
+        bytes,
+        mimeType,
+        categories: ref.read(inventoryCategoriesProvider).valueOrNull ?? [],
+        locations: ref.read(inventoryLocationsProvider).valueOrNull ?? [],
+      );
 
       if (result != null && mounted) {
         setState(() {
@@ -227,6 +232,14 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
           }
           if (result['barcode'] is String && _barcodeController.text.isEmpty) {
             _barcodeController.text = result['barcode'] as String;
+          }
+          if (result['location'] is String &&
+              _locationController.text.isEmpty) {
+            _locationController.text = result['location'] as String;
+          }
+          if (result['expiryDate'] is String && _expiryDate == null) {
+            final parsed = DateTime.tryParse(result['expiryDate'] as String);
+            if (parsed != null) _expiryDate = parsed;
           }
         });
         ScaffoldMessenger.of(context).showSnackBar(

@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- Improved Gemini image scan for inventory — AI now receives existing categories and locations for better matching; prompt enhanced to detect quantity, price labels, expiry/best-before dates, and storage location from product images (WISH-0041)
 - Push notifications and expiry reminders — FCM integration with token management; configurable reminder days (1, 2, 3, 7, 14, 30 days before expiry) in settings; daily scheduled Cloud Function (`checkExpiryReminders`) sends push notifications for expiring inventory items; automatic cleanup of invalid tokens (WISH-0042)
 - Currency conversion — all prices stored in EUR; displayed in user's preferred currency using live ECB exchange rates from Frankfurter API; `CurrencyConverter` with `fromEur`/`toEur` methods; shared `currencyConverterProvider` used by all display and edit pages; edit pages convert input to EUR on save and EUR to user currency on load (WISH-0043)
 - Gemini API key vault integration — save and retrieve the Gemini API key from the Password Vault; load from vault button in the API key dialog, automatic offer to save to vault after manual entry; supports multiple vault entries with a picker (WISH-0044)

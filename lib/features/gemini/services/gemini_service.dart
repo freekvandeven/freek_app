@@ -102,21 +102,35 @@ class GeminiService {
   /// Analyze an image and return structured inventory data as JSON.
   Future<Map<String, dynamic>?> analyzeInventoryImage(
     Uint8List imageBytes,
-    String mimeType,
-  ) async {
+    String mimeType, {
+    List<String> categories = const [],
+    List<String> locations = const [],
+  }) async {
     if (!isConfigured) return null;
     try {
+      final categoryHint = categories.isNotEmpty
+          ? 'The user has these existing categories: ${categories.join(', ')}. '
+                'Use one of these if the item fits, otherwise suggest a new category.\n'
+          : '';
+      final locationHint = locations.isNotEmpty
+          ? 'The user has these existing locations: ${locations.join(', ')}. '
+                'Use one of these if appropriate.\n'
+          : '';
       final response = await _getModel().generateContent([
         Content.multi([
           TextPart(
             'Analyze this image for an inventory management app. '
+            'Look carefully at the product, packaging, labels, and any visible text.\n'
+            '$categoryHint$locationHint'
             'Return ONLY a JSON object with these fields (omit fields you cannot determine):\n'
             '- "name": product/item name (string)\n'
             '- "description": brief description (string)\n'
             '- "category": item category (string)\n'
-            '- "quantity": number of items visible (int)\n'
-            '- "purchasePrice": estimated price in EUR if visible (number)\n'
-            '- "barcode": barcode number if visible (string)\n'
+            '- "location": where this item is typically stored (string)\n'
+            '- "quantity": count the number of items visible in the image (int)\n'
+            '- "purchasePrice": price if visible on a label or tag, in EUR (number)\n'
+            '- "expiryDate": expiry/best-before date if visible, in ISO 8601 format YYYY-MM-DD (string)\n'
+            '- "barcode": barcode or EAN number if visible (string)\n'
             'Respond with ONLY the JSON object, no markdown fences.',
           ),
           DataPart(mimeType, imageBytes),
