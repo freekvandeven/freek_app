@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
+import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
 import '../models/task.dart';
 import '../providers/task_providers.dart';
@@ -35,58 +36,68 @@ class TaskListPage extends ConsumerWidget {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: SegmentedButton<TaskFilter>(
-              segments: const [
-                ButtonSegment(
-                  value: TaskFilter.pending,
-                  label: Text('Pending'),
-                ),
-                ButtonSegment(value: TaskFilter.all, label: Text('All')),
-                ButtonSegment(value: TaskFilter.completed, label: Text('Done')),
-              ],
-              selected: {filter},
-              onSelectionChanged: (selection) =>
-                  ref.read(taskFilterProvider.notifier).state = selection.first,
+      body: ResponsiveCenter(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: SegmentedButton<TaskFilter>(
+                segments: const [
+                  ButtonSegment(
+                    value: TaskFilter.pending,
+                    label: Text('Pending'),
+                  ),
+                  ButtonSegment(value: TaskFilter.all, label: Text('All')),
+                  ButtonSegment(
+                    value: TaskFilter.completed,
+                    label: Text('Done'),
+                  ),
+                ],
+                selected: {filter},
+                onSelectionChanged: (selection) =>
+                    ref.read(taskFilterProvider.notifier).state =
+                        selection.first,
+              ),
             ),
-          ),
-          Expanded(
-            child: tasksAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Error: $e')),
-              data: (tasks) => tasks.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.check_circle_outline,
-                            size: 64,
-                            color: colorScheme.onSurfaceVariant.withAlpha(100),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            filter == TaskFilter.completed
-                                ? 'No completed tasks'
-                                : 'No tasks yet',
-                            style: Theme.of(context).textTheme.bodyLarge
-                                ?.copyWith(color: colorScheme.onSurfaceVariant),
-                          ),
-                        ],
+            Expanded(
+              child: tasksAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(child: Text('Error: $e')),
+                data: (tasks) => tasks.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.check_circle_outline,
+                              size: 64,
+                              color: colorScheme.onSurfaceVariant.withAlpha(
+                                100,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              filter == TaskFilter.completed
+                                  ? 'No completed tasks'
+                                  : 'No tasks yet',
+                              style: Theme.of(context).textTheme.bodyLarge
+                                  ?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.only(bottom: 80),
+                        itemCount: tasks.length,
+                        itemBuilder: (context, index) =>
+                            _TaskTile(task: tasks[index]),
                       ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.only(bottom: 80),
-                      itemCount: tasks.length,
-                      itemBuilder: (context, index) =>
-                          _TaskTile(task: tasks[index]),
-                    ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/tasks/new'),

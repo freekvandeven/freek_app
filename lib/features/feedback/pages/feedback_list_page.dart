@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
+import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
 import '../models/feedback_entry.dart';
 import '../providers/feedback_providers.dart';
@@ -251,23 +252,25 @@ class FeedbackListPage extends ConsumerWidget {
         onPressed: () => context.push('/feedback/new'),
         child: const Icon(Icons.add),
       ),
-      body: entriesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
-        data: (entries) {
-          if (entries.isEmpty) {
-            return const Center(
-              child: Text('No feedback entries yet.\nTap + to add one.'),
+      body: ResponsiveCenter(
+        child: entriesAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('Error: $e')),
+          data: (entries) {
+            if (entries.isEmpty) {
+              return const Center(
+                child: Text('No feedback entries yet.\nTap + to add one.'),
+              );
+            }
+            return ListView.builder(
+              itemCount: entries.length,
+              itemBuilder: (context, index) {
+                final entry = entries[index];
+                return _FeedbackTile(entry: entry);
+              },
             );
-          }
-          return ListView.builder(
-            itemCount: entries.length,
-            itemBuilder: (context, index) {
-              final entry = entries[index];
-              return _FeedbackTile(entry: entry);
-            },
-          );
-        },
+          },
+        ),
       ),
     );
   }

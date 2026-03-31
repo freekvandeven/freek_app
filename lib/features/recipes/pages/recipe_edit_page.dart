@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
+import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
 import '../../../services/image_upload_service.dart';
@@ -562,386 +563,404 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
           ),
         ],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            TextFormField(
-              controller: _titleController,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(labelText: 'Title'),
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Title is required' : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _descriptionController,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(labelText: 'Description'),
-              maxLines: 2,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _servingsController,
-                    decoration: const InputDecoration(labelText: 'Servings'),
-                    keyboardType: TextInputType.number,
+      body: ResponsiveCenter(
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              TextFormField(
+                controller: _titleController,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(labelText: 'Title'),
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Title is required' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _descriptionController,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(labelText: 'Description'),
+                maxLines: 2,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _servingsController,
+                      decoration: const InputDecoration(labelText: 'Servings'),
+                      keyboardType: TextInputType.number,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextFormField(
-                    controller: _prepTimeController,
-                    decoration: const InputDecoration(labelText: 'Prep (min)'),
-                    keyboardType: TextInputType.number,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _prepTimeController,
+                      decoration: const InputDecoration(
+                        labelText: 'Prep (min)',
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextFormField(
-                    controller: _cookTimeController,
-                    decoration: const InputDecoration(labelText: 'Cook (min)'),
-                    keyboardType: TextInputType.number,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _cookTimeController,
+                      decoration: const InputDecoration(
+                        labelText: 'Cook (min)',
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
+                ],
+              ),
+              const SizedBox(height: 16),
 
-            // Tags
-            Row(
-              children: [
-                Expanded(
-                  child: Autocomplete<String>(
-                    optionsBuilder: (textEditingValue) {
-                      final input = textEditingValue.text.toLowerCase().trim();
-                      if (input.isEmpty) return const Iterable<String>.empty();
-                      final available =
-                          ref.read(availableTagsProvider).valueOrNull ?? [];
-                      return available.where(
-                        (t) => t.contains(input) && !_tags.contains(t),
-                      );
-                    },
-                    onSelected: (tag) {
-                      if (!_tags.contains(tag)) {
-                        setState(() => _tags.add(tag));
-                        ref.read(availableTagsProvider.notifier).addTag(tag);
-                      }
-                      _autocompleteTagController?.clear();
-                    },
-                    fieldViewBuilder:
-                        (context, controller, focusNode, onFieldSubmitted) {
-                          _autocompleteTagController = controller;
-                          return TextField(
-                            controller: controller,
-                            focusNode: focusNode,
-                            decoration: const InputDecoration(
-                              labelText: 'Add tag',
-                            ),
-                            onSubmitted: (_) => _addTag(),
-                          );
-                        },
+              // Tags
+              Row(
+                children: [
+                  Expanded(
+                    child: Autocomplete<String>(
+                      optionsBuilder: (textEditingValue) {
+                        final input = textEditingValue.text
+                            .toLowerCase()
+                            .trim();
+                        if (input.isEmpty) {
+                          return const Iterable<String>.empty();
+                        }
+                        final available =
+                            ref.read(availableTagsProvider).valueOrNull ?? [];
+                        return available.where(
+                          (t) => t.contains(input) && !_tags.contains(t),
+                        );
+                      },
+                      onSelected: (tag) {
+                        if (!_tags.contains(tag)) {
+                          setState(() => _tags.add(tag));
+                          ref.read(availableTagsProvider.notifier).addTag(tag);
+                        }
+                        _autocompleteTagController?.clear();
+                      },
+                      fieldViewBuilder:
+                          (context, controller, focusNode, onFieldSubmitted) {
+                            _autocompleteTagController = controller;
+                            return TextField(
+                              controller: controller,
+                              focusNode: focusNode,
+                              decoration: const InputDecoration(
+                                labelText: 'Add tag',
+                              ),
+                              onSubmitted: (_) => _addTag(),
+                            );
+                          },
+                    ),
+                  ),
+                  IconButton(icon: const Icon(Icons.add), onPressed: _addTag),
+                ],
+              ),
+              if (_tags.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Wrap(
+                    spacing: 6,
+                    children: _tags
+                        .map(
+                          (t) => Chip(
+                            label: Text(t),
+                            onDeleted: () => setState(() => _tags.remove(t)),
+                          ),
+                        )
+                        .toList(),
                   ),
                 ),
-                IconButton(icon: const Icon(Icons.add), onPressed: _addTag),
-              ],
-            ),
-            if (_tags.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Wrap(
-                  spacing: 6,
-                  children: _tags
-                      .map(
-                        (t) => Chip(
-                          label: Text(t),
-                          onDeleted: () => setState(() => _tags.remove(t)),
-                        ),
-                      )
-                      .toList(),
+              const SizedBox(height: 16),
+
+              // Ingredients
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Ingredients',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  TextButton.icon(
+                    onPressed: _addIngredient,
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Add'),
+                  ),
+                ],
+              ),
+              ..._ingredients.asMap().entries.map(
+                (entry) => ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  title: Text(
+                    [
+                      if (entry.value.quantity != null)
+                        entry.value.quantity!.toString(),
+                      if (entry.value.unit != null) entry.value.unit,
+                      entry.value.name,
+                    ].join(' '),
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.remove_circle_outline, size: 20),
+                    onPressed: () =>
+                        setState(() => _ingredients.removeAt(entry.key)),
+                  ),
                 ),
               ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // Ingredients
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Ingredients',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                TextButton.icon(
-                  onPressed: _addIngredient,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Add'),
-                ),
-              ],
-            ),
-            ..._ingredients.asMap().entries.map(
-              (entry) => ListTile(
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-                title: Text(
-                  [
-                    if (entry.value.quantity != null)
-                      entry.value.quantity!.toString(),
-                    if (entry.value.unit != null) entry.value.unit,
-                    entry.value.name,
-                  ].join(' '),
-                ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.remove_circle_outline, size: 20),
-                  onPressed: () =>
-                      setState(() => _ingredients.removeAt(entry.key)),
-                ),
+              // Instructions
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Instructions',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  TextButton.icon(
+                    onPressed: _addInstruction,
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Add'),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 16),
-
-            // Instructions
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Instructions',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                TextButton.icon(
-                  onPressed: _addInstruction,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Add'),
-                ),
-              ],
-            ),
-            ReorderableListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _instructions.length,
-              onReorder: (old, newIdx) {
-                setState(() {
-                  if (newIdx > old) newIdx--;
-                  final item = _instructions.removeAt(old);
-                  _instructions.insert(newIdx, item);
-                });
-              },
-              itemBuilder: (context, index) => ListTile(
-                key: ValueKey(index),
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-                leading: CircleAvatar(
-                  radius: 12,
-                  child: Text(
-                    '${index + 1}',
-                    style: const TextStyle(fontSize: 12),
+              ReorderableListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _instructions.length,
+                onReorder: (old, newIdx) {
+                  setState(() {
+                    if (newIdx > old) newIdx--;
+                    final item = _instructions.removeAt(old);
+                    _instructions.insert(newIdx, item);
+                  });
+                },
+                itemBuilder: (context, index) => ListTile(
+                  key: ValueKey(index),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  leading: CircleAvatar(
+                    radius: 12,
+                    child: Text(
+                      '${index + 1}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                  title: Text(
+                    _instructions[index].text,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: _instructions[index].imageUrl != null
+                      ? Text(
+                          _instructions[index].imageUrl!,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey,
+                          ),
+                        )
+                      : null,
+                  trailing: IconButton(
+                    icon: const Icon(Icons.remove_circle_outline, size: 20),
+                    onPressed: () =>
+                        setState(() => _instructions.removeAt(index)),
                   ),
                 ),
-                title: Text(
-                  _instructions[index].text,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                subtitle: _instructions[index].imageUrl != null
-                    ? Text(
-                        _instructions[index].imageUrl!,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey,
-                        ),
-                      )
-                    : null,
-                trailing: IconButton(
-                  icon: const Icon(Icons.remove_circle_outline, size: 20),
-                  onPressed: () =>
-                      setState(() => _instructions.removeAt(index)),
-                ),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // Images
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Images', style: Theme.of(context).textTheme.titleMedium),
-                TextButton.icon(
-                  onPressed: _addImage,
-                  icon: const Icon(Icons.add_photo_alternate, size: 18),
-                  label: const Text('Add'),
-                ),
-              ],
-            ),
-            if (_savedImageUrls.isNotEmpty || _pendingImages.isNotEmpty)
-              SizedBox(
-                height: 80,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _savedImageUrls.length + _pendingImages.length,
-                  itemBuilder: (context, index) {
-                    final isExisting = index < _savedImageUrls.length;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: Stack(
-                        children: [
-                          GestureDetector(
-                            onTap: () =>
-                                setState(() => _primaryImageIndex = index),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: isExisting
-                                  ? CachedNetworkImage(
-                                      imageUrl: _savedImageUrls[index],
-                                      width: 80,
-                                      height: 80,
-                                      fit: BoxFit.cover,
-                                      errorWidget: (_, __, ___) => Container(
+              // Images
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Images',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  TextButton.icon(
+                    onPressed: _addImage,
+                    icon: const Icon(Icons.add_photo_alternate, size: 18),
+                    label: const Text('Add'),
+                  ),
+                ],
+              ),
+              if (_savedImageUrls.isNotEmpty || _pendingImages.isNotEmpty)
+                SizedBox(
+                  height: 80,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _savedImageUrls.length + _pendingImages.length,
+                    itemBuilder: (context, index) {
+                      final isExisting = index < _savedImageUrls.length;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Stack(
+                          children: [
+                            GestureDetector(
+                              onTap: () =>
+                                  setState(() => _primaryImageIndex = index),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: isExisting
+                                    ? CachedNetworkImage(
+                                        imageUrl: _savedImageUrls[index],
                                         width: 80,
                                         height: 80,
-                                        color: Colors.grey[300],
-                                        child: const Icon(Icons.broken_image),
+                                        fit: BoxFit.cover,
+                                        errorWidget: (_, __, ___) => Container(
+                                          width: 80,
+                                          height: 80,
+                                          color: Colors.grey[300],
+                                          child: const Icon(Icons.broken_image),
+                                        ),
+                                      )
+                                    : Image.memory(
+                                        _pendingImages[index -
+                                                _savedImageUrls.length]
+                                            .bytes,
+                                        width: 80,
+                                        height: 80,
+                                        fit: BoxFit.cover,
                                       ),
-                                    )
-                                  : Image.memory(
-                                      _pendingImages[index -
-                                              _savedImageUrls.length]
-                                          .bytes,
-                                      width: 80,
-                                      height: 80,
-                                      fit: BoxFit.cover,
-                                    ),
+                              ),
                             ),
-                          ),
-                          if (index == _primaryImageIndex)
+                            if (index == _primaryImageIndex)
+                              Positioned(
+                                top: 2,
+                                left: 2,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 1,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text(
+                                    'Primary',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 9,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             Positioned(
-                              top: 2,
-                              left: 2,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                  vertical: 1,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: const Text(
-                                  'Primary',
-                                  style: TextStyle(
+                              top: 0,
+                              right: 0,
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    final totalCount =
+                                        _savedImageUrls.length +
+                                        _pendingImages.length;
+                                    if (isExisting) {
+                                      _removedImageUrls.add(
+                                        _savedImageUrls[index],
+                                      );
+                                      _savedImageUrls.removeAt(index);
+                                    } else {
+                                      _pendingImages.removeAt(
+                                        index - _savedImageUrls.length,
+                                      );
+                                    }
+                                    final newTotal = totalCount - 1;
+                                    if (_primaryImageIndex >= newTotal) {
+                                      _primaryImageIndex = newTotal <= 0
+                                          ? 0
+                                          : newTotal - 1;
+                                    }
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.black54,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.close,
+                                    size: 14,
                                     color: Colors.white,
-                                    fontSize: 9,
                                   ),
                                 ),
                               ),
                             ),
-                          Positioned(
-                            top: 0,
-                            right: 0,
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  final totalCount =
-                                      _savedImageUrls.length +
-                                      _pendingImages.length;
-                                  if (isExisting) {
-                                    _removedImageUrls.add(
-                                      _savedImageUrls[index],
-                                    );
-                                    _savedImageUrls.removeAt(index);
-                                  } else {
-                                    _pendingImages.removeAt(
-                                      index - _savedImageUrls.length,
-                                    );
-                                  }
-                                  final newTotal = totalCount - 1;
-                                  if (_primaryImageIndex >= newTotal) {
-                                    _primaryImageIndex = newTotal <= 0
-                                        ? 0
-                                        : newTotal - 1;
-                                  }
-                                });
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(2),
-                                decoration: const BoxDecoration(
-                                  color: Colors.black54,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.close,
-                                  size: 14,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
+              const SizedBox(height: 16),
+
+              // Video Links
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Videos',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  TextButton.icon(
+                    onPressed: _addVideoLink,
+                    icon: const Icon(Icons.video_library, size: 18),
+                    label: const Text('Add'),
+                  ),
+                ],
               ),
-            const SizedBox(height: 16),
+              ..._videoLinks.asMap().entries.map((entry) {
+                final info = VideoLinkParser.parse(entry.value);
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  leading: Icon(
+                    info.platform == VideoPlatform.youtube
+                        ? Icons.play_circle_fill
+                        : Icons.ondemand_video,
+                    color: info.platform == VideoPlatform.youtube
+                        ? Colors.red
+                        : null,
+                  ),
+                  title: Text(
+                    VideoLinkParser.platformLabel(info.platform),
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  subtitle: Text(
+                    entry.value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.remove_circle_outline, size: 20),
+                    onPressed: () =>
+                        setState(() => _videoLinks.removeAt(entry.key)),
+                  ),
+                );
+              }),
 
-            // Video Links
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Videos', style: Theme.of(context).textTheme.titleMedium),
-                TextButton.icon(
-                  onPressed: _addVideoLink,
-                  icon: const Icon(Icons.video_library, size: 18),
-                  label: const Text('Add'),
-                ),
-              ],
-            ),
-            ..._videoLinks.asMap().entries.map((entry) {
-              final info = VideoLinkParser.parse(entry.value);
-              return ListTile(
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-                leading: Icon(
-                  info.platform == VideoPlatform.youtube
-                      ? Icons.play_circle_fill
-                      : Icons.ondemand_video,
-                  color: info.platform == VideoPlatform.youtube
-                      ? Colors.red
-                      : null,
-                ),
-                title: Text(
-                  VideoLinkParser.platformLabel(info.platform),
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                subtitle: Text(
-                  entry.value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 11, color: Colors.grey),
-                ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.remove_circle_outline, size: 20),
-                  onPressed: () =>
-                      setState(() => _videoLinks.removeAt(entry.key)),
-                ),
-              );
-            }),
+              const SizedBox(height: 16),
 
-            const SizedBox(height: 16),
-
-            TextFormField(
-              controller: _sourceController,
-              decoration: const InputDecoration(labelText: 'Source'),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _notesController,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(labelText: 'Notes'),
-              maxLines: 3,
-            ),
-          ],
+              TextFormField(
+                controller: _sourceController,
+                decoration: const InputDecoration(labelText: 'Source'),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _notesController,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(labelText: 'Notes'),
+                maxLines: 3,
+              ),
+            ],
+          ),
         ),
       ),
     );

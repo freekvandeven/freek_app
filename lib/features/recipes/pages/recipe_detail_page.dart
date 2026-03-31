@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
+import 'package:personal_app/presentation/widgets/responsive_center.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
@@ -93,227 +94,233 @@ class RecipeDetailPage extends ConsumerWidget {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // Images
-          if (recipe.images.isNotEmpty) ...[
-            SizedBox(
-              height: 200,
-              child: recipe.images.length == 1
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: CachedNetworkImage(
-                        imageUrl: recipe.images.first,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => const Center(
-                          child: Icon(Icons.broken_image, size: 48),
+      body: ResponsiveCenter(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            // Images
+            if (recipe.images.isNotEmpty) ...[
+              SizedBox(
+                height: 200,
+                child: recipe.images.length == 1
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: CachedNetworkImage(
+                          imageUrl: recipe.images.first,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorWidget: (_, __, ___) => const Center(
+                            child: Icon(Icons.broken_image, size: 48),
+                          ),
                         ),
-                      ),
-                    )
-                  : ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: recipe.images.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 8),
-                      itemBuilder: (context, index) {
-                        final isPrimary = index == recipe.primaryImageIndex;
-                        return Stack(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: CachedNetworkImage(
-                                imageUrl: recipe.images[index],
-                                width: 280,
-                                height: 200,
-                                fit: BoxFit.cover,
-                                errorWidget: (_, __, ___) => const SizedBox(
+                      )
+                    : ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: recipe.images.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 8),
+                        itemBuilder: (context, index) {
+                          final isPrimary = index == recipe.primaryImageIndex;
+                          return Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: CachedNetworkImage(
+                                  imageUrl: recipe.images[index],
                                   width: 280,
-                                  child: Center(
-                                    child: Icon(Icons.broken_image, size: 48),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            if (isPrimary)
-                              Positioned(
-                                top: 8,
-                                left: 8,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: colorScheme.primary,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    'Primary',
-                                    style: TextStyle(
-                                      color: colorScheme.onPrimary,
-                                      fontSize: 12,
+                                  height: 200,
+                                  fit: BoxFit.cover,
+                                  errorWidget: (_, __, ___) => const SizedBox(
+                                    width: 280,
+                                    child: Center(
+                                      child: Icon(Icons.broken_image, size: 48),
                                     ),
                                   ),
                                 ),
                               ),
-                          ],
-                        );
-                      },
-                    ),
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          if (recipe.description != null) ...[
-            Text(
-              recipe.description!,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+                              if (isPrimary)
+                                Positioned(
+                                  top: 8,
+                                  left: 8,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.primary,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      'Primary',
+                                      style: TextStyle(
+                                        color: colorScheme.onPrimary,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
+                      ),
               ),
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          // Metadata row
-          Wrap(
-            spacing: 16,
-            runSpacing: 8,
-            children: [
-              if (recipe.servings != null)
-                _infoChip(Icons.people, '${recipe.servings} servings'),
-              if (recipe.prepTimeMinutes != null)
-                _infoChip(
-                  Icons.timer_outlined,
-                  '${recipe.prepTimeMinutes} min prep',
-                ),
-              if (recipe.cookTimeMinutes != null)
-                _infoChip(
-                  Icons.local_fire_department,
-                  '${recipe.cookTimeMinutes} min cook',
-                ),
+              const SizedBox(height: 16),
             ],
-          ),
 
-          if (recipe.tags.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 6,
-              children: recipe.tags
-                  .map(
-                    (t) => Chip(
-                      label: Text(t),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  )
-                  .toList(),
-            ),
-          ],
-
-          // Ingredients
-          if (recipe.ingredients.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            Text('Ingredients', style: Theme.of(context).textTheme.titleMedium),
-            const Divider(),
-            ...recipe.ingredients.map(
-              (i) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  children: [
-                    const Icon(Icons.fiber_manual_record, size: 8),
-                    const SizedBox(width: 8),
-                    Text(
-                      [
-                        if (i.quantity != null) _formatQuantity(i.quantity!),
-                        if (i.unit != null) i.unit,
-                        i.name,
-                      ].join(' '),
-                    ),
-                  ],
+            if (recipe.description != null) ...[
+              Text(
+                recipe.description!,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+            ],
 
-          // Instructions
-          if (recipe.instructions.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            Text(
-              'Instructions',
-              style: Theme.of(context).textTheme.titleMedium,
+            // Metadata row
+            Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              children: [
+                if (recipe.servings != null)
+                  _infoChip(Icons.people, '${recipe.servings} servings'),
+                if (recipe.prepTimeMinutes != null)
+                  _infoChip(
+                    Icons.timer_outlined,
+                    '${recipe.prepTimeMinutes} min prep',
+                  ),
+                if (recipe.cookTimeMinutes != null)
+                  _infoChip(
+                    Icons.local_fire_department,
+                    '${recipe.cookTimeMinutes} min cook',
+                  ),
+              ],
             ),
-            const Divider(),
-            ...recipe.instructions.asMap().entries.map(
-              (entry) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        CircleAvatar(
-                          radius: 12,
-                          child: Text(
-                            '${entry.key + 1}',
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(child: Text(entry.value.text)),
-                      ],
-                    ),
-                    if (entry.value.imageUrl != null) ...[
-                      const SizedBox(height: 8),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: CachedNetworkImage(
-                          imageUrl: entry.value.imageUrl!,
-                          height: 150,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) => const SizedBox.shrink(),
-                        ),
+
+            if (recipe.tags.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 6,
+                children: recipe.tags
+                    .map(
+                      (t) => Chip(
+                        label: Text(t),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    )
+                    .toList(),
+              ),
+            ],
+
+            // Ingredients
+            if (recipe.ingredients.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              Text(
+                'Ingredients',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const Divider(),
+              ...recipe.ingredients.map(
+                (i) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.fiber_manual_record, size: 8),
+                      const SizedBox(width: 8),
+                      Text(
+                        [
+                          if (i.quantity != null) _formatQuantity(i.quantity!),
+                          if (i.unit != null) i.unit,
+                          i.name,
+                        ].join(' '),
                       ),
                     ],
-                  ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
 
-          // Videos
-          if (recipe.videoLinks.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            Text('Videos', style: Theme.of(context).textTheme.titleMedium),
-            const Divider(),
-            ...recipe.videoLinks.map(
-              (url) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _VideoLinkCard(url: url),
+            // Instructions
+            if (recipe.instructions.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              Text(
+                'Instructions',
+                style: Theme.of(context).textTheme.titleMedium,
               ),
-            ),
-          ],
-
-          // Notes
-          if (recipe.notes != null) ...[
-            const SizedBox(height: 24),
-            Text('Notes', style: Theme.of(context).textTheme.titleMedium),
-            const Divider(),
-            Text(recipe.notes!),
-          ],
-
-          // Source
-          if (recipe.source != null) ...[
-            const SizedBox(height: 24),
-            Text(
-              'Source: ${recipe.source}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+              const Divider(),
+              ...recipe.instructions.asMap().entries.map(
+                (entry) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CircleAvatar(
+                            radius: 12,
+                            child: Text(
+                              '${entry.key + 1}',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(child: Text(entry.value.text)),
+                        ],
+                      ),
+                      if (entry.value.imageUrl != null) ...[
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: CachedNetworkImage(
+                            imageUrl: entry.value.imageUrl!,
+                            height: 150,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorWidget: (_, __, ___) =>
+                                const SizedBox.shrink(),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ),
-            ),
+            ],
+
+            // Videos
+            if (recipe.videoLinks.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              Text('Videos', style: Theme.of(context).textTheme.titleMedium),
+              const Divider(),
+              ...recipe.videoLinks.map(
+                (url) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _VideoLinkCard(url: url),
+                ),
+              ),
+            ],
+
+            // Notes
+            if (recipe.notes != null) ...[
+              const SizedBox(height: 24),
+              Text('Notes', style: Theme.of(context).textTheme.titleMedium),
+              const Divider(),
+              Text(recipe.notes!),
+            ],
+
+            // Source
+            if (recipe.source != null) ...[
+              const SizedBox(height: 24),
+              Text(
+                'Source: ${recipe.source}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

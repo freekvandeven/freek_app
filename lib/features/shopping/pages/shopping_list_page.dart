@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
+import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
 import '../../catalog/models/catalog_item.dart';
 import '../../catalog/providers/catalog_providers.dart';
@@ -35,45 +36,47 @@ class ShoppingListPage extends ConsumerWidget {
           ),
         ],
       ),
-      body: items.when(
-        data: (list) {
-          if (list.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.shopping_cart, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text('Shopping list is empty'),
-                ],
-              ),
-            );
-          }
+      body: ResponsiveCenter(
+        child: items.when(
+          data: (list) {
+            if (list.isEmpty) {
+              return const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.shopping_cart, size: 64, color: Colors.grey),
+                    SizedBox(height: 16),
+                    Text('Shopping list is empty'),
+                  ],
+                ),
+              );
+            }
 
-          final pending = list.where((i) => !i.isCompleted).toList();
-          final completed = list.where((i) => i.isCompleted).toList();
+            final pending = list.where((i) => !i.isCompleted).toList();
+            final completed = list.where((i) => i.isCompleted).toList();
 
-          return ListView(
-            children: [
-              if (pending.isNotEmpty)
-                ...pending.map((item) => _ShoppingTile(item: item)),
-              if (completed.isNotEmpty) ...[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Text(
-                    'Completed (${completed.length})',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+            return ListView(
+              children: [
+                if (pending.isNotEmpty)
+                  ...pending.map((item) => _ShoppingTile(item: item)),
+                if (completed.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: Text(
+                      'Completed (${completed.length})',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
-                ),
-                ...completed.map((item) => _ShoppingTile(item: item)),
+                  ...completed.map((item) => _ShoppingTile(item: item)),
+                ],
               ],
-            ],
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('Error: $e')),
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddDialog(context, ref),

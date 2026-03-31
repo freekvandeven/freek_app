@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
+import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
 import '../providers/vault_providers.dart';
 
@@ -34,117 +35,119 @@ class PasswordListPage extends ConsumerWidget {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Search bar
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search passwords...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                suffixIcon: search.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () =>
-                            ref.read(vaultSearchProvider.notifier).state = '',
-                      )
-                    : null,
-              ),
-              onChanged: (v) =>
-                  ref.read(vaultSearchProvider.notifier).state = v,
-            ),
-          ),
-
-          // Category chips
-          _CategoryChips(),
-
-          // Entry list
-          Expanded(
-            child: entries.when(
-              data: (list) {
-                if (list.isEmpty) {
-                  return const Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.key, size: 64, color: Colors.grey),
-                        SizedBox(height: 16),
-                        Text('No passwords yet'),
-                      ],
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  itemCount: list.length,
-                  itemBuilder: (context, index) {
-                    final entry = list[index];
-                    return Dismissible(
-                      key: Key(entry.id),
-                      direction: DismissDirection.endToStart,
-                      background: Container(
-                        color: Colors.red,
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.only(right: 16),
-                        child: const Icon(Icons.delete, color: Colors.white),
-                      ),
-                      confirmDismiss: (_) => showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('Delete Entry'),
-                          content: Text('Delete "${entry.title}"?'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx, false),
-                              child: const Text('Cancel'),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx, true),
-                              child: const Text('Delete'),
-                            ),
-                          ],
-                        ),
-                      ),
-                      onDismissed: (_) => ref
-                          .read(vaultEntriesProvider.notifier)
-                          .deleteEntry(entry.id),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          child: Text(
-                            entry.title.isNotEmpty
-                                ? entry.title[0].toUpperCase()
-                                : '?',
-                          ),
-                        ),
-                        title: Text(entry.title),
-                        subtitle: Text(
-                          [
-                            entry.username,
-                            entry.category,
-                          ].whereType<String>().join(' \u2022 '),
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.copy),
-                          tooltip: 'Copy password',
+      body: ResponsiveCenter(
+        child: Column(
+          children: [
+            // Search bar
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Search passwords...',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  suffixIcon: search.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
                           onPressed: () =>
-                              _copyPassword(context, entry.password),
-                        ),
-                        onTap: () =>
-                            context.push('/passwords/list/${entry.id}'),
+                              ref.read(vaultSearchProvider.notifier).state = '',
+                        )
+                      : null,
+                ),
+                onChanged: (v) =>
+                    ref.read(vaultSearchProvider.notifier).state = v,
+              ),
+            ),
+
+            // Category chips
+            _CategoryChips(),
+
+            // Entry list
+            Expanded(
+              child: entries.when(
+                data: (list) {
+                  if (list.isEmpty) {
+                    return const Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.key, size: 64, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text('No passwords yet'),
+                        ],
                       ),
                     );
-                  },
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Error: $e')),
+                  }
+
+                  return ListView.builder(
+                    itemCount: list.length,
+                    itemBuilder: (context, index) {
+                      final entry = list[index];
+                      return Dismissible(
+                        key: Key(entry.id),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          color: Colors.red,
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 16),
+                          child: const Icon(Icons.delete, color: Colors.white),
+                        ),
+                        confirmDismiss: (_) => showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Delete Entry'),
+                            content: Text('Delete "${entry.title}"?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                child: const Text('Delete'),
+                              ),
+                            ],
+                          ),
+                        ),
+                        onDismissed: (_) => ref
+                            .read(vaultEntriesProvider.notifier)
+                            .deleteEntry(entry.id),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            child: Text(
+                              entry.title.isNotEmpty
+                                  ? entry.title[0].toUpperCase()
+                                  : '?',
+                            ),
+                          ),
+                          title: Text(entry.title),
+                          subtitle: Text(
+                            [
+                              entry.username,
+                              entry.category,
+                            ].whereType<String>().join(' \u2022 '),
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.copy),
+                            tooltip: 'Copy password',
+                            onPressed: () =>
+                                _copyPassword(context, entry.password),
+                          ),
+                          onTap: () =>
+                              context.push('/passwords/list/${entry.id}'),
+                        ),
+                      );
+                    },
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(child: Text('Error: $e')),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/passwords/list/new'),

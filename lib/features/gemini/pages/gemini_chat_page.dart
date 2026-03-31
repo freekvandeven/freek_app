@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
+import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
 import '../providers/gemini_providers.dart';
 
@@ -65,116 +66,118 @@ class _GeminiChatPageState extends ConsumerState<GeminiChatPage> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          if (ref.watch(geminiApiKeyAvailableProvider).valueOrNull == false)
-            MaterialBanner(
-              content: const Text(
-                'No Gemini API key configured. Add one in Settings or in your dotenv file.',
-              ),
-              leading: const Icon(Icons.warning_amber, color: Colors.orange),
-              actions: [
-                TextButton(onPressed: () {}, child: const Text('Dismiss')),
-              ],
-            ),
-          Expanded(
-            child: messages.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.auto_awesome,
-                          size: 64,
-                          color: theme.colorScheme.primary.withValues(
-                            alpha: 0.4,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Ask Gemini anything',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          alignment: WrapAlignment.center,
-                          children: [
-                            _SuggestionChip(
-                              label: 'Meal plan for the week',
-                              onTap: () {
-                                _controller.text =
-                                    'Suggest a meal plan for this week';
-                                _send();
-                              },
-                            ),
-                            _SuggestionChip(
-                              label: 'Organize my tasks',
-                              onTap: () {
-                                _controller.text =
-                                    'How should I organize my tasks for better productivity?';
-                                _send();
-                              },
-                            ),
-                            _SuggestionChip(
-                              label: 'Budget tips',
-                              onTap: () {
-                                _controller.text =
-                                    'Give me some practical budgeting tips';
-                                _send();
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(16),
-                    itemCount: messages.length,
-                    itemBuilder: (context, index) {
-                      final msg = messages[index];
-                      return _ChatBubble(message: msg);
-                    },
-                  ),
-          ),
-          if (_isSending) const LinearProgressIndicator(),
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: SafeArea(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      decoration: InputDecoration(
-                        hintText: 'Ask Gemini...',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                      ),
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _send(),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton.filled(
-                    onPressed: _isSending ? null : _send,
-                    icon: const Icon(Icons.send),
-                  ),
+      body: ResponsiveCenter(
+        child: Column(
+          children: [
+            if (ref.watch(geminiApiKeyAvailableProvider).valueOrNull == false)
+              MaterialBanner(
+                content: const Text(
+                  'No Gemini API key configured. Add one in Settings or in your dotenv file.',
+                ),
+                leading: const Icon(Icons.warning_amber, color: Colors.orange),
+                actions: [
+                  TextButton(onPressed: () {}, child: const Text('Dismiss')),
                 ],
               ),
+            Expanded(
+              child: messages.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.auto_awesome,
+                            size: 64,
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.4,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Ask Gemini anything',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            alignment: WrapAlignment.center,
+                            children: [
+                              _SuggestionChip(
+                                label: 'Meal plan for the week',
+                                onTap: () {
+                                  _controller.text =
+                                      'Suggest a meal plan for this week';
+                                  _send();
+                                },
+                              ),
+                              _SuggestionChip(
+                                label: 'Organize my tasks',
+                                onTap: () {
+                                  _controller.text =
+                                      'How should I organize my tasks for better productivity?';
+                                  _send();
+                                },
+                              ),
+                              _SuggestionChip(
+                                label: 'Budget tips',
+                                onTap: () {
+                                  _controller.text =
+                                      'Give me some practical budgeting tips';
+                                  _send();
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(16),
+                      itemCount: messages.length,
+                      itemBuilder: (context, index) {
+                        final msg = messages[index];
+                        return _ChatBubble(message: msg);
+                      },
+                    ),
             ),
-          ),
-        ],
+            if (_isSending) const LinearProgressIndicator(),
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: SafeArea(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _controller,
+                        decoration: InputDecoration(
+                          hintText: 'Ask Gemini...',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                        ),
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => _send(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton.filled(
+                      onPressed: _isSending ? null : _send,
+                      icon: const Icon(Icons.send),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

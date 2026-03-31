@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
+import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
 import '../../../presentation/theme/app_theme.dart';
 import '../../../services/version_check_service.dart';
@@ -28,103 +29,132 @@ class SettingsPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const QuickActionsTitle(child: Text('Settings'))),
-      body: ListView(
-        children: [
-          const _SectionHeader('Profile'),
-          ListTile(
-            leading: user.photoUrl != null
-                ? CircleAvatar(
-                    backgroundImage: CachedNetworkImageProvider(user.photoUrl!),
-                  )
-                : const Icon(Icons.person),
-            title: const Text('Edit Profile'),
-            subtitle: Text(user.displayName ?? user.email),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/settings/profile'),
-          ),
+      body: ResponsiveCenter(
+        child: ListView(
+          children: [
+            const _SectionHeader('Profile'),
+            ListTile(
+              leading: user.photoUrl != null
+                  ? CircleAvatar(
+                      backgroundImage: CachedNetworkImageProvider(
+                        user.photoUrl!,
+                      ),
+                    )
+                  : const Icon(Icons.person),
+              title: const Text('Edit Profile'),
+              subtitle: Text(user.displayName ?? user.email),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/settings/profile'),
+            ),
 
-          const _SectionHeader('Appearance'),
-          ListTile(
-            leading: const Icon(Icons.palette),
-            title: const Text('Theme'),
-            subtitle: Text(
-              settings.themeMode[0].toUpperCase() +
-                  settings.themeMode.substring(1),
+            const _SectionHeader('Appearance'),
+            ListTile(
+              leading: const Icon(Icons.palette),
+              title: const Text('Theme'),
+              subtitle: Text(
+                settings.themeMode[0].toUpperCase() +
+                    settings.themeMode.substring(1),
+              ),
+              onTap: () => _showThemePicker(context, ref, settings.themeMode),
             ),
-            onTap: () => _showThemePicker(context, ref, settings.themeMode),
-          ),
-          ListTile(
-            leading: Icon(
-              Icons.color_lens,
-              color:
-                  AppTheme.parseHex(settings.customSeedColor) ??
-                  AppTheme.defaultSeedColor,
+            ListTile(
+              leading: Icon(
+                Icons.color_lens,
+                color:
+                    AppTheme.parseHex(settings.customSeedColor) ??
+                    AppTheme.defaultSeedColor,
+              ),
+              title: const Text('Accent Color'),
+              subtitle: Text(
+                settings.customSeedColor != null
+                    ? '#${settings.customSeedColor}'
+                    : 'Default',
+              ),
+              trailing: settings.customSeedColor != null
+                  ? IconButton(
+                      icon: const Icon(Icons.restart_alt),
+                      tooltip: 'Reset to default',
+                      onPressed: () {
+                        final updated = user.copyWith(
+                          settings: settings.copyWith(
+                            clearCustomSeedColor: true,
+                          ),
+                        );
+                        ref.read(authServiceProvider).updateProfile(updated);
+                      },
+                    )
+                  : null,
+              onTap: () => _showColorPicker(context, ref),
             ),
-            title: const Text('Accent Color'),
-            subtitle: Text(
-              settings.customSeedColor != null
-                  ? '#${settings.customSeedColor}'
-                  : 'Default',
+            SwitchListTile(
+              secondary: const Icon(Icons.image),
+              title: const Text('Image Previews in Lists'),
+              subtitle: const Text(
+                'Show thumbnail images in inventory and recipe lists',
+              ),
+              value: settings.showImagePreviews,
+              onChanged: (v) {
+                final updated = user.copyWith(
+                  settings: settings.copyWith(showImagePreviews: v),
+                );
+                ref.read(authServiceProvider).updateProfile(updated);
+              },
             ),
-            trailing: settings.customSeedColor != null
-                ? IconButton(
-                    icon: const Icon(Icons.restart_alt),
-                    tooltip: 'Reset to default',
-                    onPressed: () {
-                      final updated = user.copyWith(
-                        settings: settings.copyWith(clearCustomSeedColor: true),
-                      );
-                      ref.read(authServiceProvider).updateProfile(updated);
-                    },
-                  )
-                : null,
-            onTap: () => _showColorPicker(context, ref),
-          ),
-          SwitchListTile(
-            secondary: const Icon(Icons.image),
-            title: const Text('Image Previews in Lists'),
-            subtitle: const Text(
-              'Show thumbnail images in inventory and recipe lists',
-            ),
-            value: settings.showImagePreviews,
-            onChanged: (v) {
-              final updated = user.copyWith(
-                settings: settings.copyWith(showImagePreviews: v),
-              );
-              ref.read(authServiceProvider).updateProfile(updated);
-            },
-          ),
 
-          const _SectionHeader('Preferences'),
-          ListTile(
-            leading: const Icon(Icons.attach_money),
-            title: const Text('Default Currency'),
-            subtitle: Text(
-              '${settings.defaultCurrency} ${_currencySymbol(settings.defaultCurrency)}',
+            const _SectionHeader('Preferences'),
+            ListTile(
+              leading: const Icon(Icons.attach_money),
+              title: const Text('Default Currency'),
+              subtitle: Text(
+                '${settings.defaultCurrency} ${_currencySymbol(settings.defaultCurrency)}',
+              ),
+              onTap: () =>
+                  _showCurrencyPicker(context, ref, settings.defaultCurrency),
             ),
-            onTap: () =>
-                _showCurrencyPicker(context, ref, settings.defaultCurrency),
-          ),
-          SwitchListTile(
-            secondary: const Icon(Icons.notifications),
-            title: const Text('Notifications'),
-            value: settings.notificationsEnabled,
-            onChanged: (v) {
-              final updated = user.copyWith(
-                settings: settings.copyWith(notificationsEnabled: v),
-              );
-              ref.read(authServiceProvider).updateProfile(updated);
-            },
-          ),
-          SwitchListTile(
-            secondary: const Icon(Icons.fingerprint),
-            title: const Text('Biometric Lock'),
-            value: settings.biometricEnabled,
-            onChanged: (v) async {
-              if (v) {
-                // Test biometrics before enabling
+            SwitchListTile(
+              secondary: const Icon(Icons.notifications),
+              title: const Text('Notifications'),
+              value: settings.notificationsEnabled,
+              onChanged: (v) {
+                final updated = user.copyWith(
+                  settings: settings.copyWith(notificationsEnabled: v),
+                );
+                ref.read(authServiceProvider).updateProfile(updated);
+              },
+            ),
+            SwitchListTile(
+              secondary: const Icon(Icons.fingerprint),
+              title: const Text('Biometric Lock'),
+              value: settings.biometricEnabled,
+              onChanged: (v) async {
+                if (v) {
+                  // Test biometrics before enabling
+                  final available = await BiometricService.isAvailable;
+                  if (!available && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Biometrics not available on this device',
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+                }
+                final updated = user.copyWith(
+                  settings: settings.copyWith(biometricEnabled: v),
+                );
+                await ref.read(authServiceProvider).updateProfile(updated);
+              },
+            ),
+            ListTile(
+              leading: const SizedBox(width: 24),
+              title: const Text('Test Biometric Lock'),
+              trailing: const Icon(Icons.play_arrow),
+              onTap: () async {
                 final available = await BiometricService.isAvailable;
-                if (!available && context.mounted) {
+                if (!context.mounted) return;
+                if (!available) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Biometrics not available on this device'),
@@ -132,92 +162,71 @@ class SettingsPage extends ConsumerWidget {
                   );
                   return;
                 }
-              }
-              final updated = user.copyWith(
-                settings: settings.copyWith(biometricEnabled: v),
-              );
-              await ref.read(authServiceProvider).updateProfile(updated);
-            },
-          ),
-          ListTile(
-            leading: const SizedBox(width: 24),
-            title: const Text('Test Biometric Lock'),
-            trailing: const Icon(Icons.play_arrow),
-            onTap: () async {
-              final available = await BiometricService.isAvailable;
-              if (!context.mounted) return;
-              if (!available) {
+                final success = await BiometricService.authenticate(
+                  reason: 'Testing biometric authentication',
+                );
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Biometrics not available on this device'),
+                  SnackBar(
+                    content: Text(
+                      success
+                          ? 'Authentication successful!'
+                          : 'Authentication failed',
+                    ),
                   ),
                 );
-                return;
-              }
-              final success = await BiometricService.authenticate(
-                reason: 'Testing biometric authentication',
-              );
-              if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    success
-                        ? 'Authentication successful!'
-                        : 'Authentication failed',
-                  ),
-                ),
-              );
-            },
-          ),
-
-          const _SectionHeader('Data'),
-          ListTile(
-            leading: const Icon(Icons.download),
-            title: const Text('Export Data'),
-            subtitle: const Text('Export your data to CSV'),
-            onTap: () => context.push('/settings/export'),
-          ),
-
-          const _SectionHeader('Storage'),
-          _StorageUsageTile(user: user),
-
-          const _SectionHeader('AI'),
-          _GeminiApiKeyTile(),
-          _GeminiModelTile(),
-
-          const _SectionHeader('Account'),
-          ListTile(
-            leading: const Icon(Icons.lock_reset),
-            title: const Text('Change Password'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/settings/change-password'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.info_outline),
-            title: const Text('App Version'),
-            subtitle: _VersionSubtitle(),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/settings/changelog'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.developer_mode),
-            title: const Text('Developer'),
-            subtitle: const Text('Logs, debug info & tools'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/settings/developer'),
-          ),
-          ListTile(
-            leading: Icon(
-              Icons.logout,
-              color: Theme.of(context).colorScheme.error,
+              },
             ),
-            title: Text(
-              'Logout',
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
+
+            const _SectionHeader('Data'),
+            ListTile(
+              leading: const Icon(Icons.download),
+              title: const Text('Export Data'),
+              subtitle: const Text('Export your data to CSV'),
+              onTap: () => context.push('/settings/export'),
             ),
-            onTap: () => _confirmLogout(context, ref),
-          ),
-        ],
+
+            const _SectionHeader('Storage'),
+            _StorageUsageTile(user: user),
+
+            const _SectionHeader('AI'),
+            _GeminiApiKeyTile(),
+            _GeminiModelTile(),
+
+            const _SectionHeader('Account'),
+            ListTile(
+              leading: const Icon(Icons.lock_reset),
+              title: const Text('Change Password'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/settings/change-password'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.info_outline),
+              title: const Text('App Version'),
+              subtitle: _VersionSubtitle(),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/settings/changelog'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.developer_mode),
+              title: const Text('Developer'),
+              subtitle: const Text('Logs, debug info & tools'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/settings/developer'),
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.logout,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              title: Text(
+                'Logout',
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+              onTap: () => _confirmLogout(context, ref),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:personal_app/presentation/widgets/responsive_center.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/catalog_providers.dart';
@@ -41,88 +42,91 @@ class CatalogDetailPage extends ConsumerWidget {
               ),
             ],
           ),
-          body: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              // Image gallery
-              if (item.imageUrls.isNotEmpty) ...[
-                SizedBox(
-                  height: 250,
-                  child: PageView.builder(
-                    itemCount: item.imageUrls.length,
-                    itemBuilder: (context, index) => ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: CachedNetworkImage(
-                        imageUrl: item.imageUrls[index],
-                        fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => const Center(
-                          child: Icon(Icons.broken_image, size: 64),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                if (item.imageUrls.length > 1)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      '${item.imageUrls.length} images \u2022 swipe to browse',
-                      style: theme.textTheme.bodySmall,
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                const SizedBox(height: 16),
-              ],
-
-              // Price
-              if (item.price != null) ...[
-                Text(
-                  _currencyFormat.format(item.price),
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
-
-              // Description
-              if (item.description != null && item.description!.isNotEmpty) ...[
-                Text(item.description!, style: theme.textTheme.bodyLarge),
-                const SizedBox(height: 16),
-              ],
-
-              // Link
-              if (item.link != null && item.link!.isNotEmpty) ...[
-                InkWell(
-                  onTap: () => _openLink(item.link!),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.link, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          item.link!,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.primary,
-                            decoration: TextDecoration.underline,
+          body: ResponsiveCenter(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                // Image gallery
+                if (item.imageUrls.isNotEmpty) ...[
+                  SizedBox(
+                    height: 250,
+                    child: PageView.builder(
+                      itemCount: item.imageUrls.length,
+                      itemBuilder: (context, index) => ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: CachedNetworkImage(
+                          imageUrl: item.imageUrls[index],
+                          fit: BoxFit.cover,
+                          errorWidget: (_, __, ___) => const Center(
+                            child: Icon(Icons.broken_image, size: 64),
                           ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-              ],
+                  if (item.imageUrls.length > 1)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        '${item.imageUrls.length} images \u2022 swipe to browse',
+                        style: theme.textTheme.bodySmall,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+                ],
 
-              // Metadata
-              const Divider(),
-              Text(
-                'Created ${DateFormat.yMMMd().format(item.createdAt)}',
-                style: theme.textTheme.bodySmall,
-              ),
-            ],
+                // Price
+                if (item.price != null) ...[
+                  Text(
+                    _currencyFormat.format(item.price),
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
+                // Description
+                if (item.description != null &&
+                    item.description!.isNotEmpty) ...[
+                  Text(item.description!, style: theme.textTheme.bodyLarge),
+                  const SizedBox(height: 16),
+                ],
+
+                // Link
+                if (item.link != null && item.link!.isNotEmpty) ...[
+                  InkWell(
+                    onTap: () => _openLink(item.link!),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.link, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            item.link!,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.primary,
+                              decoration: TextDecoration.underline,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Metadata
+                const Divider(),
+                Text(
+                  'Created ${DateFormat.yMMMd().format(item.createdAt)}',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+            ),
           ),
         );
       },

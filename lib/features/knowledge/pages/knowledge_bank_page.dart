@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
+import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
 import '../models/knowledge_page.dart';
 import '../providers/knowledge_providers.dart';
@@ -22,33 +23,35 @@ class KnowledgeBankPage extends ConsumerWidget {
         onPressed: () => context.push('/knowledge/new'),
         child: const Icon(Icons.add),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search by title or tag...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+      body: ResponsiveCenter(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Search by title or tag...',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  isDense: true,
+                  suffixIcon: search.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () =>
+                              ref.read(knowledgeSearchProvider.notifier).state =
+                                  '',
+                        )
+                      : null,
                 ),
-                isDense: true,
-                suffixIcon: search.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () =>
-                            ref.read(knowledgeSearchProvider.notifier).state =
-                                '',
-                      )
-                    : null,
+                onChanged: (v) =>
+                    ref.read(knowledgeSearchProvider.notifier).state = v,
               ),
-              onChanged: (v) =>
-                  ref.read(knowledgeSearchProvider.notifier).state = v,
             ),
-          ),
-          Expanded(child: isSearching ? _SearchResults() : _TreeView()),
-        ],
+            Expanded(child: isSearching ? _SearchResults() : _TreeView()),
+          ],
+        ),
       ),
     );
   }

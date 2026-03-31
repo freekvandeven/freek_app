@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
+import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
 import '../../auth/providers/auth_providers.dart';
 import '../models/recipe.dart';
@@ -28,56 +29,62 @@ class RecipeListPage extends ConsumerWidget {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search recipes...',
-                prefixIcon: const Icon(Icons.search),
-                isDense: true,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+      body: ResponsiveCenter(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Search recipes...',
+                  prefixIcon: const Icon(Icons.search),
+                  isDense: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
+                onChanged: (v) =>
+                    ref.read(recipeSearchProvider.notifier).state = v,
               ),
-              onChanged: (v) =>
-                  ref.read(recipeSearchProvider.notifier).state = v,
             ),
-          ),
-          _buildTagChips(context, ref),
-          Expanded(
-            child: recipesAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Error: $e')),
-              data: (recipes) => recipes.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.restaurant_menu_rounded,
-                            size: 64,
-                            color: colorScheme.onSurfaceVariant.withAlpha(100),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No recipes yet',
-                            style: Theme.of(context).textTheme.bodyLarge
-                                ?.copyWith(color: colorScheme.onSurfaceVariant),
-                          ),
-                        ],
+            _buildTagChips(context, ref),
+            Expanded(
+              child: recipesAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(child: Text('Error: $e')),
+                data: (recipes) => recipes.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.restaurant_menu_rounded,
+                              size: 64,
+                              color: colorScheme.onSurfaceVariant.withAlpha(
+                                100,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No recipes yet',
+                              style: Theme.of(context).textTheme.bodyLarge
+                                  ?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.only(bottom: 80),
+                        itemCount: recipes.length,
+                        itemBuilder: (context, index) =>
+                            _RecipeCard(recipe: recipes[index]),
                       ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.only(bottom: 80),
-                      itemCount: recipes.length,
-                      itemBuilder: (context, index) =>
-                          _RecipeCard(recipe: recipes[index]),
-                    ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/recipes/new'),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
+import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
 import '../models/conversation_topic.dart';
 import '../providers/conversation_providers.dart';
@@ -119,31 +120,33 @@ class ConversationListPage extends ConsumerWidget {
         onPressed: () => context.push('/conversations/new'),
         child: const Icon(Icons.add),
       ),
-      body: topicsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
-        data: (topics) {
-          if (topics.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.forum_outlined,
-                    size: 64,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('No conversation topics yet'),
-                ],
-              ),
+      body: ResponsiveCenter(
+        child: topicsAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('Error: $e')),
+          data: (topics) {
+            if (topics.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.forum_outlined,
+                      size: 64,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('No conversation topics yet'),
+                  ],
+                ),
+              );
+            }
+            return ListView.builder(
+              itemCount: topics.length,
+              itemBuilder: (context, index) => _TopicTile(topic: topics[index]),
             );
-          }
-          return ListView.builder(
-            itemCount: topics.length,
-            itemBuilder: (context, index) => _TopicTile(topic: topics[index]),
-          );
-        },
+          },
+        ),
       ),
     );
   }
