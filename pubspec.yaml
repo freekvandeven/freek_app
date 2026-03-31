@@ -1,7 +1,7 @@
 name: personal_app
 description: "Personal App — an all-in-one personal life management application."
 publish_to: 'none'
-version: 0.6.0+6
+version: 0.7.0+7
 
 environment:
   sdk: ^3.11.1

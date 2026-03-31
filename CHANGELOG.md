@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.7.0] - 2026-03-31
 
 ### Added
 - Improved Gemini image scan for inventory — AI now receives existing categories and locations for better matching; prompt enhanced to detect quantity, price labels, expiry/best-before dates, and storage location from product images (WISH-0041)
