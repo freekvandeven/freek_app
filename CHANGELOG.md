@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- Flutter static analysis report on GitHub Pages — `scripts/generate-analysis-report.sh` runs `dart analyze` and generates an HTML report with issue counts, severity breakdown, and codebase metrics; automatically published to GitHub Pages alongside API docs (WISH-0045)
 - Android release signing — local keystore with Gradle signing config; `key.properties` and `*.jks` excluded from git; fingerprints documented in README
 - Item catalog — create catalog items with title, description, price, link, and multiple images; catalog items serve as the central reference for products across the app
 - Inventory-catalog linking — link inventory items to catalog items from the edit page; auto-fills name, description, price, and shares image URLs without storage duplication

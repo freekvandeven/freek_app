@@ -144,7 +144,22 @@ Track key third-party packages planned for the project.
 
 ## Open Questions
 
-- Whether to add a linting package like `very_good_analysis`
 - Strategy for encrypted fields in Firestore (which library, key derivation)
 - Chart library choice (`fl_chart` vs. `syncfusion_flutter_charts`)
 - Calendar package choice (`table_calendar` vs. custom)
+
+---
+
+## Static Analysis & Documentation Pipeline
+
+**Status**: Decided
+
+**Decision**: Automated static analysis report published to GitHub Pages alongside API docs.
+
+**How it works**:
+1. The `docs.yml` GitHub Actions workflow runs `dart analyze --format=machine` on every push to master.
+2. `scripts/generate-analysis-report.sh` converts analysis output into an HTML report with severity counts, codebase metrics (file/line counts), and a detailed issues table.
+3. The report is deployed to GitHub Pages at `/analysis/` alongside Dart API docs (`/dart/`) and Cloud Functions docs (`/functions/`).
+4. The pipeline includes: `flutter_lints` ruleset + custom rules, `strict-casts`, `strict-raw-types`, and ~50 additional lint rules.
+
+**Reports available at**: `https://<owner>.github.io/<repo>/analysis/`

@@ -31,17 +31,26 @@ jobs:
 
       - run: flutter pub get
 
+      - name: Create dummy dotenv for analysis
+        run: cp dotenv.example dotenv
+
       - name: Generate Dart API docs
         run: dart doc --output docs/generated/dart
+
+      - name: Generate Flutter static analysis report
+        run: |
+          chmod +x scripts/generate-analysis-report.sh
+          bash scripts/generate-analysis-report.sh docs/generated/analysis
 
       - name: Generate Cloud Functions docs
         run: cd functions && npm ci && npm run docs
 
       - name: Assemble site
         run: |
-          mkdir -p _site/dart _site/functions
+          mkdir -p _site/dart _site/functions _site/analysis
           cp -r docs/generated/dart/* _site/dart/
           cp -r functions/docs/* _site/functions/
+          cp -r docs/generated/analysis/* _site/analysis/
           cp docs/pages/index.html _site/index.html
 
       - uses: actions/upload-pages-artifact@v3
