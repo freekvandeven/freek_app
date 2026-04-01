@@ -89,9 +89,39 @@ class PersonalApp extends ConsumerWidget {
       ),
       error: (e, _) {
         FlutterNativeSplash.remove();
+        LogService.instance.info('Auth init error: $e');
         return MaterialApp(
           debugShowCheckedModeBanner: false,
-          home: Scaffold(body: Center(child: Text('Failed to initialize: $e'))),
+          theme: AppTheme.lightTheme(),
+          darkTheme: AppTheme.darkTheme(),
+          themeMode: ThemeMode.system,
+          home: Scaffold(
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.red,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Failed to initialize:\n$e',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    FilledButton(
+                      onPressed: () => ref.invalidate(authInitProvider),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         );
       },
       data: (_) {

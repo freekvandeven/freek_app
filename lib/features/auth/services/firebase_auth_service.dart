@@ -38,8 +38,21 @@ class FirebaseAuthService implements AuthService {
   Future<void> init() async {
     final fbUser = _auth.currentUser;
     if (fbUser != null) {
-      _currentUser = await _loadProfile(fbUser.uid);
-      _authStateController.add(_currentUser);
+      LogService.instance.info('Restoring session for uid=${fbUser.uid}');
+      try {
+        _currentUser = await _loadProfile(fbUser.uid);
+        _authStateController.add(_currentUser);
+        LogService.instance.info(
+          'Session restored: ${_currentUser?.id ?? "profile not found"}',
+        );
+      } catch (e) {
+        LogService.instance.info('Session restore failed: $e');
+        // Sign out the stale Firebase session so the user gets a clean login.
+        try {
+          await _auth.signOut();
+        } catch (_) {}
+        _authStateController.add(null);
+      }
     }
   }
 
@@ -105,10 +118,12 @@ class FirebaseAuthService implements AuthService {
     required String password,
   }) async {
     try {
+      LogService.instance.info('Signing in $email');
       final credential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+      LogService.instance.info('Firebase auth OK, loading profile');
       final profile = await _loadProfile(credential.user!.uid);
       if (profile == null) {
         throw const AuthException('User profile not found.');
@@ -118,6 +133,7 @@ class FirebaseAuthService implements AuthService {
       LogService.instance.info('User signed in: ${profile.id}');
       return profile;
     } on fb.FirebaseAuthException catch (e) {
+      LogService.instance.info('Firebase auth error: ${e.code}');
       throw AuthException(_mapFirebaseError(e.code));
     } on AuthException {
       rethrow;
@@ -197,8 +213,17 @@ class FirebaseAuthService implements AuthService {
   }
 
   Future<UserProfile?> _loadProfile(String uid) async {
-    final doc = await _firestore.collection('users').doc(uid).get();
-    if (!doc.exists || doc.data() == null) return null;
+    LogService.instance.info('Loading profile for uid=$uid');
+    final doc = await _firestore
+        .collection('users')
+        .doc(uid)
+        .get()
+        .timeout(const Duration(seconds: 10));
+    if (!doc.exists || doc.data() == null) {
+      LogService.instance.info('Profile not found for uid=$uid');
+      return null;
+    }
+    LogService.instance.info('Profile loaded for uid=$uid');
     return UserProfile.fromMap(doc.data()!);
   }
 
