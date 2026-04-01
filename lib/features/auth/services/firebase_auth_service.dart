@@ -119,6 +119,11 @@ class FirebaseAuthService implements AuthService {
       return profile;
     } on fb.FirebaseAuthException catch (e) {
       throw AuthException(_mapFirebaseError(e.code));
+    } on AuthException {
+      rethrow;
+    } catch (e) {
+      LogService.instance.info('Sign-in post-auth error: $e');
+      throw AuthException('Sign-in failed: $e');
     }
   }
 

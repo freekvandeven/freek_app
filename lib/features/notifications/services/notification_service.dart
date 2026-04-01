@@ -6,16 +6,20 @@ class NotificationService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
 
   Future<void> init(String userId) async {
-    final settings = await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+    try {
+      final settings = await _messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
 
-    if (settings.authorizationStatus == AuthorizationStatus.authorized ||
-        settings.authorizationStatus == AuthorizationStatus.provisional) {
-      await _saveToken(userId);
-      _messaging.onTokenRefresh.listen((token) => _saveToken(userId));
+      if (settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional) {
+        await _saveToken(userId);
+        _messaging.onTokenRefresh.listen((token) => _saveToken(userId));
+      }
+    } catch (e) {
+      debugPrint('Failed to initialize notifications: $e');
     }
   }
 
