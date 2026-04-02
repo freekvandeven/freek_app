@@ -53,12 +53,16 @@ android {
     }
 
     buildTypes {
+        val config = if (keystorePropertiesFile.exists()) {
+            signingConfigs.getByName("release")
+        } else {
+            signingConfigs.getByName("debug")
+        }
+        debug {
+            signingConfig = config
+        }
         release {
-            signingConfig = if (keystorePropertiesFile.exists()) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
-            }
+            signingConfig = config
         }
     }
 }
