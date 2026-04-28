@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -9,6 +10,7 @@ import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
 import '../../../services/image_upload_service.dart';
+import '../../auth/providers/auth_providers.dart';
 import '../../catalog/models/catalog_item.dart';
 import '../../catalog/providers/catalog_providers.dart';
 import '../models/recipe.dart';
@@ -44,6 +46,8 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
   List<String> _videoLinks = [];
   bool _isEditing = false;
   bool _isUploading = false;
+  Recipe? _existingRecipe;
+  Timer? _autosaveTimer;
 
   @override
   void initState() {
@@ -59,6 +63,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     final recipe = await service.getRecipe(widget.recipeId!);
     if (recipe != null && mounted) {
       setState(() {
+        _existingRecipe = recipe;
         _titleController.text = recipe.title;
         _descriptionController.text = recipe.description ?? '';
         _servingsController.text = recipe.servings?.toString() ?? '';
@@ -74,10 +79,65 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
         _videoLinks = List.from(recipe.videoLinks);
       });
     }
+    if (mounted) _setupAutosaveTimer();
+  }
+
+  void _setupAutosaveTimer() {
+    _autosaveTimer?.cancel();
+    final minutes =
+        ref.read(currentUserProvider)?.settings.autosaveIntervalMinutes ?? 0;
+    if (minutes > 0 && _isEditing) {
+      _autosaveTimer = Timer.periodic(
+        Duration(minutes: minutes),
+        (_) => _autosave(),
+      );
+    }
+  }
+
+  Future<void> _autosave() async {
+    if (!mounted || _existingRecipe == null) return;
+    if (!_formKey.currentState!.validate()) return;
+
+    final description = _descriptionController.text.trim();
+    final source = _sourceController.text.trim();
+    final notes = _notesController.text.trim();
+
+    try {
+      final updated = _existingRecipe!.copyWith(
+        title: _titleController.text.trim(),
+        description: description.isEmpty ? null : description,
+        clearDescription: description.isEmpty,
+        servings: int.tryParse(_servingsController.text),
+        prepTimeMinutes: int.tryParse(_prepTimeController.text),
+        cookTimeMinutes: int.tryParse(_cookTimeController.text),
+        ingredients: _ingredients,
+        instructions: _instructions,
+        tags: _tags,
+        images: _savedImageUrls,
+        primaryImageIndex: _primaryImageIndex,
+        videoLinks: _videoLinks,
+        source: source.isEmpty ? null : source,
+        clearSource: source.isEmpty,
+        notes: notes.isEmpty ? null : notes,
+        clearNotes: notes.isEmpty,
+      );
+      await ref.read(recipeListProvider.notifier).updateRecipe(updated);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Auto-saved'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (_) {
+      // Silently ignore autosave errors
+    }
   }
 
   @override
   void dispose() {
+    _autosaveTimer?.cancel();
     _titleController.dispose();
     _descriptionController.dispose();
     _servingsController.dispose();

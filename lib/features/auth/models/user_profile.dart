@@ -7,6 +7,8 @@ class UserSettings {
   final String? geminiModel;
   final bool showImagePreviews;
   final List<int> expiryReminderDays;
+  // 0 = disabled; otherwise interval in minutes
+  final int autosaveIntervalMinutes;
 
   const UserSettings({
     this.themeMode = 'system',
@@ -17,6 +19,7 @@ class UserSettings {
     this.geminiModel,
     this.showImagePreviews = true,
     this.expiryReminderDays = const [7, 1],
+    this.autosaveIntervalMinutes = 0,
   });
 
   UserSettings copyWith({
@@ -30,6 +33,7 @@ class UserSettings {
     bool clearGeminiModel = false,
     bool? showImagePreviews,
     List<int>? expiryReminderDays,
+    int? autosaveIntervalMinutes,
   }) {
     return UserSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -42,6 +46,8 @@ class UserSettings {
       geminiModel: clearGeminiModel ? null : (geminiModel ?? this.geminiModel),
       showImagePreviews: showImagePreviews ?? this.showImagePreviews,
       expiryReminderDays: expiryReminderDays ?? this.expiryReminderDays,
+      autosaveIntervalMinutes:
+          autosaveIntervalMinutes ?? this.autosaveIntervalMinutes,
     );
   }
 
@@ -54,6 +60,7 @@ class UserSettings {
     'geminiModel': geminiModel,
     'showImagePreviews': showImagePreviews,
     'expiryReminderDays': expiryReminderDays,
+    'autosaveIntervalMinutes': autosaveIntervalMinutes,
   };
 
   factory UserSettings.fromMap(Map<String, dynamic> map) {
@@ -70,6 +77,7 @@ class UserSettings {
               ?.map((e) => e as int)
               .toList() ??
           const [7, 1],
+      autosaveIntervalMinutes: map['autosaveIntervalMinutes'] as int? ?? 0,
     );
   }
 }

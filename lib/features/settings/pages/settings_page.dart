@@ -196,6 +196,17 @@ class SettingsPage extends ConsumerWidget {
               },
             ),
 
+            ListTile(
+              leading: const Icon(Icons.save_outlined),
+              title: const Text('Auto-save Interval'),
+              subtitle: Text(
+                settings.autosaveIntervalMinutes == 0
+                    ? 'Disabled'
+                    : 'Every ${settings.autosaveIntervalMinutes} min (recipes & knowledge)',
+              ),
+              onTap: () => _showAutosavePicker(context, ref, settings),
+            ),
+
             const _SectionHeader('Data'),
             ListTile(
               leading: const Icon(Icons.download),
@@ -245,6 +256,37 @@ class SettingsPage extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showAutosavePicker(
+    BuildContext context,
+    WidgetRef ref,
+    UserSettings settings,
+  ) {
+    const options = [0, 1, 2, 5, 10, 15, 30];
+    showDialog(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Auto-save Interval'),
+        children: [
+          for (final minutes in options)
+            ListTile(
+              title: Text(minutes == 0 ? 'Disabled' : 'Every $minutes min'),
+              trailing: settings.autosaveIntervalMinutes == minutes
+                  ? const Icon(Icons.check)
+                  : null,
+              onTap: () {
+                final user = ref.read(currentUserProvider)!;
+                final updated = user.copyWith(
+                  settings: settings.copyWith(autosaveIntervalMinutes: minutes),
+                );
+                ref.read(authServiceProvider).updateProfile(updated);
+                Navigator.pop(ctx);
+              },
+            ),
+        ],
       ),
     );
   }
