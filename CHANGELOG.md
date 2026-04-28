@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Responsive navigation rail on large screens — Recipes (600px+), Knowledge & Inventory (900px+) and Gemini AI (1200px+) appear directly in the rail; More only shows items not visible at the current width. Mobile bottom nav keeps 5 items (BUG-0023)
-- Markdown toolbar in the knowledge editor with H1/H2/H3, bold, italic, inline code, bullet/numbered list, blockquote, link and horizontal-rule buttons; inserts at line start or wraps the current selection (WISH-0048)
+- Markdown toolbar in the knowledge editor with H1/H2/H3, bold, italic, inline code, bullet/numbered list, blockquote, link and horizontal-rule buttons; inserts at line start or wraps the current selection; wrap buttons with no selection place the cursor between the opening and closing markers so typing inserts content immediately (WISH-0048)
 - AI Assist button in the knowledge editor app bar — enter a plain-language instruction (e.g. "make it more concise") and Gemini rewrites the markdown in-place without saving; requires a configured Gemini API key (WISH-0049)
 - Sub-page creation button on knowledge view pages — an 'Add sub-page' icon in the app bar opens the new-page form with the current page pre-selected as parent, still changeable (WISH-0055)
 - Auto-save setting in Settings > Preferences — choose an interval (1, 2, 5, 10, 15, or 30 min) to save knowledge bank pages and recipes in the background while editing; shows a brief snackbar on each save (WISH-0054)
