@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Fixed
+- Markdown links in the knowledge bank are now tappable — added `onTapLink` callback to `MarkdownBody` using `url_launcher` to open URLs in the external browser on both mobile and web (BUG-0025)
 - Static text (page titles, labels, body text) is now selectable on web and desktop — wrapped the app in a `SelectionArea` so all `Text` widgets are selectable without replacing them individually; `TextField` inputs retain their own selection behaviour (BUG-0026)
 
 ## [0.7.0] - 2026-03-31

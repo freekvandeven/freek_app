@@ -3,6 +3,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/knowledge_page.dart';
 import '../providers/knowledge_providers.dart';
@@ -144,7 +145,17 @@ class KnowledgeViewPage extends ConsumerWidget {
         ],
 
         // Markdown content
-        MarkdownBody(data: page.content, selectable: true),
+        MarkdownBody(
+          data: page.content,
+          selectable: true,
+          onTapLink: (text, href, title) async {
+            if (href == null) return;
+            final uri = Uri.tryParse(href);
+            if (uri != null && await canLaunchUrl(uri)) {
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+            }
+          },
+        ),
 
         // Child pages
         if (childPages.isNotEmpty) ...[
