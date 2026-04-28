@@ -24,6 +24,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
   final _tagController = TextEditingController();
+  final _contentFocusNode = FocusNode();
 
   List<String> _tags = [];
   String? _parentId;
@@ -117,6 +118,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
     _titleController.dispose();
     _contentController.dispose();
     _tagController.dispose();
+    _contentFocusNode.dispose();
     super.dispose();
   }
 
@@ -352,12 +354,16 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
             const SizedBox(height: 16),
 
             // Markdown toolbar
-            _MarkdownToolbar(controller: _contentController),
+            _MarkdownToolbar(
+              controller: _contentController,
+              focusNode: _contentFocusNode,
+            ),
             const SizedBox(height: 4),
 
             // Content
             TextFormField(
               controller: _contentController,
+              focusNode: _contentFocusNode,
               decoration: const InputDecoration(
                 labelText: 'Content (Markdown)',
                 border: OutlineInputBorder(),
@@ -375,47 +381,75 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
   }
 }
 
-class _MarkdownToolbar extends StatelessWidget {
+class _MarkdownToolbar extends StatefulWidget {
   final TextEditingController controller;
-  const _MarkdownToolbar({required this.controller});
+  final FocusNode focusNode;
+  const _MarkdownToolbar({required this.controller, required this.focusNode});
+
+  @override
+  State<_MarkdownToolbar> createState() => _MarkdownToolbarState();
+}
+
+class _MarkdownToolbarState extends State<_MarkdownToolbar> {
+  // Last known valid selection — updated while the field has focus.
+  // Clicking a toolbar button blurs the field on web/desktop, making
+  // controller.selection invalid, so we cache it here instead.
+  TextSelection _lastSel = const TextSelection.collapsed(offset: 0);
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_cacheSelection);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_cacheSelection);
+    super.dispose();
+  }
+
+  void _cacheSelection() {
+    final sel = widget.controller.selection;
+    if (sel.isValid) _lastSel = sel;
+  }
 
   void _insertAtLineStart(String prefix) {
-    final text = controller.text;
-    final sel = controller.selection;
-    final start = sel.isValid ? sel.start : text.length;
-    // Find the beginning of the line
+    final text = widget.controller.text;
+    final start = _lastSel.start.clamp(0, text.length);
     final lineStart = text.lastIndexOf('\n', start - 1) + 1;
     final newText =
         text.substring(0, lineStart) + prefix + text.substring(lineStart);
-    controller.value = controller.value.copyWith(
+    widget.controller.value = widget.controller.value.copyWith(
       text: newText,
       selection: TextSelection.collapsed(offset: start + prefix.length),
     );
+    widget.focusNode.requestFocus();
   }
 
   void _wrapSelection(String before, String after) {
-    final text = controller.text;
-    final sel = controller.selection;
-    final pos = sel.isValid ? sel.start : text.length;
-    if (!sel.isValid || sel.isCollapsed) {
+    final text = widget.controller.text;
+    final sel = _lastSel;
+    if (sel.isCollapsed) {
+      final pos = sel.start.clamp(0, text.length);
       final newText =
           text.substring(0, pos) + before + after + text.substring(pos);
-      controller.value = TextEditingValue(
+      widget.controller.value = TextEditingValue(
         text: newText,
         selection: TextSelection.collapsed(offset: pos + before.length),
       );
-      return;
+    } else {
+      final selected = text.substring(sel.start, sel.end);
+      final replacement = before + selected + after;
+      final newText =
+          text.substring(0, sel.start) + replacement + text.substring(sel.end);
+      widget.controller.value = widget.controller.value.copyWith(
+        text: newText,
+        selection: TextSelection.collapsed(
+          offset: sel.start + replacement.length,
+        ),
+      );
     }
-    final selected = text.substring(sel.start, sel.end);
-    final replacement = before + selected + after;
-    final newText =
-        text.substring(0, sel.start) + replacement + text.substring(sel.end);
-    controller.value = controller.value.copyWith(
-      text: newText,
-      selection: TextSelection.collapsed(
-        offset: sel.start + replacement.length,
-      ),
-    );
+    widget.focusNode.requestFocus();
   }
 
   @override
@@ -436,17 +470,17 @@ class _MarkdownToolbar extends StatelessWidget {
             _ToolbarTextButton(
               label: 'H1',
               color: color,
-              onTap: () => _insertAtLineStart('# '),
+              onTap: () => _wrapSelection('# ', ' #'),
             ),
             _ToolbarTextButton(
               label: 'H2',
               color: color,
-              onTap: () => _insertAtLineStart('## '),
+              onTap: () => _wrapSelection('## ', ' ##'),
             ),
             _ToolbarTextButton(
               label: 'H3',
               color: color,
-              onTap: () => _insertAtLineStart('### '),
+              onTap: () => _wrapSelection('### ', ' ###'),
             ),
             _divider(),
             _ToolbarIconButton(
