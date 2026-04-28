@@ -148,6 +148,25 @@ class GeminiService {
     }
   }
 
+  /// Apply an AI instruction to a markdown document and return the result.
+  Future<String> editMarkdown(String content, String instruction) async {
+    if (!isConfigured) return content;
+    try {
+      final response = await _getModel().generateContent([
+        Content.text(
+          'You are a markdown editor assistant. Apply the following instruction to the markdown content below.\n\n'
+          'INSTRUCTION: $instruction\n\n'
+          'MARKDOWN:\n$content\n\n'
+          'Return ONLY the modified markdown, no explanations, no code fences.',
+        ),
+      ]);
+      final result = response.text?.trim();
+      return (result == null || result.isEmpty) ? content : result;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   void resetChat() {
     _chat = null;
   }
