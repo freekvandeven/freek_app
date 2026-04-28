@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -68,339 +69,363 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      // Auth routes (outside shell)
-      GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
-      GoRoute(path: '/signup', builder: (context, state) => const SignupPage()),
-      GoRoute(
-        path: '/forgot-password',
-        builder: (context, state) => const ForgotPasswordPage(),
-      ),
+      ShellRoute(
+        builder: (context, state, child) => SelectionArea(child: child),
+        routes: [
+          // Auth routes (outside shell)
+          GoRoute(
+            path: '/login',
+            builder: (context, state) => const LoginPage(),
+          ),
+          GoRoute(
+            path: '/signup',
+            builder: (context, state) => const SignupPage(),
+          ),
+          GoRoute(
+            path: '/forgot-password',
+            builder: (context, state) => const ForgotPasswordPage(),
+          ),
 
-      // Main app with bottom navigation
-      StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) =>
-            AppShell(navigationShell: navigationShell),
-        branches: [
-          // Tab 0: Dashboard
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/',
-                builder: (context, state) => const DashboardPage(),
-              ),
-            ],
-          ),
-          // Tab 1: Tasks
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/tasks',
-                builder: (context, state) => const TaskListPage(),
+          // Main app with bottom navigation
+          StatefulShellRoute.indexedStack(
+            builder: (context, state, navigationShell) =>
+                AppShell(navigationShell: navigationShell),
+            branches: [
+              // Tab 0: Dashboard
+              StatefulShellBranch(
                 routes: [
                   GoRoute(
-                    path: 'new',
-                    builder: (context, state) => const TaskEditPage(),
-                  ),
-                  GoRoute(
-                    path: ':taskId',
-                    builder: (context, state) =>
-                        TaskEditPage(taskId: state.pathParameters['taskId']),
+                    path: '/',
+                    builder: (context, state) => const DashboardPage(),
                   ),
                 ],
               ),
-            ],
-          ),
-          // Tab 2: Calendar
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/calendar',
-                builder: (context, state) => const CalendarPage(),
+              // Tab 1: Tasks
+              StatefulShellBranch(
                 routes: [
                   GoRoute(
-                    path: 'new',
-                    builder: (context, state) {
-                      final dateParam = state.uri.queryParameters['date'];
-                      DateTime? initialDate;
-                      if (dateParam != null) {
-                        initialDate = DateTime.tryParse(dateParam);
-                      }
-                      return CalendarEventEditPage(initialDate: initialDate);
-                    },
-                  ),
-                  GoRoute(
-                    path: ':eventId',
-                    builder: (context, state) => CalendarEventEditPage(
-                      eventId: state.pathParameters['eventId'],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          // Tab 3: Finance
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/finance',
-                builder: (context, state) => const FinanceOverviewPage(),
-                routes: [
-                  GoRoute(
-                    path: 'transactions',
-                    builder: (context, state) => const TransactionListPage(),
+                    path: '/tasks',
+                    builder: (context, state) => const TaskListPage(),
                     routes: [
                       GoRoute(
                         path: 'new',
+                        builder: (context, state) => const TaskEditPage(),
+                      ),
+                      GoRoute(
+                        path: ':taskId',
+                        builder: (context, state) => TaskEditPage(
+                          taskId: state.pathParameters['taskId'],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              // Tab 2: Calendar
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: '/calendar',
+                    builder: (context, state) => const CalendarPage(),
+                    routes: [
+                      GoRoute(
+                        path: 'new',
+                        builder: (context, state) {
+                          final dateParam = state.uri.queryParameters['date'];
+                          DateTime? initialDate;
+                          if (dateParam != null) {
+                            initialDate = DateTime.tryParse(dateParam);
+                          }
+                          return CalendarEventEditPage(
+                            initialDate: initialDate,
+                          );
+                        },
+                      ),
+                      GoRoute(
+                        path: ':eventId',
+                        builder: (context, state) => CalendarEventEditPage(
+                          eventId: state.pathParameters['eventId'],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              // Tab 3: Finance
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: '/finance',
+                    builder: (context, state) => const FinanceOverviewPage(),
+                    routes: [
+                      GoRoute(
+                        path: 'transactions',
                         builder: (context, state) =>
-                            const TransactionEditPage(),
+                            const TransactionListPage(),
+                        routes: [
+                          GoRoute(
+                            path: 'new',
+                            builder: (context, state) =>
+                                const TransactionEditPage(),
+                          ),
+                          GoRoute(
+                            path: ':transactionId',
+                            builder: (context, state) => TransactionEditPage(
+                              transactionId:
+                                  state.pathParameters['transactionId'],
+                            ),
+                          ),
+                        ],
                       ),
                       GoRoute(
-                        path: ':transactionId',
-                        builder: (context, state) => TransactionEditPage(
-                          transactionId: state.pathParameters['transactionId'],
-                        ),
+                        path: 'assets',
+                        builder: (context, state) => const AssetListPage(),
+                        routes: [
+                          GoRoute(
+                            path: 'new',
+                            builder: (context, state) => const AssetEditPage(),
+                          ),
+                          GoRoute(
+                            path: ':assetId',
+                            builder: (context, state) => AssetEditPage(
+                              assetId: state.pathParameters['assetId'],
+                            ),
+                          ),
+                        ],
+                      ),
+                      GoRoute(
+                        path: 'categories',
+                        builder: (context, state) =>
+                            const CategoryManagementPage(),
                       ),
                     ],
                   ),
+                ],
+              ),
+              // Tab 4: More
+              StatefulShellBranch(
+                routes: [
                   GoRoute(
-                    path: 'assets',
-                    builder: (context, state) => const AssetListPage(),
-                    routes: [
-                      GoRoute(
-                        path: 'new',
-                        builder: (context, state) => const AssetEditPage(),
-                      ),
-                      GoRoute(
-                        path: ':assetId',
-                        builder: (context, state) => AssetEditPage(
-                          assetId: state.pathParameters['assetId'],
-                        ),
-                      ),
-                    ],
-                  ),
-                  GoRoute(
-                    path: 'categories',
-                    builder: (context, state) => const CategoryManagementPage(),
+                    path: '/more',
+                    builder: (context, state) => const MorePage(),
                   ),
                 ],
               ),
             ],
           ),
-          // Tab 4: More
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/more',
-                builder: (context, state) => const MorePage(),
-              ),
-            ],
-          ),
-        ],
-      ),
 
-      // Feature routes (pushed on top of shell)
-      GoRoute(
-        path: '/recipes',
-        builder: (context, state) => const RecipeListPage(),
-        routes: [
+          // Feature routes (pushed on top of shell)
           GoRoute(
-            path: 'new',
-            builder: (context, state) => const RecipeEditPage(),
-          ),
-          GoRoute(
-            path: ':recipeId',
-            builder: (context, state) =>
-                RecipeDetailPage(recipeId: state.pathParameters['recipeId']!),
-            routes: [
-              GoRoute(
-                path: 'edit',
-                builder: (context, state) =>
-                    RecipeEditPage(recipeId: state.pathParameters['recipeId']),
-              ),
-            ],
-          ),
-        ],
-      ),
-      GoRoute(
-        path: '/passwords',
-        builder: (context, state) => const VaultUnlockPage(),
-        routes: [
-          GoRoute(
-            path: 'list',
-            redirect: (context, state) {
-              final isLocked = ref.read(vaultLockedProvider);
-              if (isLocked) return '/passwords';
-              return null;
-            },
-            builder: (context, state) => const PasswordListPage(),
+            path: '/recipes',
+            builder: (context, state) => const RecipeListPage(),
             routes: [
               GoRoute(
                 path: 'new',
-                builder: (context, state) => const PasswordEditPage(),
+                builder: (context, state) => const RecipeEditPage(),
               ),
               GoRoute(
-                path: ':entryId',
-                builder: (context, state) => PasswordDetailPage(
-                  entryId: state.pathParameters['entryId']!,
+                path: ':recipeId',
+                builder: (context, state) => RecipeDetailPage(
+                  recipeId: state.pathParameters['recipeId']!,
                 ),
                 routes: [
                   GoRoute(
                     path: 'edit',
-                    builder: (context, state) => PasswordEditPage(
-                      entryId: state.pathParameters['entryId'],
+                    builder: (context, state) => RecipeEditPage(
+                      recipeId: state.pathParameters['recipeId'],
                     ),
                   ),
                 ],
               ),
             ],
           ),
-        ],
-      ),
-      GoRoute(
-        path: '/inventory',
-        builder: (context, state) => const InventoryListPage(),
-        routes: [
           GoRoute(
-            path: 'new',
-            builder: (context, state) => const InventoryEditPage(),
-          ),
-          GoRoute(
-            path: ':itemId',
-            builder: (context, state) =>
-                InventoryEditPage(itemId: state.pathParameters['itemId']),
-          ),
-        ],
-      ),
-      GoRoute(
-        path: '/knowledge',
-        builder: (context, state) => const KnowledgeBankPage(),
-        routes: [
-          GoRoute(
-            path: 'new',
-            builder: (context, state) => const KnowledgeEditPage(),
-          ),
-          GoRoute(
-            path: ':pageId',
-            builder: (context, state) =>
-                KnowledgeViewPage(pageId: state.pathParameters['pageId']!),
+            path: '/passwords',
+            builder: (context, state) => const VaultUnlockPage(),
             routes: [
               GoRoute(
-                path: 'edit',
-                builder: (context, state) =>
-                    KnowledgeEditPage(pageId: state.pathParameters['pageId']),
+                path: 'list',
+                redirect: (context, state) {
+                  final isLocked = ref.read(vaultLockedProvider);
+                  if (isLocked) return '/passwords';
+                  return null;
+                },
+                builder: (context, state) => const PasswordListPage(),
+                routes: [
+                  GoRoute(
+                    path: 'new',
+                    builder: (context, state) => const PasswordEditPage(),
+                  ),
+                  GoRoute(
+                    path: ':entryId',
+                    builder: (context, state) => PasswordDetailPage(
+                      entryId: state.pathParameters['entryId']!,
+                    ),
+                    routes: [
+                      GoRoute(
+                        path: 'edit',
+                        builder: (context, state) => PasswordEditPage(
+                          entryId: state.pathParameters['entryId'],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
-      GoRoute(
-        path: '/connections',
-        builder: (context, state) => const ConnectionsPage(),
-      ),
-      GoRoute(
-        path: '/people',
-        builder: (context, state) => const UserDirectoryPage(),
-        routes: [
           GoRoute(
-            path: ':userId',
-            builder: (context, state) =>
-                PublicProfilePage(userId: state.pathParameters['userId']!),
-          ),
-        ],
-      ),
-      GoRoute(
-        path: '/gemini',
-        builder: (context, state) => const GeminiChatPage(),
-      ),
-      GoRoute(
-        path: '/feedback',
-        builder: (context, state) => const FeedbackListPage(),
-        routes: [
-          GoRoute(
-            path: 'new',
-            builder: (context, state) {
-              final typeParam = state.uri.queryParameters['type'];
-              FeedbackType? initialType;
-              if (typeParam == 'bug') initialType = FeedbackType.bug;
-              if (typeParam == 'wish') initialType = FeedbackType.wish;
-              return FeedbackEditPage(initialType: initialType);
-            },
-          ),
-          GoRoute(
-            path: ':entryId',
-            builder: (context, state) =>
-                FeedbackEditPage(entryId: state.pathParameters['entryId']),
-          ),
-        ],
-      ),
-      GoRoute(
-        path: '/conversations',
-        builder: (context, state) => const ConversationListPage(),
-        routes: [
-          GoRoute(
-            path: 'new',
-            builder: (context, state) => const ConversationEditPage(),
-          ),
-          GoRoute(
-            path: ':topicId',
-            builder: (context, state) =>
-                ConversationEditPage(topicId: state.pathParameters['topicId']),
-          ),
-        ],
-      ),
-      GoRoute(
-        path: '/catalog',
-        builder: (context, state) => const CatalogListPage(),
-        routes: [
-          GoRoute(
-            path: 'new',
-            builder: (context, state) => const CatalogEditPage(),
-          ),
-          GoRoute(
-            path: ':itemId',
-            builder: (context, state) =>
-                CatalogDetailPage(itemId: state.pathParameters['itemId']!),
+            path: '/inventory',
+            builder: (context, state) => const InventoryListPage(),
             routes: [
               GoRoute(
-                path: 'edit',
+                path: 'new',
+                builder: (context, state) => const InventoryEditPage(),
+              ),
+              GoRoute(
+                path: ':itemId',
                 builder: (context, state) =>
-                    CatalogEditPage(itemId: state.pathParameters['itemId']),
+                    InventoryEditPage(itemId: state.pathParameters['itemId']),
               ),
             ],
           ),
-        ],
-      ),
-      GoRoute(
-        path: '/shopping',
-        builder: (context, state) => const ShoppingListPage(),
-      ),
-      GoRoute(path: '/admin', builder: (context, state) => const AdminPage()),
-      GoRoute(
-        path: '/settings',
-        builder: (context, state) => const SettingsPage(),
-        routes: [
           GoRoute(
-            path: 'export',
-            builder: (context, state) => const DataExportPage(),
+            path: '/knowledge',
+            builder: (context, state) => const KnowledgeBankPage(),
+            routes: [
+              GoRoute(
+                path: 'new',
+                builder: (context, state) => const KnowledgeEditPage(),
+              ),
+              GoRoute(
+                path: ':pageId',
+                builder: (context, state) =>
+                    KnowledgeViewPage(pageId: state.pathParameters['pageId']!),
+                routes: [
+                  GoRoute(
+                    path: 'edit',
+                    builder: (context, state) => KnowledgeEditPage(
+                      pageId: state.pathParameters['pageId'],
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
           GoRoute(
-            path: 'profile',
-            builder: (context, state) => const ProfilePage(),
+            path: '/connections',
+            builder: (context, state) => const ConnectionsPage(),
           ),
           GoRoute(
-            path: 'changelog',
-            builder: (context, state) => const ChangelogPage(),
+            path: '/people',
+            builder: (context, state) => const UserDirectoryPage(),
+            routes: [
+              GoRoute(
+                path: ':userId',
+                builder: (context, state) =>
+                    PublicProfilePage(userId: state.pathParameters['userId']!),
+              ),
+            ],
           ),
           GoRoute(
-            path: 'change-password',
-            builder: (context, state) => const ChangePasswordPage(),
+            path: '/gemini',
+            builder: (context, state) => const GeminiChatPage(),
           ),
           GoRoute(
-            path: 'developer',
-            builder: (context, state) => const DeveloperPage(),
+            path: '/feedback',
+            builder: (context, state) => const FeedbackListPage(),
+            routes: [
+              GoRoute(
+                path: 'new',
+                builder: (context, state) {
+                  final typeParam = state.uri.queryParameters['type'];
+                  FeedbackType? initialType;
+                  if (typeParam == 'bug') initialType = FeedbackType.bug;
+                  if (typeParam == 'wish') initialType = FeedbackType.wish;
+                  return FeedbackEditPage(initialType: initialType);
+                },
+              ),
+              GoRoute(
+                path: ':entryId',
+                builder: (context, state) =>
+                    FeedbackEditPage(entryId: state.pathParameters['entryId']),
+              ),
+            ],
           ),
-        ],
-      ),
+          GoRoute(
+            path: '/conversations',
+            builder: (context, state) => const ConversationListPage(),
+            routes: [
+              GoRoute(
+                path: 'new',
+                builder: (context, state) => const ConversationEditPage(),
+              ),
+              GoRoute(
+                path: ':topicId',
+                builder: (context, state) => ConversationEditPage(
+                  topicId: state.pathParameters['topicId'],
+                ),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: '/catalog',
+            builder: (context, state) => const CatalogListPage(),
+            routes: [
+              GoRoute(
+                path: 'new',
+                builder: (context, state) => const CatalogEditPage(),
+              ),
+              GoRoute(
+                path: ':itemId',
+                builder: (context, state) =>
+                    CatalogDetailPage(itemId: state.pathParameters['itemId']!),
+                routes: [
+                  GoRoute(
+                    path: 'edit',
+                    builder: (context, state) =>
+                        CatalogEditPage(itemId: state.pathParameters['itemId']),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          GoRoute(
+            path: '/shopping',
+            builder: (context, state) => const ShoppingListPage(),
+          ),
+          GoRoute(
+            path: '/admin',
+            builder: (context, state) => const AdminPage(),
+          ),
+          GoRoute(
+            path: '/settings',
+            builder: (context, state) => const SettingsPage(),
+            routes: [
+              GoRoute(
+                path: 'export',
+                builder: (context, state) => const DataExportPage(),
+              ),
+              GoRoute(
+                path: 'profile',
+                builder: (context, state) => const ProfilePage(),
+              ),
+              GoRoute(
+                path: 'changelog',
+                builder: (context, state) => const ChangelogPage(),
+              ),
+              GoRoute(
+                path: 'change-password',
+                builder: (context, state) => const ChangePasswordPage(),
+              ),
+              GoRoute(
+                path: 'developer',
+                builder: (context, state) => const DeveloperPage(),
+              ),
+            ],
+          ),
+        ], // ShellRoute routes
+      ), // ShellRoute
     ],
   );
 });
