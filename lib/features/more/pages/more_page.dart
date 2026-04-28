@@ -19,10 +19,12 @@ class MorePage extends ConsumerWidget {
         child: ListView(
           children: [
             _buildSection(context, 'Features', [
+              // Shell-branch routes — use go() to properly activate the branch.
               const _MenuItem(
                 icon: Icons.restaurant_menu_rounded,
                 label: 'Recipes',
                 route: '/recipes',
+                useGo: true,
               ),
               const _MenuItem(
                 icon: Icons.lock_rounded,
@@ -33,6 +35,7 @@ class MorePage extends ConsumerWidget {
                 icon: Icons.inventory_2_rounded,
                 label: 'Inventory',
                 route: '/inventory',
+                useGo: true,
               ),
               const _MenuItem(
                 icon: Icons.auto_stories_rounded,
@@ -48,6 +51,7 @@ class MorePage extends ConsumerWidget {
                 icon: Icons.menu_book_rounded,
                 label: 'Knowledge Bank',
                 route: '/knowledge',
+                useGo: true,
               ),
               const _MenuItem(
                 icon: Icons.feedback_rounded,
@@ -68,6 +72,7 @@ class MorePage extends ConsumerWidget {
                 icon: Icons.auto_awesome_rounded,
                 label: 'Gemini AI',
                 route: '/gemini',
+                useGo: true,
               ),
               const _MenuItem(
                 icon: Icons.people_rounded,
@@ -116,7 +121,8 @@ class MorePage extends ConsumerWidget {
             leading: Icon(item.icon),
             title: Text(item.label),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push(item.route),
+            onTap: () =>
+                item.useGo ? context.go(item.route) : context.push(item.route),
           ),
         ),
       ],
@@ -128,10 +134,12 @@ class _MenuItem {
   final IconData icon;
   final String label;
   final String route;
+  final bool useGo;
 
   const _MenuItem({
     required this.icon,
     required this.label,
     required this.route,
+    this.useGo = false,
   });
 }

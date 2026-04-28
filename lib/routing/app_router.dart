@@ -202,7 +202,98 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   ),
                 ],
               ),
-              // Tab 4: More
+              // Tab 4: Recipes
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: '/recipes',
+                    builder: (context, state) => const RecipeListPage(),
+                    routes: [
+                      GoRoute(
+                        path: 'new',
+                        builder: (context, state) => const RecipeEditPage(),
+                      ),
+                      GoRoute(
+                        path: ':recipeId',
+                        builder: (context, state) => RecipeDetailPage(
+                          recipeId: state.pathParameters['recipeId']!,
+                        ),
+                        routes: [
+                          GoRoute(
+                            path: 'edit',
+                            builder: (context, state) => RecipeEditPage(
+                              recipeId: state.pathParameters['recipeId'],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              // Tab 5: Knowledge
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: '/knowledge',
+                    builder: (context, state) => const KnowledgeBankPage(),
+                    routes: [
+                      GoRoute(
+                        path: 'new',
+                        builder: (context, state) => KnowledgeEditPage(
+                          initialParentId:
+                              state.uri.queryParameters['parentId'],
+                        ),
+                      ),
+                      GoRoute(
+                        path: ':pageId',
+                        builder: (context, state) => KnowledgeViewPage(
+                          pageId: state.pathParameters['pageId']!,
+                        ),
+                        routes: [
+                          GoRoute(
+                            path: 'edit',
+                            builder: (context, state) => KnowledgeEditPage(
+                              pageId: state.pathParameters['pageId'],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              // Tab 6: Inventory
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: '/inventory',
+                    builder: (context, state) => const InventoryListPage(),
+                    routes: [
+                      GoRoute(
+                        path: 'new',
+                        builder: (context, state) => const InventoryEditPage(),
+                      ),
+                      GoRoute(
+                        path: ':itemId',
+                        builder: (context, state) => InventoryEditPage(
+                          itemId: state.pathParameters['itemId'],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              // Tab 7: Gemini AI
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: '/gemini',
+                    builder: (context, state) => const GeminiChatPage(),
+                  ),
+                ],
+              ),
+              // Tab 8: More
               StatefulShellBranch(
                 routes: [
                   GoRoute(
@@ -215,30 +306,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
 
           // Feature routes (pushed on top of shell)
-          GoRoute(
-            path: '/recipes',
-            builder: (context, state) => const RecipeListPage(),
-            routes: [
-              GoRoute(
-                path: 'new',
-                builder: (context, state) => const RecipeEditPage(),
-              ),
-              GoRoute(
-                path: ':recipeId',
-                builder: (context, state) => RecipeDetailPage(
-                  recipeId: state.pathParameters['recipeId']!,
-                ),
-                routes: [
-                  GoRoute(
-                    path: 'edit',
-                    builder: (context, state) => RecipeEditPage(
-                      recipeId: state.pathParameters['recipeId'],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
           GoRoute(
             path: '/passwords',
             builder: (context, state) => const VaultUnlockPage(),
@@ -275,46 +342,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ],
           ),
           GoRoute(
-            path: '/inventory',
-            builder: (context, state) => const InventoryListPage(),
-            routes: [
-              GoRoute(
-                path: 'new',
-                builder: (context, state) => const InventoryEditPage(),
-              ),
-              GoRoute(
-                path: ':itemId',
-                builder: (context, state) =>
-                    InventoryEditPage(itemId: state.pathParameters['itemId']),
-              ),
-            ],
-          ),
-          GoRoute(
-            path: '/knowledge',
-            builder: (context, state) => const KnowledgeBankPage(),
-            routes: [
-              GoRoute(
-                path: 'new',
-                builder: (context, state) => KnowledgeEditPage(
-                  initialParentId: state.uri.queryParameters['parentId'],
-                ),
-              ),
-              GoRoute(
-                path: ':pageId',
-                builder: (context, state) =>
-                    KnowledgeViewPage(pageId: state.pathParameters['pageId']!),
-                routes: [
-                  GoRoute(
-                    path: 'edit',
-                    builder: (context, state) => KnowledgeEditPage(
-                      pageId: state.pathParameters['pageId'],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          GoRoute(
             path: '/connections',
             builder: (context, state) => const ConnectionsPage(),
           ),
@@ -328,10 +355,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     PublicProfilePage(userId: state.pathParameters['userId']!),
               ),
             ],
-          ),
-          GoRoute(
-            path: '/gemini',
-            builder: (context, state) => const GeminiChatPage(),
           ),
           GoRoute(
             path: '/feedback',
