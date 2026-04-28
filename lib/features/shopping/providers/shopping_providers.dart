@@ -62,21 +62,29 @@ final shoppingListProvider =
     );
 
 final shoppingSearchProvider = StateProvider<String>((_) => '');
+final shoppingWipOnlyProvider = StateProvider<bool>((_) => false);
 
 final filteredShoppingProvider = Provider<AsyncValue<List<ShoppingItem>>>((
   ref,
 ) {
   final items = ref.watch(shoppingListProvider);
   final search = ref.watch(shoppingSearchProvider).toLowerCase();
+  final wipOnly = ref.watch(shoppingWipOnlyProvider);
 
   return items.whenData((list) {
-    if (search.isEmpty) return list;
-    return list
-        .where(
-          (i) =>
-              i.title.toLowerCase().contains(search) ||
-              (i.description?.toLowerCase().contains(search) ?? false),
-        )
-        .toList();
+    var filtered = list;
+    if (search.isNotEmpty) {
+      filtered = filtered
+          .where(
+            (i) =>
+                i.title.toLowerCase().contains(search) ||
+                (i.description?.toLowerCase().contains(search) ?? false),
+          )
+          .toList();
+    }
+    if (wipOnly) {
+      filtered = filtered.where((i) => i.isWip).toList();
+    }
+    return filtered;
   });
 });

@@ -8,6 +8,7 @@ class ShoppingItem {
   final String? unit;
   final String? catalogItemId;
   final bool isCompleted;
+  final bool isWip;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -19,6 +20,7 @@ class ShoppingItem {
     this.unit,
     this.catalogItemId,
     this.isCompleted = false,
+    this.isWip = false,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) : id = id ?? const Uuid().v4(),
@@ -32,6 +34,7 @@ class ShoppingItem {
     String? unit,
     String? catalogItemId,
     bool? isCompleted,
+    bool? isWip,
     bool clearDescription = false,
     bool clearUnit = false,
     bool clearCatalogItemId = false,
@@ -46,6 +49,7 @@ class ShoppingItem {
           ? null
           : (catalogItemId ?? this.catalogItemId),
       isCompleted: isCompleted ?? this.isCompleted,
+      isWip: isWip ?? this.isWip,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
     );
@@ -59,6 +63,7 @@ class ShoppingItem {
     'unit': unit,
     'catalogItemId': catalogItemId,
     'isCompleted': isCompleted,
+    'isWip': isWip,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
   };
@@ -72,6 +77,7 @@ class ShoppingItem {
       unit: map['unit'] as String?,
       catalogItemId: map['catalogItemId'] as String?,
       isCompleted: map['isCompleted'] as bool? ?? false,
+      isWip: map['isWip'] as bool? ?? false,
       createdAt: DateTime.parse(map['createdAt'] as String),
       updatedAt: DateTime.parse(map['updatedAt'] as String),
     );

@@ -46,6 +46,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
   List<String> _videoLinks = [];
   bool _isEditing = false;
   bool _isUploading = false;
+  bool _isWip = false;
   Recipe? _existingRecipe;
   Timer? _autosaveTimer;
 
@@ -77,6 +78,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
         _savedImageUrls = List.from(recipe.images);
         _primaryImageIndex = recipe.primaryImageIndex;
         _videoLinks = List.from(recipe.videoLinks);
+        _isWip = recipe.isWip;
       });
     }
     if (mounted) _setupAutosaveTimer();
@@ -116,6 +118,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
         images: _savedImageUrls,
         primaryImageIndex: _primaryImageIndex,
         videoLinks: _videoLinks,
+        isWip: _isWip,
         source: source.isEmpty ? null : source,
         clearSource: source.isEmpty,
         notes: notes.isEmpty ? null : notes,
@@ -218,6 +221,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
             images: _savedImageUrls,
             primaryImageIndex: _primaryImageIndex,
             videoLinks: _videoLinks,
+            isWip: _isWip,
             source: source.isEmpty ? null : source,
             clearSource: source.isEmpty,
             notes: notes.isEmpty ? null : notes,
@@ -238,6 +242,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
           images: _savedImageUrls,
           primaryImageIndex: _primaryImageIndex,
           videoLinks: _videoLinks,
+          isWip: _isWip,
           source: source.isEmpty ? null : source,
           notes: notes.isEmpty ? null : notes,
         );
@@ -1018,6 +1023,14 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                 textCapitalization: TextCapitalization.sentences,
                 decoration: const InputDecoration(labelText: 'Notes'),
                 maxLines: 3,
+              ),
+              const SizedBox(height: 8),
+              SwitchListTile(
+                title: const Text('Work in Progress'),
+                subtitle: const Text('Mark this recipe as WIP'),
+                value: _isWip,
+                onChanged: (v) => setState(() => _isWip = v),
+                contentPadding: EdgeInsets.zero,
               ),
             ],
           ),

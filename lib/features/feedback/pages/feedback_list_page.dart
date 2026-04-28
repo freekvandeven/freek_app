@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
+import 'package:personal_app/presentation/widgets/wip_badge.dart';
 
 import '../models/feedback_entry.dart';
 import '../providers/feedback_providers.dart';
@@ -158,6 +159,7 @@ class FeedbackListPage extends ConsumerWidget {
     final typeFilter = ref.watch(feedbackTypeFilterProvider);
     final statusFilter = ref.watch(feedbackStatusFilterProvider);
     final manualFilter = ref.watch(feedbackManualFilterProvider);
+    final wipOnly = ref.watch(feedbackWipOnlyProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -192,6 +194,10 @@ class FeedbackListPage extends ConsumerWidget {
                 ref.read(feedbackManualFilterProvider.notifier).state = true;
               } else if (value == 'non_manual') {
                 ref.read(feedbackManualFilterProvider.notifier).state = false;
+              } else if (value == 'wip_only') {
+                ref.read(feedbackWipOnlyProvider.notifier).state = true;
+              } else if (value == 'all_wip') {
+                ref.read(feedbackWipOnlyProvider.notifier).state = false;
               } else {
                 ref.read(feedbackStatusFilterProvider.notifier).state =
                     FeedbackStatus.values.byName(value);
@@ -243,6 +249,18 @@ class FeedbackListPage extends ConsumerWidget {
                 value: 'non_manual',
                 checked: manualFilter == false,
                 child: const Text('Non-manual only'),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(enabled: false, child: Text('Progress')),
+              CheckedPopupMenuItem(
+                value: 'all_wip',
+                checked: !wipOnly,
+                child: const Text('All'),
+              ),
+              CheckedPopupMenuItem(
+                value: 'wip_only',
+                checked: wipOnly,
+                child: const Text('WIP only'),
               ),
             ],
           ),
@@ -303,11 +321,17 @@ class _FeedbackTile extends ConsumerWidget {
         ' · ${entry.createdAt.toIso8601String().substring(0, 10)}'
         '${entry.isPrivate ? ' · Private' : ''}'
         '${entry.isManual ? ' · Manual' : ''}'
+        '${entry.isWip ? ' · WIP' : ''}'
         '${entry.aiSummary != null ? ' · 🤖' : ''}',
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (entry.isWip)
+            const Padding(
+              padding: EdgeInsets.only(right: 6),
+              child: WipBadge(),
+            ),
           if (entry.attachedLogs != null && entry.attachedLogs!.isNotEmpty)
             const Icon(Icons.attach_file, size: 18, color: Colors.grey),
           if (entry.imageUrls.isNotEmpty)

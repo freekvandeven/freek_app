@@ -28,6 +28,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
 
   List<String> _tags = [];
   String? _parentId;
+  bool _isWip = false;
   bool _isLoading = true;
   KnowledgePage? _existing;
   Timer? _autosaveTimer;
@@ -55,6 +56,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
         _contentController.text = page.content;
         _tags = List.from(page.tags);
         _parentId = page.parentId;
+        _isWip = page.isWip;
         _isLoading = false;
       });
     } else {
@@ -87,6 +89,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
             content: _contentController.text,
             tags: _tags,
             parentId: () => _parentId,
+            isWip: _isWip,
           ),
         );
       } else {
@@ -95,6 +98,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
           content: _contentController.text,
           tags: _tags,
           parentId: _parentId,
+          isWip: _isWip,
         );
         await notifier.addPage(page);
         if (mounted) setState(() => _existing = page);
@@ -143,6 +147,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
           content: _contentController.text,
           tags: _tags,
           parentId: () => _parentId,
+          isWip: _isWip,
         ),
       );
     } else {
@@ -152,6 +157,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
           content: _contentController.text,
           tags: _tags,
           parentId: _parentId,
+          isWip: _isWip,
         ),
       );
     }
@@ -352,6 +358,15 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
               ),
             ],
             const SizedBox(height: 16),
+
+            SwitchListTile(
+              title: const Text('Work in Progress'),
+              subtitle: const Text('Mark this page as WIP'),
+              value: _isWip,
+              onChanged: (v) => setState(() => _isWip = v),
+              contentPadding: EdgeInsets.zero,
+            ),
+            const SizedBox(height: 8),
 
             // Markdown toolbar
             _MarkdownToolbar(

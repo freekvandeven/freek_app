@@ -7,6 +7,7 @@ class KnowledgePage {
   final List<String> tags;
   final String? parentId;
   final int sortOrder;
+  final bool isWip;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -17,6 +18,7 @@ class KnowledgePage {
     this.tags = const [],
     this.parentId,
     this.sortOrder = 0,
+    this.isWip = false,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) : id = id ?? const Uuid().v4(),
@@ -29,6 +31,7 @@ class KnowledgePage {
     List<String>? tags,
     String? Function()? parentId,
     int? sortOrder,
+    bool? isWip,
     DateTime? updatedAt,
   }) {
     return KnowledgePage(
@@ -38,6 +41,7 @@ class KnowledgePage {
       tags: tags ?? this.tags,
       parentId: parentId != null ? parentId() : this.parentId,
       sortOrder: sortOrder ?? this.sortOrder,
+      isWip: isWip ?? this.isWip,
       createdAt: createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
     );
@@ -50,6 +54,7 @@ class KnowledgePage {
     'tags': tags,
     'parentId': parentId,
     'sortOrder': sortOrder,
+    'isWip': isWip,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
   };
@@ -61,6 +66,7 @@ class KnowledgePage {
     tags: (map['tags'] as List).cast<String>(),
     parentId: map['parentId'] as String?,
     sortOrder: map['sortOrder'] as int? ?? 0,
+    isWip: map['isWip'] as bool? ?? false,
     createdAt: DateTime.parse(map['createdAt'] as String),
     updatedAt: DateTime.parse(map['updatedAt'] as String),
   );

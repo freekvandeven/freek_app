@@ -72,12 +72,14 @@ class RecipeListNotifier extends AsyncNotifier<List<Recipe>> {
 final recipeSearchProvider = StateProvider<String>((ref) => '');
 final recipeTagFilterProvider = StateProvider<String?>((ref) => null);
 final recipeFavoritesOnlyProvider = StateProvider<bool>((ref) => false);
+final recipeWipOnlyProvider = StateProvider<bool>((ref) => false);
 
 final filteredRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
   final recipesAsync = ref.watch(recipeListProvider);
   final search = ref.watch(recipeSearchProvider).toLowerCase();
   final tag = ref.watch(recipeTagFilterProvider);
   final favOnly = ref.watch(recipeFavoritesOnlyProvider);
+  final wipOnly = ref.watch(recipeWipOnlyProvider);
 
   return recipesAsync.whenData((recipes) {
     var filtered = recipes.toList();
@@ -91,6 +93,9 @@ final filteredRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
     }
     if (favOnly) {
       filtered = filtered.where((r) => r.isFavorite).toList();
+    }
+    if (wipOnly) {
+      filtered = filtered.where((r) => r.isWip).toList();
     }
     filtered.sort((a, b) => a.title.compareTo(b.title));
     return filtered;

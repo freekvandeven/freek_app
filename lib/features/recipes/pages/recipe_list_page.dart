@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
+import 'package:personal_app/presentation/widgets/wip_badge.dart';
 
 import '../../auth/providers/auth_providers.dart';
 import '../models/recipe.dart';
@@ -16,12 +17,22 @@ class RecipeListPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final recipesAsync = ref.watch(filteredRecipesProvider);
     final favOnly = ref.watch(recipeFavoritesOnlyProvider);
+    final wipOnly = ref.watch(recipeWipOnlyProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
         title: const QuickActionsTitle(child: Text('Recipes')),
         actions: [
+          IconButton(
+            tooltip: 'WIP only',
+            icon: Icon(
+              Icons.construction,
+              color: wipOnly ? Theme.of(context).colorScheme.primary : null,
+            ),
+            onPressed: () =>
+                ref.read(recipeWipOnlyProvider.notifier).state = !wipOnly,
+          ),
           IconButton(
             icon: Icon(favOnly ? Icons.favorite : Icons.favorite_border),
             onPressed: () =>
@@ -163,9 +174,19 @@ class _RecipeCard extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      recipe.title,
-                      style: Theme.of(context).textTheme.titleMedium,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            recipe.title,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                        ),
+                        if (recipe.isWip) ...[
+                          const SizedBox(width: 6),
+                          const WipBadge(),
+                        ],
+                      ],
                     ),
                     if (recipe.description != null) ...[
                       const SizedBox(height: 4),

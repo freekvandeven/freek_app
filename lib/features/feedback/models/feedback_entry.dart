@@ -16,6 +16,7 @@ class FeedbackEntry {
   final String? attachedLogs;
   final List<String> imageUrls;
   final bool isManual;
+  final bool isWip;
   final String? aiSummary;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -29,6 +30,7 @@ class FeedbackEntry {
     this.status = FeedbackStatus.open,
     this.isPrivate = false,
     this.isManual = false,
+    this.isWip = false,
     this.userId,
     this.attachedLogs,
     this.imageUrls = const [],
@@ -47,6 +49,7 @@ class FeedbackEntry {
     FeedbackStatus? status,
     bool? isPrivate,
     bool? isManual,
+    bool? isWip,
     String? attachedLogs,
     bool clearAttachedLogs = false,
     List<String>? imageUrls,
@@ -62,6 +65,7 @@ class FeedbackEntry {
       status: status ?? this.status,
       isPrivate: isPrivate ?? this.isPrivate,
       isManual: isManual ?? this.isManual,
+      isWip: isWip ?? this.isWip,
       userId: userId,
       attachedLogs: clearAttachedLogs
           ? null
@@ -82,6 +86,7 @@ class FeedbackEntry {
     'status': status.name,
     'isPrivate': isPrivate,
     'isManual': isManual,
+    'isWip': isWip,
     'userId': userId,
     'attachedLogs': attachedLogs,
     'imageUrls': imageUrls,
@@ -99,6 +104,7 @@ class FeedbackEntry {
     status: FeedbackStatus.values.byName(map['status'] as String),
     isPrivate: map['isPrivate'] as bool? ?? false,
     isManual: map['isManual'] as bool? ?? false,
+    isWip: map['isWip'] as bool? ?? false,
     userId: map['userId'] as String?,
     attachedLogs: map['attachedLogs'] as String?,
     imageUrls: (map['imageUrls'] as List<dynamic>?)?.cast<String>() ?? const [],

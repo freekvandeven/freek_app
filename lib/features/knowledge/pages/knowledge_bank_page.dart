@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
+import 'package:personal_app/presentation/widgets/wip_badge.dart';
 
 import '../models/knowledge_page.dart';
 import '../providers/knowledge_providers.dart';
@@ -14,10 +15,22 @@ class KnowledgeBankPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final search = ref.watch(knowledgeSearchProvider);
     final isSearching = search.isNotEmpty;
+    final wipOnly = ref.watch(knowledgeWipOnlyProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const QuickActionsTitle(child: Text('Knowledge Bank')),
+        actions: [
+          IconButton(
+            tooltip: 'WIP only',
+            icon: Icon(
+              Icons.construction,
+              color: wipOnly ? Theme.of(context).colorScheme.primary : null,
+            ),
+            onPressed: () =>
+                ref.read(knowledgeWipOnlyProvider.notifier).state = !wipOnly,
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/knowledge/new'),
@@ -164,11 +177,18 @@ class _PageTreeTileState extends ConsumerState<_PageTreeTile> {
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                 ),
+                if (widget.page.isWip) ...[
+                  const SizedBox(width: 6),
+                  const WipBadge(),
+                ],
                 if (widget.page.tags.isNotEmpty)
-                  Icon(
-                    Icons.label_outline,
-                    size: 16,
-                    color: Theme.of(context).colorScheme.outline,
+                  Padding(
+                    padding: const EdgeInsets.only(left: 6),
+                    child: Icon(
+                      Icons.label_outline,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
                   ),
               ],
             ),

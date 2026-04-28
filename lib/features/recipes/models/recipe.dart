@@ -65,6 +65,7 @@ class Recipe {
   final int primaryImageIndex;
   final List<String> videoLinks;
   final bool isFavorite;
+  final bool isWip;
   final String? source;
   final String? notes;
   final DateTime createdAt;
@@ -84,6 +85,7 @@ class Recipe {
     this.primaryImageIndex = 0,
     this.videoLinks = const [],
     this.isFavorite = false,
+    this.isWip = false,
     this.source,
     this.notes,
     DateTime? createdAt,
@@ -110,6 +112,7 @@ class Recipe {
     int? primaryImageIndex,
     List<String>? videoLinks,
     bool? isFavorite,
+    bool? isWip,
     String? source,
     String? notes,
     bool clearDescription = false,
@@ -130,6 +133,7 @@ class Recipe {
       primaryImageIndex: primaryImageIndex ?? this.primaryImageIndex,
       videoLinks: videoLinks ?? this.videoLinks,
       isFavorite: isFavorite ?? this.isFavorite,
+      isWip: isWip ?? this.isWip,
       source: clearSource ? null : (source ?? this.source),
       notes: clearNotes ? null : (notes ?? this.notes),
       createdAt: createdAt,
@@ -156,6 +160,7 @@ class Recipe {
     'primaryImageIndex': primaryImageIndex,
     'videoLinks': videoLinks,
     'isFavorite': isFavorite,
+    'isWip': isWip,
     'source': source,
     'notes': notes,
     'createdAt': createdAt.toIso8601String(),
@@ -196,6 +201,7 @@ class Recipe {
       videoLinks:
           (map['videoLinks'] as List?)?.map((s) => s as String).toList() ?? [],
       isFavorite: map['isFavorite'] as bool? ?? false,
+      isWip: map['isWip'] as bool? ?? false,
       source: map['source'] as String?,
       notes: map['notes'] as String?,
       createdAt: DateTime.parse(map['createdAt'] as String),

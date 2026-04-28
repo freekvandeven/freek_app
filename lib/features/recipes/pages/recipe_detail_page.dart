@@ -13,12 +13,19 @@ import '../models/recipe.dart';
 import '../providers/recipe_providers.dart';
 import '../utils/video_link_parser.dart';
 
-class RecipeDetailPage extends ConsumerWidget {
+class RecipeDetailPage extends ConsumerStatefulWidget {
   final String recipeId;
   const RecipeDetailPage({super.key, required this.recipeId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RecipeDetailPage> createState() => _RecipeDetailPageState();
+}
+
+class _RecipeDetailPageState extends ConsumerState<RecipeDetailPage> {
+  int? _currentServings;
+
+  @override
+  Widget build(BuildContext context) {
     final recipesAsync = ref.watch(recipeListProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -30,21 +37,23 @@ class RecipeDetailPage extends ConsumerWidget {
         body: Center(child: Text('Error: $e')),
       ),
       data: (recipes) {
-        final recipe = recipes.where((r) => r.id == recipeId).firstOrNull;
+        final recipe = recipes
+            .where((r) => r.id == widget.recipeId)
+            .firstOrNull;
         if (recipe == null) {
           return Scaffold(
             appBar: AppBar(),
             body: const Center(child: Text('Recipe not found')),
           );
         }
-        return _buildDetail(context, ref, recipe, colorScheme);
+        _currentServings ??= recipe.servings;
+        return _buildDetail(context, recipe, colorScheme);
       },
     );
   }
 
   Widget _buildDetail(
     BuildContext context,
-    WidgetRef ref,
     Recipe recipe,
     ColorScheme colorScheme,
   ) {
@@ -182,8 +191,7 @@ class RecipeDetailPage extends ConsumerWidget {
               spacing: 16,
               runSpacing: 8,
               children: [
-                if (recipe.servings != null)
-                  _infoChip(Icons.people, '${recipe.servings} servings'),
+                if (recipe.servings != null) _servingsAdjuster(recipe),
                 if (recipe.prepTimeMinutes != null)
                   _infoChip(
                     Icons.timer_outlined,
@@ -220,8 +228,15 @@ class RecipeDetailPage extends ConsumerWidget {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const Divider(),
-              ...recipe.ingredients.map(
-                (i) => Padding(
+              ...recipe.ingredients.map((i) {
+                final scaledQty =
+                    (i.quantity != null &&
+                        recipe.servings != null &&
+                        recipe.servings! > 0 &&
+                        _currentServings != null)
+                    ? i.quantity! * _currentServings! / recipe.servings!
+                    : i.quantity;
+                return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Row(
                     children: [
@@ -229,15 +244,15 @@ class RecipeDetailPage extends ConsumerWidget {
                       const SizedBox(width: 8),
                       Text(
                         [
-                          if (i.quantity != null) _formatQuantity(i.quantity!),
+                          if (scaledQty != null) _formatQuantity(scaledQty),
                           if (i.unit != null) i.unit,
                           i.name,
                         ].join(' '),
                       ),
                     ],
                   ),
-                ),
-              ),
+                );
+              }),
             ],
 
             // Instructions
@@ -325,6 +340,42 @@ class RecipeDetailPage extends ConsumerWidget {
     );
   }
 
+  Widget _servingsAdjuster(Recipe recipe) {
+    final current = _currentServings ?? recipe.servings!;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.people, size: 16),
+        const SizedBox(width: 4),
+        IconButton(
+          icon: const Icon(Icons.remove, size: 16),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+          onPressed: current > 1
+              ? () => setState(() => _currentServings = current - 1)
+              : null,
+        ),
+        Text('$current'),
+        IconButton(
+          icon: const Icon(Icons.add, size: 16),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+          onPressed: () => setState(() => _currentServings = current + 1),
+        ),
+        const Text('servings'),
+        if (current != recipe.servings)
+          TextButton(
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              minimumSize: const Size(0, 28),
+            ),
+            onPressed: () => setState(() => _currentServings = recipe.servings),
+            child: const Text('reset'),
+          ),
+      ],
+    );
+  }
+
   Widget _infoChip(IconData icon, String text) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -333,7 +384,11 @@ class RecipeDetailPage extends ConsumerWidget {
   }
 
   String _formatQuantity(double q) {
-    return q == q.roundToDouble() ? q.toInt().toString() : q.toString();
+    if (q == q.roundToDouble()) return q.toInt().toString();
+    final rounded = double.parse(q.toStringAsFixed(2));
+    return rounded == rounded.roundToDouble()
+        ? rounded.toInt().toString()
+        : rounded.toString();
   }
 }
 

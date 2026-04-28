@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
+import 'package:personal_app/presentation/widgets/wip_badge.dart';
 
 import '../../catalog/models/catalog_item.dart';
 import '../../catalog/providers/catalog_providers.dart';
@@ -15,12 +16,22 @@ class ShoppingListPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final items = ref.watch(filteredShoppingProvider);
+    final wipOnly = ref.watch(shoppingWipOnlyProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
         title: const QuickActionsTitle(child: Text('Shopping List')),
         actions: [
+          IconButton(
+            tooltip: 'WIP only',
+            icon: Icon(
+              Icons.construction,
+              color: wipOnly ? theme.colorScheme.primary : null,
+            ),
+            onPressed: () =>
+                ref.read(shoppingWipOnlyProvider.notifier).state = !wipOnly,
+          ),
           PopupMenuButton<String>(
             onSelected: (value) {
               if (value == 'clear') {
@@ -90,94 +101,105 @@ class ShoppingListPage extends ConsumerWidget {
     final qtyCtrl = TextEditingController(text: '1');
     final unitCtrl = TextEditingController();
     String? catalogItemId;
+    bool isWip = false;
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add Shopping Item'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleCtrl,
-              decoration: const InputDecoration(labelText: 'Item name'),
-              textCapitalization: TextCapitalization.sentences,
-              autofocus: true,
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: qtyCtrl,
-                    decoration: const InputDecoration(labelText: 'Qty'),
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 2,
-                  child: TextField(
-                    controller: unitCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Unit (optional)',
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Add Shopping Item'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleCtrl,
+                decoration: const InputDecoration(labelText: 'Item name'),
+                textCapitalization: TextCapitalization.sentences,
+                autofocus: true,
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: qtyCtrl,
+                      decoration: const InputDecoration(labelText: 'Qty'),
+                      keyboardType: TextInputType.number,
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: () async {
-                  final catalogItems = await ref
-                      .read(catalogServiceProvider)
-                      .getItems();
-                  if (!ctx.mounted || catalogItems.isEmpty) return;
-                  final picked = await showModalBottomSheet<CatalogItem>(
-                    context: ctx,
-                    isScrollControlled: true,
-                    builder: (c) =>
-                        _ShoppingCatalogPickerSheet(items: catalogItems),
-                  );
-                  if (picked != null) {
-                    titleCtrl.text = picked.title;
-                    catalogItemId = picked.id;
-                  }
-                },
-                icon: const Icon(Icons.auto_stories, size: 18),
-                label: const Text('Pick from catalog'),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: TextField(
+                      controller: unitCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Unit (optional)',
+                      ),
+                    ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () async {
+                    final catalogItems = await ref
+                        .read(catalogServiceProvider)
+                        .getItems();
+                    if (!ctx.mounted || catalogItems.isEmpty) return;
+                    final picked = await showModalBottomSheet<CatalogItem>(
+                      context: ctx,
+                      isScrollControlled: true,
+                      builder: (c) =>
+                          _ShoppingCatalogPickerSheet(items: catalogItems),
+                    );
+                    if (picked != null) {
+                      titleCtrl.text = picked.title;
+                      catalogItemId = picked.id;
+                    }
+                  },
+                  icon: const Icon(Icons.auto_stories, size: 18),
+                  label: const Text('Pick from catalog'),
+                ),
+              ),
+              SwitchListTile(
+                title: const Text('Work in Progress'),
+                value: isWip,
+                onChanged: (v) => setDialogState(() => isWip = v),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                if (titleCtrl.text.trim().isNotEmpty) {
+                  ref
+                      .read(shoppingListProvider.notifier)
+                      .addItem(
+                        ShoppingItem(
+                          title: titleCtrl.text.trim(),
+                          quantity: int.tryParse(qtyCtrl.text) ?? 1,
+                          unit: unitCtrl.text.trim().isEmpty
+                              ? null
+                              : unitCtrl.text.trim(),
+                          catalogItemId: catalogItemId,
+                          isWip: isWip,
+                        ),
+                      );
+                }
+                Navigator.pop(ctx);
+              },
+              child: const Text('Add'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              if (titleCtrl.text.trim().isNotEmpty) {
-                ref
-                    .read(shoppingListProvider.notifier)
-                    .addItem(
-                      ShoppingItem(
-                        title: titleCtrl.text.trim(),
-                        quantity: int.tryParse(qtyCtrl.text) ?? 1,
-                        unit: unitCtrl.text.trim().isEmpty
-                            ? null
-                            : unitCtrl.text.trim(),
-                        catalogItemId: catalogItemId,
-                      ),
-                    );
-              }
-              Navigator.pop(ctx);
-            },
-            child: const Text('Add'),
-          ),
-        ],
       ),
     );
   }
@@ -212,14 +234,21 @@ class _ShoppingTile extends ConsumerWidget {
           onChanged: (_) =>
               ref.read(shoppingListProvider.notifier).toggleItem(item.id),
         ),
-        title: Text(
-          item.title,
-          style: item.isCompleted
-              ? TextStyle(
-                  decoration: TextDecoration.lineThrough,
-                  color: theme.colorScheme.onSurfaceVariant,
-                )
-              : null,
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                item.title,
+                style: item.isCompleted
+                    ? TextStyle(
+                        decoration: TextDecoration.lineThrough,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      )
+                    : null,
+              ),
+            ),
+            if (item.isWip) ...[const SizedBox(width: 6), const WipBadge()],
+          ],
         ),
         subtitle: subtitle.isNotEmpty ? Text(subtitle) : null,
       ),

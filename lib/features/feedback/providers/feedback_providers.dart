@@ -82,6 +82,7 @@ final feedbackStatusFilterProvider = StateProvider<FeedbackStatus?>(
   (_) => null,
 );
 final feedbackManualFilterProvider = StateProvider<bool?>((_) => null);
+final feedbackWipOnlyProvider = StateProvider<bool>((_) => false);
 
 final filteredFeedbackProvider = Provider<AsyncValue<List<FeedbackEntry>>>((
   ref,
@@ -90,6 +91,7 @@ final filteredFeedbackProvider = Provider<AsyncValue<List<FeedbackEntry>>>((
   final typeFilter = ref.watch(feedbackTypeFilterProvider);
   final statusFilter = ref.watch(feedbackStatusFilterProvider);
   final manualFilter = ref.watch(feedbackManualFilterProvider);
+  final wipOnly = ref.watch(feedbackWipOnlyProvider);
 
   return listAsync.whenData((entries) {
     var filtered = entries;
@@ -101,6 +103,9 @@ final filteredFeedbackProvider = Provider<AsyncValue<List<FeedbackEntry>>>((
     }
     if (manualFilter != null) {
       filtered = filtered.where((e) => e.isManual == manualFilter).toList();
+    }
+    if (wipOnly) {
+      filtered = filtered.where((e) => e.isWip).toList();
     }
     return filtered;
   });

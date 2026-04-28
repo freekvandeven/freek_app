@@ -28,6 +28,7 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
   FeedbackStatus _status = FeedbackStatus.open;
   bool _isPrivate = false;
   bool _isManual = false;
+  bool _isWip = false;
   bool _isLoading = true;
   String? _attachedLogs;
   List<String> _imageUrls = [];
@@ -60,6 +61,7 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
         _status = entry.status;
         _isPrivate = entry.isPrivate;
         _isManual = entry.isManual;
+        _isWip = entry.isWip;
         _attachedLogs = entry.attachedLogs;
         _imageUrls = List<String>.from(entry.imageUrls);
         _isLoading = false;
@@ -90,6 +92,7 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
           status: _status,
           isPrivate: _isPrivate,
           isManual: _isManual,
+          isWip: _isWip,
           attachedLogs: _attachedLogs,
           clearAttachedLogs: _attachedLogs == null,
           imageUrls: _imageUrls,
@@ -103,6 +106,7 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
           description: _descriptionController.text.trim(),
           isPrivate: _isPrivate,
           isManual: _isManual,
+          isWip: _isWip,
           userId: userId,
           attachedLogs: _attachedLogs,
           imageUrls: _imageUrls,
@@ -281,6 +285,12 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
                   v == null || v.trim().isEmpty ? 'Required' : null,
             ),
             const SizedBox(height: 16),
+            SwitchListTile(
+              title: const Text('Work in Progress'),
+              subtitle: const Text('Description not yet complete'),
+              value: _isWip,
+              onChanged: (v) => setState(() => _isWip = v),
+            ),
             SwitchListTile(
               title: const Text('Private'),
               subtitle: const Text('Only visible to you'),

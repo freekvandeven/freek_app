@@ -44,30 +44,41 @@ class KnowledgeListNotifier extends AsyncNotifier<List<KnowledgePage>> {
 }
 
 final knowledgeSearchProvider = StateProvider<String>((_) => '');
+final knowledgeWipOnlyProvider = StateProvider<bool>((_) => false);
 
 final filteredKnowledgeProvider = Provider<AsyncValue<List<KnowledgePage>>>((
   ref,
 ) {
   final listAsync = ref.watch(knowledgeListProvider);
   final search = ref.watch(knowledgeSearchProvider).toLowerCase();
+  final wipOnly = ref.watch(knowledgeWipOnlyProvider);
 
   return listAsync.whenData((pages) {
-    if (search.isEmpty) return pages;
-    return pages.where((p) {
-      return p.title.toLowerCase().contains(search) ||
-          p.tags.any((t) => t.toLowerCase().contains(search));
-    }).toList();
+    var filtered = pages;
+    if (search.isNotEmpty) {
+      filtered = filtered.where((p) {
+        return p.title.toLowerCase().contains(search) ||
+            p.tags.any((t) => t.toLowerCase().contains(search));
+      }).toList();
+    }
+    if (wipOnly) {
+      filtered = filtered.where((p) => p.isWip).toList();
+    }
+    return filtered;
   });
 });
 
-/// Returns root pages (no parent)
+/// Returns root pages (no parent), optionally filtered to WIP only.
 final rootKnowledgePagesProvider = Provider<AsyncValue<List<KnowledgePage>>>((
   ref,
 ) {
   final listAsync = ref.watch(knowledgeListProvider);
-  return listAsync.whenData(
-    (pages) => pages.where((p) => p.parentId == null).toList(),
-  );
+  final wipOnly = ref.watch(knowledgeWipOnlyProvider);
+  return listAsync.whenData((pages) {
+    var roots = pages.where((p) => p.parentId == null).toList();
+    if (wipOnly) roots = roots.where((p) => p.isWip).toList();
+    return roots;
+  });
 });
 
 /// Returns child pages of a given parent
