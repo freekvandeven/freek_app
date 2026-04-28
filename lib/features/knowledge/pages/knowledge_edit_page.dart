@@ -393,30 +393,27 @@ class _MarkdownToolbar extends StatelessWidget {
     );
   }
 
-  void _wrapSelection(String before, String after, String placeholder) {
+  void _wrapSelection(String before, String after) {
     final text = controller.text;
     final sel = controller.selection;
-    if (!sel.isValid) {
-      final insertion = before + placeholder + after;
+    final pos = sel.isValid ? sel.start : text.length;
+    if (!sel.isValid || sel.isCollapsed) {
+      final newText =
+          text.substring(0, pos) + before + after + text.substring(pos);
       controller.value = TextEditingValue(
-        text: text + insertion,
-        selection: TextSelection(
-          baseOffset: text.length + before.length,
-          extentOffset: text.length + before.length + placeholder.length,
-        ),
+        text: newText,
+        selection: TextSelection.collapsed(offset: pos + before.length),
       );
       return;
     }
     final selected = text.substring(sel.start, sel.end);
-    final inner = selected.isEmpty ? placeholder : selected;
-    final replacement = before + inner + after;
+    final replacement = before + selected + after;
     final newText =
         text.substring(0, sel.start) + replacement + text.substring(sel.end);
     controller.value = controller.value.copyWith(
       text: newText,
-      selection: TextSelection(
-        baseOffset: sel.start + before.length,
-        extentOffset: sel.start + before.length + inner.length,
+      selection: TextSelection.collapsed(
+        offset: sel.start + replacement.length,
       ),
     );
   }
@@ -456,19 +453,19 @@ class _MarkdownToolbar extends StatelessWidget {
               icon: Icons.format_bold,
               color: color,
               tooltip: 'Bold',
-              onTap: () => _wrapSelection('**', '**', 'bold text'),
+              onTap: () => _wrapSelection('**', '**'),
             ),
             _ToolbarIconButton(
               icon: Icons.format_italic,
               color: color,
               tooltip: 'Italic',
-              onTap: () => _wrapSelection('*', '*', 'italic text'),
+              onTap: () => _wrapSelection('*', '*'),
             ),
             _ToolbarIconButton(
               icon: Icons.code,
               color: color,
               tooltip: 'Inline code',
-              onTap: () => _wrapSelection('`', '`', 'code'),
+              onTap: () => _wrapSelection('`', '`'),
             ),
             _divider(),
             _ToolbarIconButton(
@@ -494,7 +491,7 @@ class _MarkdownToolbar extends StatelessWidget {
               icon: Icons.link,
               color: color,
               tooltip: 'Link',
-              onTap: () => _wrapSelection('[', '](url)', 'link text'),
+              onTap: () => _wrapSelection('[', '](url)'),
             ),
             _ToolbarIconButton(
               icon: Icons.horizontal_rule,
