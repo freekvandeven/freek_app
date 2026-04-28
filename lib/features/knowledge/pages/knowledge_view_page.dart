@@ -41,6 +41,12 @@ class KnowledgeViewPage extends ConsumerWidget {
             title: QuickActionsTitle(child: Text(page.title)),
             actions: [
               IconButton(
+                icon: const Icon(Icons.add),
+                tooltip: 'Add sub-page',
+                onPressed: () =>
+                    context.push('/knowledge/new?parentId=$pageId'),
+              ),
+              IconButton(
                 icon: const Icon(Icons.edit),
                 onPressed: () => context.push('/knowledge/$pageId/edit'),
               ),

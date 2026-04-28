@@ -295,7 +295,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: 'new',
-                builder: (context, state) => const KnowledgeEditPage(),
+                builder: (context, state) => KnowledgeEditPage(
+                  initialParentId: state.uri.queryParameters['parentId'],
+                ),
               ),
               GoRoute(
                 path: ':pageId',

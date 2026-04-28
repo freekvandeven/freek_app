@@ -1,14 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
+import '../../auth/providers/auth_providers.dart';
 import '../models/knowledge_page.dart';
 import '../providers/knowledge_providers.dart';
 
 class KnowledgeEditPage extends ConsumerStatefulWidget {
   final String? pageId;
-  const KnowledgeEditPage({super.key, this.pageId});
+  final String? initialParentId;
+  const KnowledgeEditPage({super.key, this.pageId, this.initialParentId});
 
   @override
   ConsumerState<KnowledgeEditPage> createState() => _KnowledgeEditPageState();
@@ -24,6 +28,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
   String? _parentId;
   bool _isLoading = true;
   KnowledgePage? _existing;
+  Timer? _autosaveTimer;
 
   @override
   void initState() {
@@ -31,7 +36,9 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
     if (widget.pageId != null) {
       _loadPage();
     } else {
+      _parentId = widget.initialParentId;
       _isLoading = false;
+      _setupAutosaveTimer();
     }
   }
 
@@ -51,10 +58,61 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
     } else {
       if (mounted) setState(() => _isLoading = false);
     }
+    if (mounted) _setupAutosaveTimer();
+  }
+
+  void _setupAutosaveTimer() {
+    _autosaveTimer?.cancel();
+    final minutes =
+        ref.read(currentUserProvider)?.settings.autosaveIntervalMinutes ?? 0;
+    if (minutes > 0) {
+      _autosaveTimer = Timer.periodic(
+        Duration(minutes: minutes),
+        (_) => _autosave(),
+      );
+    }
+  }
+
+  Future<void> _autosave() async {
+    if (!mounted || !_formKey.currentState!.validate()) return;
+
+    final notifier = ref.read(knowledgeListProvider.notifier);
+    try {
+      if (_existing != null) {
+        await notifier.updatePage(
+          _existing!.copyWith(
+            title: _titleController.text.trim(),
+            content: _contentController.text,
+            tags: _tags,
+            parentId: () => _parentId,
+          ),
+        );
+      } else {
+        final page = KnowledgePage(
+          title: _titleController.text.trim(),
+          content: _contentController.text,
+          tags: _tags,
+          parentId: _parentId,
+        );
+        await notifier.addPage(page);
+        if (mounted) setState(() => _existing = page);
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Auto-saved'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (_) {
+      // Silently ignore autosave errors
+    }
   }
 
   @override
   void dispose() {
+    _autosaveTimer?.cancel();
     _titleController.dispose();
     _contentController.dispose();
     _tagController.dispose();
