@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:personal_app/presentation/theme/app_theme.dart';
 import 'package:personal_app/routing/app_router.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -20,6 +21,7 @@ import 'presentation/widgets/lock_screen.dart';
 import 'services/log_service.dart';
 
 Future<void> main() async {
+  usePathUrlStrategy();
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   await WakelockPlus.enable();
