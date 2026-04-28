@@ -56,3 +56,6 @@ scripts/.feedback-api-key
 # Generated documentation
 docs/generated/
 functions/docs/
+
+# Claude AI settings
+.claude/settings.local.json
