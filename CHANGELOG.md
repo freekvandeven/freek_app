@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+- Static text (page titles, labels, body text) is now selectable on web and desktop — wrapped the app in a `SelectionArea` so all `Text` widgets are selectable without replacing them individually; `TextField` inputs retain their own selection behaviour (BUG-0026)
+
 ## [0.7.0] - 2026-03-31
 
 ### Added

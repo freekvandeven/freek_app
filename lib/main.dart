@@ -140,10 +140,12 @@ class PersonalApp extends ConsumerWidget {
           darkTheme: AppTheme.darkTheme(seedColor),
           themeMode: ref.watch(themeModeProvider),
           routerConfig: router,
-          builder: (context, child) => LockScreen(
-            enabled: biometricEnabled,
-            child: child!,
-            onSignOut: () => ref.read(authServiceProvider).signOut(),
+          builder: (context, child) => SelectionArea(
+            child: LockScreen(
+              enabled: biometricEnabled,
+              child: child!,
+              onSignOut: () => ref.read(authServiceProvider).signOut(),
+            ),
           ),
         );
       },
