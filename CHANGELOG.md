@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- Recipe components — link existing recipes as sub-recipes ("components") on any recipe; the detail page shows each component with a tap-to-navigate link; the edit page has a Components section with a searchable recipe picker to add or remove links (WISH-0047)
 - WIP (Work In Progress) marking for recipes, knowledge bank items, shopping list items, and feedback entries — toggle per item from the edit/add form; each list page gains a WIP-only filter button (construction icon) to show only items still in progress (WISH-0046)
 - Servings adjuster on recipe detail page — tap +/− to change serving count; all ingredient quantities scale proportionally (display only, never saved); reset button restores the original serving count (WISH-0051)
 - Responsive navigation rail on large screens — Recipes (600px+), Knowledge & Inventory (900px+) and Gemini AI (1200px+) appear directly in the rail; More only shows items not visible at the current width. Mobile bottom nav keeps 5 items (BUG-0023)

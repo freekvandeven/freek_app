@@ -47,7 +47,7 @@ class _RecipeDetailPageState extends ConsumerState<RecipeDetailPage> {
           );
         }
         _currentServings ??= recipe.servings;
-        return _buildDetail(context, recipe, colorScheme);
+        return _buildDetail(context, recipe, colorScheme, recipes);
       },
     );
   }
@@ -56,6 +56,7 @@ class _RecipeDetailPageState extends ConsumerState<RecipeDetailPage> {
     BuildContext context,
     Recipe recipe,
     ColorScheme colorScheme,
+    List<Recipe> allRecipes,
   ) {
     return Scaffold(
       appBar: AppBar(
@@ -218,6 +219,34 @@ class _RecipeDetailPageState extends ConsumerState<RecipeDetailPage> {
                     )
                     .toList(),
               ),
+            ],
+
+            // Sub-recipes (components)
+            if (recipe.subRecipeIds.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              Text(
+                'Components',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const Divider(),
+              ...recipe.subRecipeIds.map((subId) {
+                final sub = allRecipes.where((r) => r.id == subId).firstOrNull;
+                if (sub == null) return const SizedBox.shrink();
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.link),
+                  title: Text(sub.title),
+                  subtitle: sub.description != null
+                      ? Text(
+                          sub.description!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                      : null,
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/recipes/${sub.id}'),
+                );
+              }),
             ],
 
             // Ingredients

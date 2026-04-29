@@ -44,6 +44,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
   final List<String> _removedImageUrls = [];
   int _primaryImageIndex = 0;
   List<String> _videoLinks = [];
+  List<String> _subRecipeIds = [];
   bool _isEditing = false;
   bool _isUploading = false;
   bool _isWip = false;
@@ -78,6 +79,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
         _savedImageUrls = List.from(recipe.images);
         _primaryImageIndex = recipe.primaryImageIndex;
         _videoLinks = List.from(recipe.videoLinks);
+        _subRecipeIds = List.from(recipe.subRecipeIds);
         _isWip = recipe.isWip;
       });
     }
@@ -118,6 +120,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
         images: _savedImageUrls,
         primaryImageIndex: _primaryImageIndex,
         videoLinks: _videoLinks,
+        subRecipeIds: _subRecipeIds,
         isWip: _isWip,
         source: source.isEmpty ? null : source,
         clearSource: source.isEmpty,
@@ -221,6 +224,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
             images: _savedImageUrls,
             primaryImageIndex: _primaryImageIndex,
             videoLinks: _videoLinks,
+            subRecipeIds: _subRecipeIds,
             isWip: _isWip,
             source: source.isEmpty ? null : source,
             clearSource: source.isEmpty,
@@ -242,6 +246,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
           images: _savedImageUrls,
           primaryImageIndex: _primaryImageIndex,
           videoLinks: _videoLinks,
+          subRecipeIds: _subRecipeIds,
           isWip: _isWip,
           source: source.isEmpty ? null : source,
           notes: notes.isEmpty ? null : notes,
@@ -606,6 +611,48 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _addSubRecipe() async {
+    final allRecipes = ref.read(recipeListProvider).valueOrNull ?? [];
+    final candidates = allRecipes
+        .where((r) => r.id != widget.recipeId && !_subRecipeIds.contains(r.id))
+        .toList();
+    if (!mounted || candidates.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No other recipes available to link')),
+        );
+      }
+      return;
+    }
+    final picked = await showModalBottomSheet<Recipe>(
+      context: context,
+      isScrollControlled: true,
+      builder: (c) => _RecipePickerSheet(items: candidates),
+    );
+    if (picked != null) {
+      setState(() => _subRecipeIds.add(picked.id));
+    }
+  }
+
+  List<Widget> _buildSubRecipeTiles() {
+    final allRecipes = ref.read(recipeListProvider).valueOrNull ?? [];
+    return _subRecipeIds.asMap().entries.map((entry) {
+      final recipe = allRecipes.where((r) => r.id == entry.value).firstOrNull;
+      final title = recipe?.title ?? entry.value;
+      return ListTile(
+        key: ValueKey(entry.value),
+        contentPadding: EdgeInsets.zero,
+        dense: true,
+        leading: const Icon(Icons.link, size: 20),
+        title: Text(title),
+        trailing: IconButton(
+          icon: const Icon(Icons.remove_circle_outline, size: 20),
+          onPressed: () => setState(() => _subRecipeIds.removeAt(entry.key)),
+        ),
+      );
+    }).toList();
   }
 
   @override
@@ -1013,6 +1060,24 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
 
               const SizedBox(height: 16),
 
+              // Sub-recipes (components)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Components',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  TextButton.icon(
+                    onPressed: _addSubRecipe,
+                    icon: const Icon(Icons.link, size: 18),
+                    label: const Text('Add'),
+                  ),
+                ],
+              ),
+              if (_subRecipeIds.isNotEmpty) ..._buildSubRecipeTiles(),
+              const SizedBox(height: 16),
+
               TextFormField(
                 controller: _sourceController,
                 decoration: const InputDecoration(labelText: 'Source'),
@@ -1118,6 +1183,77 @@ class _RecipeCatalogPickerSheetState extends State<_RecipeCatalogPickerSheet> {
                         )
                       : null,
                   onTap: () => Navigator.pop(context, item),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecipePickerSheet extends StatefulWidget {
+  final List<Recipe> items;
+  const _RecipePickerSheet({required this.items});
+
+  @override
+  State<_RecipePickerSheet> createState() => _RecipePickerSheetState();
+}
+
+class _RecipePickerSheetState extends State<_RecipePickerSheet> {
+  String _search = '';
+
+  List<Recipe> get _filtered {
+    if (_search.isEmpty) return widget.items;
+    final q = _search.toLowerCase();
+    return widget.items
+        .where(
+          (r) =>
+              r.title.toLowerCase().contains(q) ||
+              (r.description?.toLowerCase().contains(q) ?? false),
+        )
+        .toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.6,
+      maxChildSize: 0.9,
+      builder: (context, scrollController) => Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Search recipes...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onChanged: (v) => setState(() => _search = v),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              controller: scrollController,
+              itemCount: _filtered.length,
+              itemBuilder: (context, index) {
+                final recipe = _filtered[index];
+                return ListTile(
+                  leading: const Icon(Icons.restaurant_menu),
+                  title: Text(recipe.title),
+                  subtitle: recipe.description != null
+                      ? Text(
+                          recipe.description!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                      : null,
+                  onTap: () => Navigator.pop(context, recipe),
                 );
               },
             ),

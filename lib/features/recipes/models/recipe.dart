@@ -64,6 +64,7 @@ class Recipe {
   final List<String> images;
   final int primaryImageIndex;
   final List<String> videoLinks;
+  final List<String> subRecipeIds;
   final bool isFavorite;
   final bool isWip;
   final String? source;
@@ -84,6 +85,7 @@ class Recipe {
     this.images = const [],
     this.primaryImageIndex = 0,
     this.videoLinks = const [],
+    this.subRecipeIds = const [],
     this.isFavorite = false,
     this.isWip = false,
     this.source,
@@ -111,6 +113,7 @@ class Recipe {
     List<String>? images,
     int? primaryImageIndex,
     List<String>? videoLinks,
+    List<String>? subRecipeIds,
     bool? isFavorite,
     bool? isWip,
     String? source,
@@ -132,6 +135,7 @@ class Recipe {
       images: images ?? this.images,
       primaryImageIndex: primaryImageIndex ?? this.primaryImageIndex,
       videoLinks: videoLinks ?? this.videoLinks,
+      subRecipeIds: subRecipeIds ?? this.subRecipeIds,
       isFavorite: isFavorite ?? this.isFavorite,
       isWip: isWip ?? this.isWip,
       source: clearSource ? null : (source ?? this.source),
@@ -159,6 +163,7 @@ class Recipe {
     'images': images,
     'primaryImageIndex': primaryImageIndex,
     'videoLinks': videoLinks,
+    'subRecipeIds': subRecipeIds,
     'isFavorite': isFavorite,
     'isWip': isWip,
     'source': source,
@@ -200,6 +205,9 @@ class Recipe {
       primaryImageIndex: map['primaryImageIndex'] as int? ?? 0,
       videoLinks:
           (map['videoLinks'] as List?)?.map((s) => s as String).toList() ?? [],
+      subRecipeIds:
+          (map['subRecipeIds'] as List?)?.map((s) => s as String).toList() ??
+          [],
       isFavorite: map['isFavorite'] as bool? ?? false,
       isWip: map['isWip'] as bool? ?? false,
       source: map['source'] as String?,
