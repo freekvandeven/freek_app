@@ -34,6 +34,8 @@ import '../features/knowledge/pages/knowledge_bank_page.dart';
 import '../features/knowledge/pages/knowledge_edit_page.dart';
 import '../features/knowledge/pages/knowledge_view_page.dart';
 import '../features/more/pages/more_page.dart';
+import '../features/onboarding/pages/onboarding_page.dart';
+import '../features/onboarding/providers/onboarding_providers.dart';
 import '../features/passwords/pages/password_detail_page.dart';
 import '../features/passwords/pages/password_edit_page.dart';
 import '../features/passwords/pages/password_list_page.dart';
@@ -55,6 +57,7 @@ import '../presentation/shell/app_shell.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final isAuthenticated = ref.watch(isAuthenticatedProvider);
+  final onboarding = ref.watch(onboardingProvider);
 
   return GoRouter(
     initialLocation: '/',
@@ -63,9 +66,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           state.matchedLocation == '/login' ||
           state.matchedLocation == '/signup' ||
           state.matchedLocation == '/forgot-password';
+      final onOnboarding = state.matchedLocation == '/onboarding';
 
       if (!isAuthenticated && !loggingIn) return '/login';
       if (isAuthenticated && loggingIn) return '/';
+
+      // Redirect to onboarding on first run (once the async state resolves)
+      if (isAuthenticated && !onOnboarding && onboarding.valueOrNull == false) {
+        return '/onboarding';
+      }
+
       return null;
     },
     routes: [
@@ -303,6 +313,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 ],
               ),
             ],
+          ),
+
+          // Onboarding (full-screen, outside the nav shell)
+          GoRoute(
+            path: '/onboarding',
+            builder: (context, state) => const OnboardingPage(),
           ),
 
           // Feature routes (pushed on top of shell)

@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- Onboarding introduction — five swipeable pages walk through the app's key feature areas on first launch; an Introduction button on the dashboard re-opens them at any time; Skip and Get Started buttons let users move through or exit at their own pace (WISH-0052)
 - AI recipe creation — when a Gemini API key is configured, a sparkle button on the new-recipe form lets you describe a recipe in plain language; the AI generates a fully structured recipe (title, description, servings, times, ingredients, instructions, tags, notes) that pre-fills the form for review before saving (WISH-0050)
 - Recipe components — link existing recipes as sub-recipes ("components") on any recipe; the detail page shows each component with a tap-to-navigate link; the edit page has a Components section with a searchable recipe picker to add or remove links (WISH-0047)
 - WIP (Work In Progress) marking for recipes, knowledge bank items, shopping list items, and feedback entries — toggle per item from the edit/add form; each list page gains a WIP-only filter button (construction icon) to show only items still in progress (WISH-0046)

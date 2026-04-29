@@ -140,12 +140,20 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 const SizedBox(height: 24),
                 _buildFeatureGrid(context, colorScheme),
                 const SizedBox(height: 16),
-                Center(
-                  child: TextButton.icon(
-                    onPressed: () => context.push('/settings/changelog'),
-                    icon: const Icon(Icons.new_releases_outlined),
-                    label: const Text("What's New"),
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () => context.push('/onboarding'),
+                      icon: const Icon(Icons.menu_book_outlined),
+                      label: const Text('Introduction'),
+                    ),
+                    TextButton.icon(
+                      onPressed: () => context.push('/settings/changelog'),
+                      icon: const Icon(Icons.new_releases_outlined),
+                      label: const Text("What's New"),
+                    ),
+                  ],
                 ),
               ],
             ),
