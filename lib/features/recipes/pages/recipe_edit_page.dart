@@ -13,6 +13,7 @@ import '../../../services/image_upload_service.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../catalog/models/catalog_item.dart';
 import '../../catalog/providers/catalog_providers.dart';
+import '../../gemini/providers/gemini_providers.dart';
 import '../models/recipe.dart';
 import '../providers/recipe_providers.dart';
 import '../utils/video_link_parser.dart';
@@ -613,6 +614,106 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     );
   }
 
+  Future<void> _createWithAi() async {
+    final geminiService = ref.read(geminiServiceProvider);
+    if (!geminiService.isConfigured) {
+      final apiKey = await ref.read(geminiApiKeyServiceProvider).getApiKey();
+      if (apiKey.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Gemini API key not configured. Set it in Settings.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
+      geminiService.configure(apiKey);
+    }
+
+    if (!mounted) return;
+    final promptCtrl = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Create Recipe with AI'),
+        content: TextField(
+          controller: promptCtrl,
+          decoration: const InputDecoration(
+            labelText: 'Describe the recipe',
+            hintText: 'e.g. Classic French onion soup for 4 people',
+          ),
+          autofocus: true,
+          maxLines: 3,
+          textCapitalization: TextCapitalization.sentences,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Generate'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final prompt = promptCtrl.text.trim();
+    if (prompt.isEmpty) return;
+
+    setState(() => _isUploading = true);
+    try {
+      final data = await geminiService.generateRecipe(prompt);
+      if (!mounted) return;
+      if (data == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to generate recipe. Try again.'),
+          ),
+        );
+        return;
+      }
+      _applyAiRecipeData(data);
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
+  }
+
+  void _applyAiRecipeData(Map<String, dynamic> data) {
+    setState(() {
+      _titleController.text =
+          (data['title'] as String?) ?? _titleController.text;
+      _descriptionController.text = (data['description'] as String?) ?? '';
+      _servingsController.text = data['servings']?.toString() ?? '';
+      _prepTimeController.text = data['prepTimeMinutes']?.toString() ?? '';
+      _cookTimeController.text = data['cookTimeMinutes']?.toString() ?? '';
+      _notesController.text = (data['notes'] as String?) ?? '';
+
+      final rawIngredients = (data['ingredients'] as List?) ?? [];
+      _ingredients = rawIngredients.map((i) {
+        final m = i as Map<String, dynamic>;
+        return Ingredient(
+          name: m['name'] as String,
+          quantity: (m['quantity'] as num?)?.toDouble(),
+          unit: m['unit'] as String?,
+        );
+      }).toList();
+
+      final rawInstructions = (data['instructions'] as List?) ?? [];
+      _instructions = rawInstructions.map((i) {
+        final m = i as Map<String, dynamic>;
+        return RecipeInstruction(text: m['text'] as String);
+      }).toList();
+
+      final rawTags = (data['tags'] as List?) ?? [];
+      _tags = rawTags.map((t) => t.toString().toLowerCase()).toList();
+    });
+  }
+
   Future<void> _addSubRecipe() async {
     final allRecipes = ref.read(recipeListProvider).valueOrNull ?? [];
     final candidates = allRecipes
@@ -663,6 +764,12 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
           child: Text(_isEditing ? 'Edit Recipe' : 'New Recipe'),
         ),
         actions: [
+          if (!_isEditing)
+            IconButton(
+              icon: const Icon(Icons.auto_awesome),
+              tooltip: 'Create with AI',
+              onPressed: _isUploading ? null : _createWithAi,
+            ),
           TextButton(
             onPressed: _isUploading ? null : _save,
             child: _isUploading

@@ -148,6 +148,39 @@ class GeminiService {
     }
   }
 
+  /// Generate a structured recipe from a plain-language prompt.
+  /// Returns a JSON map matching the Recipe field schema, or null on failure.
+  Future<Map<String, dynamic>?> generateRecipe(String prompt) async {
+    if (!isConfigured) return null;
+    try {
+      final response = await _getModel().generateContent([
+        Content.text(
+          'You are a recipe creation assistant. Create a detailed recipe based on the following request:\n\n'
+          '$prompt\n\n'
+          'Return ONLY a JSON object with these fields (omit optional fields you cannot determine):\n'
+          '- "title": recipe title (string, required)\n'
+          '- "description": brief one-sentence description (string)\n'
+          '- "servings": number of servings (int)\n'
+          '- "prepTimeMinutes": preparation time in minutes (int)\n'
+          '- "cookTimeMinutes": cooking time in minutes (int)\n'
+          '- "ingredients": list of objects with "name" (string, required), "quantity" (number, optional), "unit" (string, optional)\n'
+          '- "instructions": list of objects with "text" (string, required)\n'
+          '- "tags": list of lowercase category tags such as cuisine or dietary info (list of strings)\n'
+          '- "notes": helpful tips or variations (string)\n'
+          'Respond with ONLY the JSON object, no markdown fences.',
+        ),
+      ]);
+      final text = response.text?.trim();
+      if (text == null || text.isEmpty) return null;
+      final cleaned = text
+          .replaceAll(RegExp(r'^```json?\s*|\s*```$'), '')
+          .trim();
+      return jsonDecode(cleaned) as Map<String, dynamic>;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Apply an AI instruction to a markdown document and return the result.
   Future<String> editMarkdown(String content, String instruction) async {
     if (!isConfigured) return content;
