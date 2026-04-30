@@ -111,12 +111,6 @@ const _integrations = [
     color: Colors.blue,
   ),
   _Integration(
-    label: 'Kerio Connect',
-    description: 'Connect to your Kerio mail and calendar',
-    icon: Icons.mail,
-    color: Colors.orange,
-  ),
-  _Integration(
     label: 'Google Gemini',
     description: 'AI-powered assistance across the app',
     icon: Icons.auto_awesome,

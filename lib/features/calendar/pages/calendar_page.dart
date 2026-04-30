@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../models/calendar_event.dart';
 import '../providers/calendar_providers.dart';
@@ -113,15 +112,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
             icon: const Icon(Icons.sync),
             tooltip: 'Calendar integrations',
             onSelected: (value) {
-              switch (value) {
-                case 'google':
-                  _toggleGoogleCalendar();
-                case 'kerio':
-                  launchUrl(
-                    Uri.parse('https://mail.kerio.com'),
-                    mode: LaunchMode.externalApplication,
-                  );
-              }
+              if (value == 'google') _toggleGoogleCalendar();
             },
             itemBuilder: (context) => [
               PopupMenuItem(
@@ -143,14 +134,6 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                   subtitle: GoogleCalendarService.isSupported
                       ? null
                       : const Text('Not supported on this platform'),
-                  dense: true,
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'kerio',
-                child: ListTile(
-                  leading: Icon(Icons.mail, color: Colors.orange),
-                  title: Text('Kerio Connect'),
                   dense: true,
                 ),
               ),
