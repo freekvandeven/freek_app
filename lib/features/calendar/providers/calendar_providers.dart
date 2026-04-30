@@ -23,10 +23,16 @@ final calendarServiceProvider = Provider<CalendarService>((ref) {
 class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
   @override
   Future<List<CalendarEvent>> build() async {
-    final customEvents = await ref.watch(calendarServiceProvider).getEvents();
-
-    // Pull task due dates as events
+    // All ref.watch calls must come before any await to avoid registering
+    // new subscriptions mid-notification, which causes ConcurrentModificationError.
+    final service = ref.watch(calendarServiceProvider);
     final tasks = ref.watch(taskListProvider).valueOrNull ?? [];
+    final transactions = ref.watch(transactionListProvider).valueOrNull ?? [];
+    final googleEvents =
+        ref.watch(googleCalendarEventsProvider).valueOrNull ?? [];
+
+    final customEvents = await service.getEvents();
+
     final taskEvents = tasks
         .where((t) => t.dueDate != null && !t.isCompleted)
         .map(
@@ -42,8 +48,6 @@ class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
         )
         .toList();
 
-    // Pull recurring transactions as events
-    final transactions = ref.watch(transactionListProvider).valueOrNull ?? [];
     final financeEvents = transactions
         .where((t) => t.isRecurring)
         .map(
@@ -60,9 +64,11 @@ class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
         )
         .toList();
 
-    // Pull Google Calendar events
-    final googleEvents =
-        ref.watch(googleCalendarEventsProvider).valueOrNull ?? [];
+    LogService.instance.info(
+      'Calendar built: ${customEvents.length} custom, '
+      '${taskEvents.length} tasks, ${financeEvents.length} finance, '
+      '${googleEvents.length} Google events',
+    );
 
     return [...customEvents, ...taskEvents, ...financeEvents, ...googleEvents]
       ..sort((a, b) => a.date.compareTo(b.date));

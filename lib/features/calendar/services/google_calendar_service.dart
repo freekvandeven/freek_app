@@ -6,6 +6,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../services/log_service.dart';
 import '../models/calendar_event.dart';
 
 class GoogleCalendarService {
@@ -34,17 +35,27 @@ class GoogleCalendarService {
       _account = await _googleSignIn.signIn();
       if (_account != null) {
         await _prefs.setBool(_connectedKey, true);
+        LogService.instance.info(
+          'Google Calendar signed in as ${_account!.email}',
+        );
         return true;
       }
+      LogService.instance.warning('Google Calendar sign-in cancelled by user');
       return false;
-    } catch (ex) {
+    } catch (ex, stack) {
+      LogService.instance.error('Google Calendar sign-in failed: $ex\n$stack');
       return false;
     }
   }
 
   Future<void> disconnect() async {
     if (!isSupported) return;
-    await _googleSignIn.disconnect();
+    try {
+      await _googleSignIn.disconnect();
+      LogService.instance.info('Google Calendar disconnected');
+    } catch (ex) {
+      LogService.instance.warning('Google Calendar disconnect error: $ex');
+    }
     _account = null;
     await _prefs.setBool(_connectedKey, false);
   }
@@ -54,8 +65,14 @@ class GoogleCalendarService {
     if (!isSupported) return false;
     try {
       _account = await _googleSignIn.signInSilently();
+      if (_account != null) {
+        LogService.instance.info(
+          'Google Calendar silent sign-in succeeded: ${_account!.email}',
+        );
+      }
       return _account != null;
-    } catch (_) {
+    } catch (ex) {
+      LogService.instance.warning('Google Calendar silent sign-in failed: $ex');
       return false;
     }
   }
@@ -66,10 +83,29 @@ class GoogleCalendarService {
     required DateTime timeMin,
     required DateTime timeMax,
   }) async {
-    _account ??= await _googleSignIn.signInSilently();
-    if (_account == null) return [];
+    if (!isSupported) return [];
 
-    final headers = await _account!.authHeaders;
+    // Refresh current user in case the in-memory account was lost.
+    _account ??= _googleSignIn.currentUser;
+    _account ??= await _googleSignIn.signInSilently();
+    if (_account == null) {
+      LogService.instance.warning(
+        'Google Calendar fetchEvents: no signed-in account',
+      );
+      return [];
+    }
+
+    Map<String, String> headers;
+    try {
+      headers = await _account!.authHeaders;
+    } catch (ex) {
+      LogService.instance.error(
+        'Google Calendar failed to get auth headers: $ex',
+      );
+      _account = null;
+      return [];
+    }
+
     final uri = Uri.https(
       'www.googleapis.com',
       '/calendar/v3/calendars/primary/events',
@@ -82,16 +118,47 @@ class GoogleCalendarService {
       },
     );
 
-    final response = await http.get(uri, headers: headers);
-    if (response.statusCode != 200) return [];
+    final http.Response response;
+    try {
+      response = await http.get(uri, headers: headers);
+    } catch (ex) {
+      LogService.instance.error('Google Calendar HTTP request failed: $ex');
+      return [];
+    }
 
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    final items = data['items'] as List<dynamic>? ?? [];
+    if (response.statusCode != 200) {
+      LogService.instance.error(
+        'Google Calendar API error ${response.statusCode}: ${response.body}',
+      );
+      return [];
+    }
 
-    return items
-        .map((item) => _parseEvent(item as Map<String, dynamic>))
-        .whereType<CalendarEvent>()
-        .toList();
+    final Map<String, dynamic> data;
+    try {
+      data = jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (ex) {
+      LogService.instance.error('Google Calendar JSON parse error: $ex');
+      return [];
+    }
+
+    final items = List<dynamic>.from(data['items'] as List? ?? []);
+    final events = <CalendarEvent>[];
+    for (final item in items) {
+      try {
+        final event = _parseEvent(item as Map<String, dynamic>);
+        if (event != null) events.add(event);
+      } catch (ex) {
+        LogService.instance.warning(
+          'Google Calendar skipped unparseable event: $ex',
+        );
+      }
+    }
+
+    LogService.instance.info(
+      'Google Calendar fetched ${events.length} events '
+      '(${timeMin.toIso8601String()} – ${timeMax.toIso8601String()})',
+    );
+    return events;
   }
 
   CalendarEvent? _parseEvent(Map<String, dynamic> item) {
@@ -116,10 +183,8 @@ class GoogleCalendarService {
 
     DateTime? endDate;
     final end = item['end'] as Map<String, dynamic>?;
-    if (end != null) {
-      if (end.containsKey('dateTime')) {
-        endDate = DateTime.parse(end['dateTime'] as String).toLocal();
-      }
+    if (end != null && end.containsKey('dateTime')) {
+      endDate = DateTime.parse(end['dateTime'] as String).toLocal();
     }
 
     final id = item['id'] as String? ?? summary.hashCode.toString();
@@ -132,7 +197,7 @@ class GoogleCalendarService {
       endDate: endDate,
       isAllDay: isAllDay,
       type: EventType.googleCalendar,
-      color: '0xFF4285F4', // Google blue
+      color: '0xFF4285F4',
     );
   }
 }
