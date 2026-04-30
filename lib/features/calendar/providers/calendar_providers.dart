@@ -23,13 +23,12 @@ final calendarServiceProvider = Provider<CalendarService>((ref) {
 class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
   @override
   Future<List<CalendarEvent>> build() async {
-    // All ref.watch calls must come before any await to avoid registering
-    // new subscriptions mid-notification, which causes ConcurrentModificationError.
+    // Watch sync-derived providers only — no FutureProvider dependencies here.
+    // Mixing await + ref.watch(FutureProvider) causes ConcurrentModificationError
+    // in Riverpod's listener graph. Google events are merged in allCalendarEventsProvider.
     final service = ref.watch(calendarServiceProvider);
     final tasks = ref.watch(taskListProvider).valueOrNull ?? [];
     final transactions = ref.watch(transactionListProvider).valueOrNull ?? [];
-    final googleEvents =
-        ref.watch(googleCalendarEventsProvider).valueOrNull ?? [];
 
     final customEvents = await service.getEvents();
 
@@ -66,11 +65,10 @@ class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
 
     LogService.instance.info(
       'Calendar built: ${customEvents.length} custom, '
-      '${taskEvents.length} tasks, ${financeEvents.length} finance, '
-      '${googleEvents.length} Google events',
+      '${taskEvents.length} tasks, ${financeEvents.length} finance',
     );
 
-    return [...customEvents, ...taskEvents, ...financeEvents, ...googleEvents]
+    return [...customEvents, ...taskEvents, ...financeEvents]
       ..sort((a, b) => a.date.compareTo(b.date));
   }
 
@@ -87,7 +85,6 @@ class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
   }
 
   Future<void> deleteEvent(String id) async {
-    // Delete associated images from Storage
     final events = state.valueOrNull ?? [];
     final event = events.where((e) => e.id == id).firstOrNull;
     if (event != null && event.imageUrls.isNotEmpty) {
@@ -107,10 +104,27 @@ final calendarEventsProvider =
       CalendarEventsNotifier.new,
     );
 
+/// Merges local events (Firestore + tasks + finance) with Google Calendar events.
+/// Kept as a sync Provider so it never participates in the async rebuild cycle
+/// that causes ConcurrentModificationError in Riverpod's listener graph.
+final allCalendarEventsProvider = Provider<AsyncValue<List<CalendarEvent>>>((
+  ref,
+) {
+  final base = ref.watch(calendarEventsProvider);
+  final google = ref.watch(googleCalendarEventsProvider);
+
+  return base.whenData((baseEvents) {
+    final googleEvents = google.valueOrNull ?? [];
+    final combined = [...baseEvents, ...googleEvents];
+    combined.sort((a, b) => a.date.compareTo(b.date));
+    return combined;
+  });
+});
+
 /// Events grouped by day for calendar marker display.
 final calendarEventsByDayProvider =
     Provider<AsyncValue<Map<DateTime, List<CalendarEvent>>>>((ref) {
-      return ref.watch(calendarEventsProvider).whenData((events) {
+      return ref.watch(allCalendarEventsProvider).whenData((events) {
         final Map<DateTime, List<CalendarEvent>> result = {};
         for (final event in events) {
           final day = DateTime(
@@ -137,10 +151,9 @@ final selectedDayEventsProvider = Provider<List<CalendarEvent>>((ref) {
 
 /// Events for the current week (Monday–Sunday).
 final thisWeekEventsProvider = Provider<List<CalendarEvent>>((ref) {
-  final events = ref.watch(calendarEventsProvider).valueOrNull ?? [];
+  final events = ref.watch(allCalendarEventsProvider).valueOrNull ?? [];
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
-  // Monday = 1, so subtract (weekday - 1) to get Monday
   final monday = today.subtract(Duration(days: now.weekday - 1));
   final sunday = monday.add(const Duration(days: 7));
 
