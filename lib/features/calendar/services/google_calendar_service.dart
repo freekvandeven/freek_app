@@ -95,6 +95,20 @@ class GoogleCalendarService {
       return [];
     }
 
+    // On web, signInSilently() restores authentication (ID token) but not the
+    // OAuth access token for API scopes. requestScopes silently refreshes the
+    // token when the scope is already granted; only prompts if not yet approved.
+    final scopeGranted = await _googleSignIn.requestScopes([_calendarScope]);
+    if (!scopeGranted) {
+      LogService.instance.warning(
+        'Google Calendar fetchEvents: calendar scope not granted',
+      );
+      return [];
+    }
+    // Re-read currentUser so _account holds the freshly-authorized token.
+    _account = _googleSignIn.currentUser;
+    if (_account == null) return [];
+
     Map<String, String> headers;
     try {
       headers = await _account!.authHeaders;
