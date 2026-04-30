@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/calendar_event.dart';
 import '../providers/calendar_providers.dart';
 import '../providers/google_calendar_providers.dart';
+import '../services/google_calendar_service.dart';
 
 class CalendarPage extends ConsumerStatefulWidget {
   const CalendarPage({super.key});
@@ -40,6 +41,18 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
   }
 
   Future<void> _toggleGoogleCalendar() async {
+    if (!GoogleCalendarService.isSupported) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Google Calendar is not supported on this platform. '
+            'Use Android, iOS, macOS, or web.',
+          ),
+        ),
+      );
+      return;
+    }
+
     final service = ref.read(googleCalendarServiceProvider);
     final connected = ref.read(googleCalendarConnectedProvider);
 
@@ -113,16 +126,23 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
             itemBuilder: (context) => [
               PopupMenuItem(
                 value: 'google',
+                enabled: GoogleCalendarService.isSupported,
                 child: ListTile(
+                  enabled: GoogleCalendarService.isSupported,
                   leading: Icon(
                     Icons.calendar_month,
-                    color: googleConnected ? Colors.green : Colors.blue,
+                    color: GoogleCalendarService.isSupported
+                        ? (googleConnected ? Colors.green : Colors.blue)
+                        : Colors.grey,
                   ),
                   title: Text(
                     googleConnected
                         ? 'Disconnect Google Calendar'
                         : 'Connect Google Calendar',
                   ),
+                  subtitle: GoogleCalendarService.isSupported
+                      ? null
+                      : const Text('Not supported on this platform'),
                   dense: true,
                 ),
               ),

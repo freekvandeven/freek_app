@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,17 +13,23 @@ class GoogleCalendarService {
   static const _calendarScope =
       'https://www.googleapis.com/auth/calendar.readonly';
 
+  /// True on platforms where google_sign_in has a native implementation.
+  static bool get isSupported =>
+      kIsWeb || Platform.isAndroid || Platform.isIOS || Platform.isMacOS;
+
   final _prefs = SharedPreferencesAsync();
   final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: [_calendarScope]);
 
   GoogleSignInAccount? _account;
 
   Future<bool> get isConnected async {
+    if (!isSupported) return false;
     if (_account != null) return true;
     return await _prefs.getBool(_connectedKey) ?? false;
   }
 
   Future<bool> signIn() async {
+    if (!isSupported) return false;
     try {
       _account = await _googleSignIn.signIn();
       if (_account != null) {
@@ -29,12 +37,13 @@ class GoogleCalendarService {
         return true;
       }
       return false;
-    } catch (_) {
+    } catch (ex) {
       return false;
     }
   }
 
   Future<void> disconnect() async {
+    if (!isSupported) return;
     await _googleSignIn.disconnect();
     _account = null;
     await _prefs.setBool(_connectedKey, false);
@@ -42,6 +51,7 @@ class GoogleCalendarService {
 
   /// Try silent sign-in (no UI prompt).
   Future<bool> trySilentSignIn() async {
+    if (!isSupported) return false;
     try {
       _account = await _googleSignIn.signInSilently();
       return _account != null;

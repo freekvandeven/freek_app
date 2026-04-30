@@ -20,6 +20,7 @@ All notable changes to this project will be documented in this file.
 - Markdown links in the knowledge bank are now tappable — added `onTapLink` callback to `MarkdownBody` using `url_launcher` to open URLs in the external browser on both mobile and web (BUG-0025)
 - Web URLs no longer contain a `/#/` hash fragment — `usePathUrlStrategy()` is now called at startup so routes use clean paths like `/tasks` instead of `/#/tasks`; Firebase Hosting already had the required catch-all rewrite (BUG-0024)
 - Static text (page titles, labels, body text) is now selectable on web and desktop — wrapped the app in a `SelectionArea` so all `Text` widgets are selectable without replacing them individually; `TextField` inputs retain their own selection behaviour (BUG-0026)
+- Google Calendar integration now guards against unsupported platforms — on Windows and Linux the sync button shows "Not supported on this platform" in the menu and a snackbar explains which platforms are supported (Android, iOS, macOS, web); prevents `MissingPluginException` crashes (BUG-0028)
 
 ## [0.7.0] - 2026-03-31
 
