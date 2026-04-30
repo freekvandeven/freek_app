@@ -11,8 +11,9 @@ import '../models/calendar_event.dart';
 
 class GoogleCalendarService {
   static const _connectedKey = 'google_calendar_connected';
+  // calendar.events grants read + write access to events on the user's calendars.
   static const _calendarScope =
-      'https://www.googleapis.com/auth/calendar.readonly';
+      'https://www.googleapis.com/auth/calendar.events';
 
   /// True on platforms where google_sign_in has a native implementation.
   static bool get isSupported =>
@@ -173,6 +174,91 @@ class GoogleCalendarService {
       '(${timeMin.toIso8601String()} – ${timeMax.toIso8601String()})',
     );
     return events;
+  }
+
+  /// Creates an event in the user's primary Google Calendar.
+  /// Returns the Google Calendar event ID on success, null on failure.
+  Future<String?> createEvent(CalendarEvent event) async {
+    if (!isSupported) return null;
+
+    _account ??= _googleSignIn.currentUser;
+    if (_account == null) return null;
+
+    final scopeGranted = await _googleSignIn.requestScopes([_calendarScope]);
+    if (!scopeGranted) {
+      LogService.instance.warning(
+        'Google Calendar createEvent: calendar scope not granted',
+      );
+      return null;
+    }
+    _account = _googleSignIn.currentUser;
+    if (_account == null) return null;
+
+    Map<String, String> headers;
+    try {
+      headers = await _account!.authHeaders;
+    } catch (ex) {
+      LogService.instance.error(
+        'Google Calendar createEvent: failed to get auth headers: $ex',
+      );
+      return null;
+    }
+
+    final body = _buildEventBody(event);
+    final uri = Uri.https(
+      'www.googleapis.com',
+      '/calendar/v3/calendars/primary/events',
+    );
+
+    final http.Response response;
+    try {
+      response = await http.post(
+        uri,
+        headers: {...headers, 'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      );
+    } catch (ex) {
+      LogService.instance.error('Google Calendar createEvent HTTP error: $ex');
+      return null;
+    }
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      LogService.instance.error(
+        'Google Calendar createEvent failed ${response.statusCode}: ${response.body}',
+      );
+      return null;
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final id = data['id'] as String?;
+    LogService.instance.info(
+      'Google Calendar event created: "${event.title}" (gcal_id=$id)',
+    );
+    return id;
+  }
+
+  Map<String, dynamic> _buildEventBody(CalendarEvent event) {
+    final body = <String, dynamic>{'summary': event.title};
+    if (event.description != null && event.description!.isNotEmpty) {
+      body['description'] = event.description;
+    }
+
+    String dateStr(DateTime dt) =>
+        '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+
+    if (event.isAllDay) {
+      body['start'] = {'date': dateStr(event.date)};
+      // Google Calendar all-day end date is exclusive, so add 1 day when no
+      // explicit end is set.
+      final endDt = event.endDate ?? event.date.add(const Duration(days: 1));
+      body['end'] = {'date': dateStr(endDt)};
+    } else {
+      body['start'] = {'dateTime': event.date.toUtc().toIso8601String()};
+      final endDt = event.endDate ?? event.date.add(const Duration(hours: 1));
+      body['end'] = {'dateTime': endDt.toUtc().toIso8601String()};
+    }
+
+    return body;
   }
 
   CalendarEvent? _parseEvent(Map<String, dynamic> item) {

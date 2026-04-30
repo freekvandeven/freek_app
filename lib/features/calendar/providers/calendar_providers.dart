@@ -75,6 +75,14 @@ class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
   Future<void> addEvent(CalendarEvent event) async {
     await ref.read(calendarServiceProvider).addEvent(event);
     LogService.instance.info('Calendar event created: ${event.title}');
+
+    final connected = ref.read(googleCalendarConnectedProvider);
+    final syncEnabled =
+        ref.read(currentUserProvider)?.settings.syncToGoogleCalendar ?? true;
+    if (connected && syncEnabled) {
+      await ref.read(googleCalendarServiceProvider).createEvent(event);
+    }
+
     ref.invalidateSelf();
   }
 

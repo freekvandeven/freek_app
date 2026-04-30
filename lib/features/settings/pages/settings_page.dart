@@ -13,6 +13,7 @@ import '../../../services/version_check_service.dart';
 import '../../auth/models/user_profile.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../auth/services/biometric_service.dart';
+import '../../calendar/providers/google_calendar_providers.dart';
 import '../../gemini/providers/gemini_providers.dart';
 import '../../gemini/services/gemini_service.dart';
 import '../../passwords/providers/vault_providers.dart';
@@ -205,6 +206,37 @@ class SettingsPage extends ConsumerWidget {
                     : 'Every ${settings.autosaveIntervalMinutes} min (recipes & knowledge)',
               ),
               onTap: () => _showAutosavePicker(context, ref, settings),
+            ),
+
+            Consumer(
+              builder: (context, cRef, _) {
+                final connected = cRef.watch(googleCalendarConnectedProvider);
+                if (!connected) return const SizedBox.shrink();
+                final cUser = cRef.watch(currentUserProvider);
+                if (cUser == null) return const SizedBox.shrink();
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const _SectionHeader('Calendar'),
+                    SwitchListTile(
+                      secondary: const Icon(Icons.calendar_month),
+                      title: const Text('Sync new events to Google Calendar'),
+                      subtitle: const Text(
+                        'Automatically push newly created events to your Google Calendar',
+                      ),
+                      value: cUser.settings.syncToGoogleCalendar,
+                      onChanged: (v) {
+                        final updated = cUser.copyWith(
+                          settings: cUser.settings.copyWith(
+                            syncToGoogleCalendar: v,
+                          ),
+                        );
+                        cRef.read(authServiceProvider).updateProfile(updated);
+                      },
+                    ),
+                  ],
+                );
+              },
             ),
 
             const _SectionHeader('Data'),

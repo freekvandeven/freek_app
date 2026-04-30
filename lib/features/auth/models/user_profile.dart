@@ -9,6 +9,7 @@ class UserSettings {
   final List<int> expiryReminderDays;
   // 0 = disabled; otherwise interval in minutes
   final int autosaveIntervalMinutes;
+  final bool syncToGoogleCalendar;
 
   const UserSettings({
     this.themeMode = 'system',
@@ -20,6 +21,7 @@ class UserSettings {
     this.showImagePreviews = true,
     this.expiryReminderDays = const [7, 1],
     this.autosaveIntervalMinutes = 0,
+    this.syncToGoogleCalendar = true,
   });
 
   UserSettings copyWith({
@@ -34,6 +36,7 @@ class UserSettings {
     bool? showImagePreviews,
     List<int>? expiryReminderDays,
     int? autosaveIntervalMinutes,
+    bool? syncToGoogleCalendar,
   }) {
     return UserSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -48,6 +51,7 @@ class UserSettings {
       expiryReminderDays: expiryReminderDays ?? this.expiryReminderDays,
       autosaveIntervalMinutes:
           autosaveIntervalMinutes ?? this.autosaveIntervalMinutes,
+      syncToGoogleCalendar: syncToGoogleCalendar ?? this.syncToGoogleCalendar,
     );
   }
 
@@ -61,6 +65,7 @@ class UserSettings {
     'showImagePreviews': showImagePreviews,
     'expiryReminderDays': expiryReminderDays,
     'autosaveIntervalMinutes': autosaveIntervalMinutes,
+    'syncToGoogleCalendar': syncToGoogleCalendar,
   };
 
   factory UserSettings.fromMap(Map<String, dynamic> map) {
@@ -78,6 +83,7 @@ class UserSettings {
               .toList() ??
           const [7, 1],
       autosaveIntervalMinutes: map['autosaveIntervalMinutes'] as int? ?? 0,
+      syncToGoogleCalendar: map['syncToGoogleCalendar'] as bool? ?? true,
     );
   }
 }
