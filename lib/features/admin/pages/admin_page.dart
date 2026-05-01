@@ -93,6 +93,48 @@ class _AdminPageState extends ConsumerState<AdminPage> {
     }
   }
 
+  Future<void> _triggerExpiryCheck() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Force Expiry Check'),
+        content: const Text(
+          'This will immediately send expiry notifications to all users with items expiring on their reminder days. Continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Run Check'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      final result = await ref.read(adminServiceProvider).triggerExpiryCheck();
+      if (!mounted) return;
+      final checked = result['usersChecked'] ?? 0;
+      final sent = result['notificationsSent'] ?? 0;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Expiry check complete: $checked users checked, $sent notifications sent.',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Expiry check failed: $e')));
+    }
+  }
+
   Future<void> _deleteCode(String code) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -188,6 +230,23 @@ class _AdminPageState extends ConsumerState<AdminPage> {
             )
           else
             ..._codes.map(_buildCodeTile),
+          const Divider(height: 32),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text(
+              'Notifications',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.notifications_active_outlined),
+            title: const Text('Force expiry check'),
+            subtitle: const Text(
+              'Send expiry notifications now (same as the daily scheduled run)',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _triggerExpiryCheck,
+          ),
         ],
       ),
     );

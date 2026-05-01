@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- Admin "Force expiry check" action — a Notifications section in the Admin page lets admins immediately run the daily expiry reminder check; a confirmation dialog explains the effect; the result snackbar reports how many users were checked and how many notifications were sent (WISH-0059)
 - Heading table of contents on knowledge view pages — on screens ≥ 900px wide, a 220px Contents panel appears on the right listing all H1–H6 headings; H1s are bold, deeper levels are indented 10px per level; clicking any entry scrolls the content to that heading with a smooth animation; hidden on narrow screens (WISH-0056)
 - Push new calendar events to Google Calendar — when Google Calendar is connected, newly created events are automatically pushed to the user's primary Google Calendar; a "Sync new events to Google Calendar" toggle in Settings → Calendar (visible only when connected) lets users disable this; enabled by default (WISH-0057)
 - Onboarding introduction — five swipeable pages walk through the app's key feature areas on first launch; an Introduction button on the dashboard re-opens them at any time; Skip and Get Started buttons let users move through or exit at their own pace (WISH-0052)
@@ -19,6 +20,7 @@ All notable changes to this project will be documented in this file.
 - Auto-save setting in Settings > Preferences — choose an interval (1, 2, 5, 10, 15, or 30 min) to save knowledge bank pages and recipes in the background while editing; shows a brief snackbar on each save (WISH-0054)
 
 ### Fixed
+- Knowledge WIP filter now shows WIP child pages even when their parent pages are not WIP — the filter includes every WIP page plus all its ancestors up the tree; ancestor nodes auto-expand so nested WIP pages are immediately visible without manual expansion (BUG-0027)
 - Markdown links in the knowledge bank are now tappable — added `onTapLink` callback to `MarkdownBody` using `url_launcher` to open URLs in the external browser on both mobile and web (BUG-0025)
 - Web URLs no longer contain a `/#/` hash fragment — `usePathUrlStrategy()` is now called at startup so routes use clean paths like `/tasks` instead of `/#/tasks`; Firebase Hosting already had the required catch-all rewrite (BUG-0024)
 - Static text (page titles, labels, body text) is now selectable on web and desktop — wrapped the app in a `SelectionArea` so all `Text` widgets are selectable without replacing them individually; `TextField` inputs retain their own selection behaviour (BUG-0026)

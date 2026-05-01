@@ -175,4 +175,36 @@ class AdminService {
     final result = body['result'] as Map<String, dynamic>;
     return result['isAdmin'] as bool? ?? false;
   }
+
+  /// Immediately runs the expiry reminder check across all users.
+  /// Returns { usersChecked, notificationsSent }.
+  Future<Map<String, int>> triggerExpiryCheck() async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('Not authenticated');
+
+    final token = await user.getIdToken();
+    final response = await http.post(
+      Uri.parse('$_functionsBaseUrl/triggerExpiryCheck'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'data': {}}),
+    );
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (response.statusCode != 200) {
+      final error = body['error'] as Map<String, dynamic>?;
+      final message =
+          error?['message'] as String? ?? 'Failed to trigger expiry check.';
+      throw Exception(message);
+    }
+
+    final result = body['result'] as Map<String, dynamic>;
+    return {
+      'usersChecked': (result['usersChecked'] as num?)?.toInt() ?? 0,
+      'notificationsSent': (result['notificationsSent'] as num?)?.toInt() ?? 0,
+    };
+  }
 }
