@@ -140,9 +140,12 @@ class _PageTreeTileState extends ConsumerState<_PageTreeTile> {
 
   @override
   Widget build(BuildContext context) {
-    final children = ref.watch(childKnowledgePagesProvider(widget.page.id));
+    final wipOnly = ref.watch(knowledgeWipOnlyProvider);
+    final children = ref.watch(treeChildKnowledgePagesProvider(widget.page.id));
     final hasChildren =
         children.whenOrNull(data: (list) => list.isNotEmpty) ?? false;
+    // Auto-expand when WIP filter is on so WIP children are visible.
+    final effectiveExpanded = wipOnly || _expanded;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,7 +165,9 @@ class _PageTreeTileState extends ConsumerState<_PageTreeTile> {
                   GestureDetector(
                     onTap: () => setState(() => _expanded = !_expanded),
                     child: Icon(
-                      _expanded ? Icons.expand_more : Icons.chevron_right,
+                      effectiveExpanded
+                          ? Icons.expand_more
+                          : Icons.chevron_right,
                       size: 20,
                     ),
                   )
@@ -194,7 +199,7 @@ class _PageTreeTileState extends ConsumerState<_PageTreeTile> {
             ),
           ),
         ),
-        if (_expanded && hasChildren)
+        if (effectiveExpanded && hasChildren)
           children.when(
             loading: () => const SizedBox.shrink(),
             error: (_, _) => const SizedBox.shrink(),

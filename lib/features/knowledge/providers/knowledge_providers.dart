@@ -46,6 +46,22 @@ class KnowledgeListNotifier extends AsyncNotifier<List<KnowledgePage>> {
 final knowledgeSearchProvider = StateProvider<String>((_) => '');
 final knowledgeWipOnlyProvider = StateProvider<bool>((_) => false);
 
+/// Returns the set of page IDs visible when WIP filter is active:
+/// every WIP page plus all its ancestors up the tree.
+Set<String> _wipVisibleIds(List<KnowledgePage> pages) {
+  final pageMap = {for (final p in pages) p.id: p};
+  final visible = <String>{};
+  for (final p in pages) {
+    if (!p.isWip) continue;
+    String? id = p.id;
+    while (id != null && pageMap.containsKey(id)) {
+      if (!visible.add(id)) break;
+      id = pageMap[id]!.parentId;
+    }
+  }
+  return visible;
+}
+
 final filteredKnowledgeProvider = Provider<AsyncValue<List<KnowledgePage>>>((
   ref,
 ) {
@@ -68,7 +84,8 @@ final filteredKnowledgeProvider = Provider<AsyncValue<List<KnowledgePage>>>((
   });
 });
 
-/// Returns root pages (no parent), optionally filtered to WIP only.
+/// Returns root pages (no parent), respecting WIP filter.
+/// When WIP filter is on, includes roots that are WIP or have WIP descendants.
 final rootKnowledgePagesProvider = Provider<AsyncValue<List<KnowledgePage>>>((
   ref,
 ) {
@@ -76,18 +93,37 @@ final rootKnowledgePagesProvider = Provider<AsyncValue<List<KnowledgePage>>>((
   final wipOnly = ref.watch(knowledgeWipOnlyProvider);
   return listAsync.whenData((pages) {
     var roots = pages.where((p) => p.parentId == null).toList();
-    if (wipOnly) roots = roots.where((p) => p.isWip).toList();
+    if (wipOnly) {
+      final visibleIds = _wipVisibleIds(pages);
+      roots = roots.where((p) => visibleIds.contains(p.id)).toList();
+    }
     return roots;
   });
 });
 
-/// Returns child pages of a given parent
+/// Returns child pages of a given parent (unfiltered — used on view pages).
 final childKnowledgePagesProvider =
     Provider.family<AsyncValue<List<KnowledgePage>>, String>((ref, parentId) {
       final listAsync = ref.watch(knowledgeListProvider);
       return listAsync.whenData(
         (pages) => pages.where((p) => p.parentId == parentId).toList(),
       );
+    });
+
+/// Returns child pages for the tree view, respecting WIP filter.
+/// When WIP filter is on, only shows children that are WIP or have WIP descendants.
+final treeChildKnowledgePagesProvider =
+    Provider.family<AsyncValue<List<KnowledgePage>>, String>((ref, parentId) {
+      final listAsync = ref.watch(knowledgeListProvider);
+      final wipOnly = ref.watch(knowledgeWipOnlyProvider);
+      return listAsync.whenData((pages) {
+        var children = pages.where((p) => p.parentId == parentId).toList();
+        if (wipOnly) {
+          final visibleIds = _wipVisibleIds(pages);
+          children = children.where((p) => visibleIds.contains(p.id)).toList();
+        }
+        return children;
+      });
     });
 
 /// Builds breadcrumb path for a page
