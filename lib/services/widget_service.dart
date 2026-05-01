@@ -48,7 +48,7 @@ class WidgetService {
     final count = dueTasks.length;
 
     await HomeWidget.saveWidgetData<String>('tasks_content', content);
-    await HomeWidget.saveWidgetData<int>('tasks_count', count);
+    await HomeWidget.saveWidgetData<String>('tasks_count', count.toString());
     await HomeWidget.updateWidget(
       androidName: _androidWidgetName,
       iOSName: _iOSWidgetName,

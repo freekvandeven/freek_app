@@ -1,56 +1,51 @@
 package nl.freekvandeven.personal_app
 
-import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
-import android.appwidget.AppWidgetProvider
 import android.content.Context
-import android.content.Intent
+import android.content.SharedPreferences
+import android.util.Log
 import android.widget.RemoteViews
+import es.antonborri.home_widget.HomeWidgetLaunchIntent
+import es.antonborri.home_widget.HomeWidgetProvider as HomeWidgetBaseProvider
 
-class HomeWidgetProvider : AppWidgetProvider() {
+class HomeWidgetProvider : HomeWidgetBaseProvider() {
 
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray,
+        widgetData: SharedPreferences,
     ) {
-        for (appWidgetId in appWidgetIds) {
-            updateWidget(context, appWidgetManager, appWidgetId)
+        Log.d(TAG, "onUpdate called for ${appWidgetIds.size} widget(s)")
+
+        val content = widgetData.getString("tasks_content", null) ?: "No tasks due today"
+        val countStr = widgetData.getString("tasks_count", "0") ?: "0"
+        val count = countStr.toIntOrNull() ?: 0
+
+        Log.d(TAG, "Widget data — count=$count, content=$content")
+
+        appWidgetIds.forEach { widgetId ->
+            try {
+                val views = RemoteViews(context.packageName, R.layout.home_widget).apply {
+                    setTextViewText(R.id.widget_content, content)
+                    val suffix = if (count == 1) "task due" else "tasks due"
+                    setTextViewText(R.id.widget_count, "$count $suffix")
+
+                    val pendingIntent = HomeWidgetLaunchIntent.getActivity(
+                        context,
+                        MainActivity::class.java,
+                    )
+                    setOnClickPendingIntent(R.id.widget_container, pendingIntent)
+                }
+                appWidgetManager.updateAppWidget(widgetId, views)
+                Log.d(TAG, "Widget $widgetId updated successfully")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to update widget $widgetId", e)
+            }
         }
     }
 
     companion object {
-        fun updateWidget(
-            context: Context,
-            appWidgetManager: AppWidgetManager,
-            appWidgetId: Int,
-        ) {
-            val prefs = context.getSharedPreferences(
-                "FlutterSharedPreferences",
-                Context.MODE_PRIVATE,
-            )
-            val content = prefs.getString("flutter.tasks_content", "No tasks due today")
-                ?: "No tasks due today"
-            val count = prefs.getInt("flutter.tasks_count", 0)
-
-            val views = RemoteViews(context.packageName, R.layout.home_widget)
-            views.setTextViewText(R.id.widget_content, content)
-
-            val suffix = if (count == 1) "task due" else "tasks due"
-            views.setTextViewText(R.id.widget_count, "$count $suffix")
-
-            val intent = Intent(context, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            }
-            val pendingIntent = PendingIntent.getActivity(
-                context,
-                0,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
-            views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
-
-            appWidgetManager.updateAppWidget(appWidgetId, views)
-        }
+        private const val TAG = "HomeWidgetProvider"
     }
 }
