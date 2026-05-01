@@ -31,7 +31,8 @@
 
     </LinearLayout>
 
-    <View
+    <!-- TextView used as divider — bare View is not supported in RemoteViews -->
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_marginTop="6dp"
@@ -44,7 +45,6 @@
         android:layout_height="wrap_content"
         android:text="Loading..."
         android:textSize="12sp"
-        android:textColor="#E0FFFFFF"
-        android:lineSpacingMultiplier="1.3" />
+        android:textColor="#E0FFFFFF" />
 
 </LinearLayout>
