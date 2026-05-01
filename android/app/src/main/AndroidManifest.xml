@@ -32,9 +32,10 @@
                 <data android:scheme="https" android:host="freek-personal-app.web.app"/>
             </intent-filter>
         </activity>
-        <!-- Home screen widget -->
+        <!-- Daily Task Preview widget -->
         <receiver
-            android:name=".HomeWidgetProvider"
+            android:name=".DailyTaskWidgetProvider"
+            android:label="Daily Task Preview"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />

@@ -138,9 +138,18 @@ class PersonalApp extends ConsumerWidget {
         // Initialize push notifications when authenticated
         ref.watch(notificationInitProvider);
 
-        // Keep home screen widget in sync with today's tasks
+        // Keep home screen widget in sync with tasks and theme color
         ref.listen(taskListProvider, (_, next) {
-          next.whenData(WidgetService.updateTaskWidget);
+          final color = ref.read(customSeedColorProvider);
+          next.whenData(
+            (tasks) => WidgetService.updateTaskWidget(tasks, seedColor: color),
+          );
+        });
+        ref.listen(customSeedColorProvider, (_, color) {
+          final tasks = ref.read(taskListProvider).valueOrNull;
+          if (tasks != null) {
+            WidgetService.updateTaskWidget(tasks, seedColor: color);
+          }
         });
 
         return MaterialApp.router(

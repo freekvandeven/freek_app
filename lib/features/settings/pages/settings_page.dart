@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,7 @@ import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
 import '../../../presentation/theme/app_theme.dart';
 import '../../../services/version_check_service.dart';
+import '../../../services/widget_service.dart';
 import '../../auth/models/user_profile.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../auth/services/biometric_service.dart';
@@ -253,6 +255,28 @@ class SettingsPage extends ConsumerWidget {
             const _SectionHeader('AI'),
             _GeminiApiKeyTile(),
             _GeminiModelTile(),
+
+            if (defaultTargetPlatform == TargetPlatform.android)
+              const _SectionHeader('Widgets'),
+            if (defaultTargetPlatform == TargetPlatform.android)
+              ListTile(
+                leading: const Icon(Icons.widgets_outlined),
+                title: const Text('Add to Home Screen'),
+                subtitle: const Text('Pin the Daily Task Preview widget'),
+                trailing: const Icon(Icons.add),
+                onTap: () async {
+                  final added = await WidgetService.requestPinWidget();
+                  if (!added && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Pinning widgets is not supported on this launcher',
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
 
             const _SectionHeader('Account'),
             ListTile(
