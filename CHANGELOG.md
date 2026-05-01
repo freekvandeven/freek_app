@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-05-01
+
 ### Added
 - Daily Task Preview homescreen widget (Android) — shows up to 5 tasks due today or overdue (overdue tasks prefixed with ⚠); tapping opens the app; widget background tracks the user's chosen accent color and updates automatically when tasks or theme change; Settings → Widgets → "Add to Home Screen" prompts the launcher to pin the widget without leaving the app; widget system documented in `docs/widgets.md` for adding future widgets like Weekly Task Preview and WIP Items (WISH-0053)
 - Admin "Force expiry check" action — a Notifications section in the Admin page lets admins immediately run the daily expiry reminder check; a confirmation dialog explains the effect; the result snackbar reports how many users were checked and how many notifications were sent (WISH-0059)
