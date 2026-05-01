@@ -16,9 +16,11 @@ import 'config/app_config.dart';
 import 'features/auth/providers/auth_providers.dart';
 import 'features/notifications/providers/notification_providers.dart';
 import 'features/settings/providers/settings_providers.dart';
+import 'features/tasks/providers/task_providers.dart';
 import 'firebase_options.dart';
 import 'presentation/widgets/lock_screen.dart';
 import 'services/log_service.dart';
+import 'services/widget_service.dart';
 
 Future<void> main() async {
   usePathUrlStrategy();
@@ -27,6 +29,7 @@ Future<void> main() async {
   await WakelockPlus.enable();
   LogService.instance.install();
   LogService.instance.info('App starting');
+  await WidgetService.initialize();
 
   try {
     await dotenv.load(fileName: 'dotenv');
@@ -134,6 +137,11 @@ class PersonalApp extends ConsumerWidget {
 
         // Initialize push notifications when authenticated
         ref.watch(notificationInitProvider);
+
+        // Keep home screen widget in sync with today's tasks
+        ref.listen(taskListProvider, (_, next) {
+          next.whenData(WidgetService.updateTaskWidget);
+        });
 
         return MaterialApp.router(
           title: 'Freek App',
