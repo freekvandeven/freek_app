@@ -27,7 +27,9 @@ class _KnowledgeViewPageState extends ConsumerState<KnowledgeViewPage> {
     setState(() => _sections = _parseSections(content));
   }
 
-  static final _headingRe = RegExp(r'^(#{1,6})\s+(.+)$');
+  // Optional closing #s (CommonMark ATX heading closer) must be preceded by
+  // whitespace, so `# C# tutorial` keeps its inline `#`.
+  static final _headingRe = RegExp(r'^(#{1,6})\s+(.+?)(?:\s+#+)?\s*$');
 
   List<_ContentSection> _parseSections(String content) {
     if (content.trim().isEmpty) {

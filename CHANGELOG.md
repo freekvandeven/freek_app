@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- Knowledge page Contents panel no longer shows trailing `#` markers — closing ATX heading hashes (e.g. `## My Heading ##`) are stripped from the table-of-contents text while inline `#`s without preceding whitespace (like `C#`) are preserved (BUG-0028)
+
 ## [0.8.0] - 2026-05-01
 
 ### Added
