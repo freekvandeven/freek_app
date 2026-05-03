@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:http/http.dart' as http;
 
+import '../../../services/log_service.dart';
+
 class GeminiService {
   static const defaultModel = 'gemini-2.0-flash';
 
@@ -150,8 +152,18 @@ class GeminiService {
 
   /// Generate a structured recipe from a plain-language prompt.
   /// Returns a JSON map matching the Recipe field schema, or null on failure.
+  /// Failures are logged via [LogService] so the developer page surfaces them.
   Future<Map<String, dynamic>?> generateRecipe(String prompt) async {
-    if (!isConfigured) return null;
+    if (!isConfigured) {
+      LogService.instance.warning(
+        'Gemini generateRecipe called but no API key is configured',
+      );
+      return null;
+    }
+    LogService.instance.info(
+      'Gemini generateRecipe: requesting (model=$_modelName, '
+      'promptLen=${prompt.length})',
+    );
     try {
       final response = await _getModel().generateContent([
         Content.text(
@@ -171,12 +183,31 @@ class GeminiService {
         ),
       ]);
       final text = response.text?.trim();
-      if (text == null || text.isEmpty) return null;
+      if (text == null || text.isEmpty) {
+        LogService.instance.error(
+          'Gemini generateRecipe: empty response from model',
+        );
+        return null;
+      }
       final cleaned = text
-          .replaceAll(RegExp(r'^```json?\s*|\s*```$'), '')
+          .replaceFirst(RegExp(r'^```(?:json)?\s*'), '')
+          .replaceFirst(RegExp(r'\s*```\s*$'), '')
           .trim();
-      return jsonDecode(cleaned) as Map<String, dynamic>;
-    } catch (_) {
+      try {
+        final decoded = jsonDecode(cleaned) as Map<String, dynamic>;
+        LogService.instance.info('Gemini generateRecipe: success');
+        return decoded;
+      } on FormatException catch (e) {
+        final preview = cleaned.length > 500
+            ? '${cleaned.substring(0, 500)}…'
+            : cleaned;
+        LogService.instance.error(
+          'Gemini generateRecipe: JSON parse failed: $e\nResponse: $preview',
+        );
+        return null;
+      }
+    } catch (e, st) {
+      LogService.instance.error('Gemini generateRecipe failed: $e\n$st');
       return null;
     }
   }

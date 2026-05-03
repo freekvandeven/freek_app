@@ -10,6 +10,7 @@ import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
 import '../../../services/image_upload_service.dart';
+import '../../../services/log_service.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../catalog/models/catalog_item.dart';
 import '../../catalog/providers/catalog_providers.dart';
@@ -672,12 +673,21 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
       if (data == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Failed to generate recipe. Try again.'),
+            content: Text(
+              'Failed to generate recipe. See Settings → Developer for details.',
+            ),
           ),
         );
         return;
       }
       _applyAiRecipeData(data);
+    } catch (e, st) {
+      LogService.instance.error('Recipe AI flow failed unexpectedly: $e\n$st');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Recipe AI failed: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }
