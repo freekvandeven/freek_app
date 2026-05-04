@@ -7,8 +7,8 @@ The app exposes native home-screen widgets backed by the [`home_widget`](https:/
 | ID | Display Name | Status | Description |
 |----|--------------|--------|-------------|
 | `DailyTaskWidgetProvider` | Daily Task Preview | Available | Shows tasks due today + overdue tasks with bullet/warning prefixes |
+| `WipItemsWidgetProvider` | WIP Items | Available | Shows items currently marked as Work-in-Progress across recipes, knowledge, shopping, and feedback. Tapping opens the in-app `/wip` overview |
 | `WeeklyTaskWidgetProvider` | Weekly Task Preview | Planned | Will show tasks due in the next 7 days, grouped by day |
-| `WipItemsWidgetProvider` | WIP Items | Planned | Will show items currently marked as Work-in-Progress across recipes, knowledge, and shopping |
 
 ## Architecture
 
@@ -48,6 +48,22 @@ Keys written by `WidgetService.updateTaskWidget`:
 | `tasks_content` | String | Newline-separated list of due tasks (max 5), prefixed with `⚠ ` (overdue) or `• ` (due today) |
 | `tasks_count` | String | Total count of due/overdue tasks (stored as String to avoid 32-bit int overflow) |
 | `widget_color` | String | ARGB hex of the user's seed color (8 chars, no `#`), or empty for default |
+
+Keys written by `WidgetService.updateWipItemsWidget`:
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `wip_content` | String | Newline-separated list of WIP items (max 5), prefixed with an emoji indicating the source (🍴 recipe, 📖 knowledge, 🛒 shopping, 💬 feedback) |
+| `wip_count` | String | Total count of WIP items across all sources |
+| `widget_color` | String | Same key as the daily-task widget; both providers read it |
+
+## Deep Linking
+
+Widgets can pass a URI when launching the app. The `home_widget` package surfaces this via `HomeWidget.widgetClicked` (warm starts) and `HomeWidget.initiallyLaunchedFromHomeWidget()` (cold starts). `WidgetService.registerClickHandler` consolidates both — the cold-start URI is delivered exactly once per app lifecycle, the stream subscription is replaced on each call.
+
+`main.dart` registers a handler that calls `router.go('/wip')` when the URI's host or path matches `wip`. The WIP Items widget's `setOnClickPendingIntent` passes `homewidget://wip` so taps land on the aggregated overview page.
+
+The Daily Task Preview passes no URI — taps just open the app at its current location.
 
 ## Adding a New Widget
 

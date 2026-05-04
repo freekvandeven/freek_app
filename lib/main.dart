@@ -17,6 +17,7 @@ import 'features/auth/providers/auth_providers.dart';
 import 'features/notifications/providers/notification_providers.dart';
 import 'features/settings/providers/settings_providers.dart';
 import 'features/tasks/providers/task_providers.dart';
+import 'features/wip/providers/wip_providers.dart';
 import 'firebase_options.dart';
 import 'presentation/widgets/lock_screen.dart';
 import 'services/log_service.dart';
@@ -138,17 +139,32 @@ class PersonalApp extends ConsumerWidget {
         // Initialize push notifications when authenticated
         ref.watch(notificationInitProvider);
 
-        // Keep home screen widget in sync with tasks and theme color
+        // Keep home screen widgets in sync with their data and theme color
         ref.listen(taskListProvider, (_, next) {
           final color = ref.read(customSeedColorProvider);
           next.whenData(
             (tasks) => WidgetService.updateTaskWidget(tasks, seedColor: color),
           );
         });
+        ref.listen(wipItemsProvider, (_, next) {
+          final color = ref.read(customSeedColorProvider);
+          WidgetService.updateWipItemsWidget(next, seedColor: color);
+        });
         ref.listen(customSeedColorProvider, (_, color) {
           final tasks = ref.read(taskListProvider).valueOrNull;
           if (tasks != null) {
             WidgetService.updateTaskWidget(tasks, seedColor: color);
+          }
+          WidgetService.updateWipItemsWidget(
+            ref.read(wipItemsProvider),
+            seedColor: color,
+          );
+        });
+
+        // Route widget taps to the appropriate page
+        WidgetService.registerClickHandler((uri) {
+          if (uri.host == 'wip' || uri.path == '/wip') {
+            router.go('/wip');
           }
         });
 

@@ -17,9 +17,15 @@ class MainActivity : FlutterFragmentActivity() {
         ).setMethodCallHandler { call, result ->
             when (call.method) {
                 "requestPinWidget" -> {
+                    val widgetName = call.argument<String>("widget")
+                        ?: "DailyTaskWidgetProvider"
+                    val providerClass = when (widgetName) {
+                        "WipItemsWidgetProvider" -> WipItemsWidgetProvider::class.java
+                        else -> DailyTaskWidgetProvider::class.java
+                    }
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         val manager = getSystemService(AppWidgetManager::class.java)
-                        val provider = ComponentName(this, DailyTaskWidgetProvider::class.java)
+                        val provider = ComponentName(this, providerClass)
                         if (manager.isRequestPinAppWidgetSupported) {
                             manager.requestPinAppWidget(provider, null, null)
                             result.success(true)

@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- WIP Items home-screen widget (Android) — aggregates work-in-progress items from recipes, knowledge, shopping, and feedback; emoji-prefixed first 5 items + total count; tracks the user's accent color; tapping the widget opens a new `/wip` overview page that lists every WIP item grouped by source with tap-through to each item's detail page; pinning shortcut available in Settings → Widgets next to the existing Daily Task Preview shortcut (WISH-0060)
+
 ### Fixed
 - Knowledge page Contents panel no longer shows trailing `#` markers — closing ATX heading hashes (e.g. `## My Heading ##`) are stripped from the table-of-contents text while inline `#`s without preceding whitespace (like `C#`) are preserved (BUG-0028)
 - AI recipe generation failures now report the actual cause — the Gemini service logs every failure path (auth missing, empty response, JSON parse error, API exception) via `LogService` so they appear on the developer page; the JSON-fence stripping regex was also fixed (`^```json?` only made the `n` optional, not the whole `json` literal); the recipe page now catches unexpected exceptions and surfaces the message in the snackbar (BUG-0029)

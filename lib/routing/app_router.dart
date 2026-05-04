@@ -53,6 +53,7 @@ import '../features/settings/pages/settings_page.dart';
 import '../features/shopping/pages/shopping_list_page.dart';
 import '../features/tasks/pages/task_edit_page.dart';
 import '../features/tasks/pages/task_list_page.dart';
+import '../features/wip/pages/wip_overview_page.dart';
 import '../presentation/shell/app_shell.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -434,6 +435,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/shopping',
             builder: (context, state) => const ShoppingListPage(),
+          ),
+          GoRoute(
+            path: '/wip',
+            builder: (context, state) => const WipOverviewPage(),
           ),
           GoRoute(
             path: '/admin',

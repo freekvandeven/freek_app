@@ -260,22 +260,22 @@ class SettingsPage extends ConsumerWidget {
               const _SectionHeader('Widgets'),
             if (defaultTargetPlatform == TargetPlatform.android)
               ListTile(
-                leading: const Icon(Icons.widgets_outlined),
-                title: const Text('Add to Home Screen'),
-                subtitle: const Text('Pin the Daily Task Preview widget'),
+                leading: const Icon(Icons.today_outlined),
+                title: const Text('Add Daily Task Preview'),
+                subtitle: const Text('Tasks due today on your home screen'),
                 trailing: const Icon(Icons.add),
-                onTap: () async {
-                  final added = await WidgetService.requestPinWidget();
-                  if (!added && context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Pinning widgets is not supported on this launcher',
-                        ),
-                      ),
-                    );
-                  }
-                },
+                onTap: () => _pinWidget(context, 'daily'),
+              ),
+            if (defaultTargetPlatform == TargetPlatform.android)
+              ListTile(
+                leading: const Icon(Icons.construction_outlined),
+                title: const Text('Add WIP Items'),
+                subtitle: const Text(
+                  'Work-in-progress items across recipes, knowledge, '
+                  'shopping, and feedback',
+                ),
+                trailing: const Icon(Icons.add),
+                onTap: () => _pinWidget(context, 'wip'),
               ),
 
             const _SectionHeader('Account'),
@@ -314,6 +314,17 @@ class SettingsPage extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _pinWidget(BuildContext context, String widget) async {
+    final added = await WidgetService.requestPinWidget(widget: widget);
+    if (!added && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pinning widgets is not supported on this launcher'),
+        ),
+      );
+    }
   }
 
   void _showAutosavePicker(
