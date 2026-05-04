@@ -7,6 +7,7 @@ import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
 import '../../auth/providers/auth_providers.dart';
 import '../../gemini/providers/gemini_providers.dart';
+import '../../settings/providers/settings_providers.dart';
 import '../models/knowledge_page.dart';
 import '../providers/knowledge_providers.dart';
 
@@ -230,9 +231,12 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
 
     try {
       final service = ref.read(geminiServiceProvider);
+      final model = ref.read(geminiModelProvider);
       if (!service.isConfigured) {
         final apiKey = await ref.read(geminiApiKeyServiceProvider).getApiKey();
-        service.configure(apiKey);
+        service.configure(apiKey, model: model);
+      } else {
+        service.setModel(model);
       }
       final result = await service.editMarkdown(
         _contentController.text,

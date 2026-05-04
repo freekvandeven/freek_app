@@ -34,7 +34,7 @@ Duration? _parseRetryAfter(String message) {
 }
 
 class GeminiService {
-  static const defaultModel = 'gemini-2.0-flash';
+  static const defaultModel = 'gemini-2.5-flash';
 
   GenerativeModel? _model;
   ChatSession? _chat;

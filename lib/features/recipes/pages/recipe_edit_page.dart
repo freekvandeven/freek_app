@@ -18,6 +18,7 @@ import '../../catalog/models/catalog_item.dart';
 import '../../catalog/providers/catalog_providers.dart';
 import '../../gemini/providers/gemini_providers.dart';
 import '../../gemini/services/gemini_service.dart';
+import '../../settings/providers/settings_providers.dart';
 import '../models/recipe.dart';
 import '../providers/recipe_providers.dart';
 import '../utils/video_link_parser.dart';
@@ -620,6 +621,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
 
   Future<void> _createWithAi() async {
     final geminiService = ref.read(geminiServiceProvider);
+    final model = ref.read(geminiModelProvider);
     if (!geminiService.isConfigured) {
       final apiKey = await ref.read(geminiApiKeyServiceProvider).getApiKey();
       if (apiKey.isEmpty) {
@@ -634,7 +636,9 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
         }
         return;
       }
-      geminiService.configure(apiKey);
+      geminiService.configure(apiKey, model: model);
+    } else {
+      geminiService.setModel(model);
     }
 
     if (!mounted) return;
