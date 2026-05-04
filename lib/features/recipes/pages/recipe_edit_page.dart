@@ -718,6 +718,133 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     }
   }
 
+  Future<void> _editWithAi() async {
+    final geminiService = ref.read(geminiServiceProvider);
+    final model = ref.read(geminiModelProvider);
+    if (!geminiService.isConfigured) {
+      final apiKey = await ref.read(geminiApiKeyServiceProvider).getApiKey();
+      if (apiKey.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Gemini API key not configured. Set it in Settings.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
+      geminiService.configure(apiKey, model: model);
+    } else {
+      geminiService.setModel(model);
+    }
+
+    if (!mounted) return;
+    final promptCtrl = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Edit Recipe with AI'),
+        content: TextField(
+          controller: promptCtrl,
+          decoration: const InputDecoration(
+            labelText: 'Describe your changes',
+            hintText: 'e.g. Make it vegetarian, double the servings',
+          ),
+          autofocus: true,
+          maxLines: 3,
+          textCapitalization: TextCapitalization.sentences,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Apply'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final instruction = promptCtrl.text.trim();
+    if (instruction.isEmpty) return;
+
+    setState(() => _isUploading = true);
+    try {
+      final existing = _currentRecipeAiData();
+      final data = await geminiService.editRecipe(existing, instruction);
+      if (!mounted) return;
+      if (data == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Failed to edit recipe with AI. See Settings → Developer for details.',
+            ),
+          ),
+        );
+        return;
+      }
+      _applyAiRecipeData(data);
+    } on GeminiRateLimitException catch (e) {
+      if (mounted) {
+        final retry = e.retryAfter;
+        final message = retry != null
+            ? 'Gemini API rate limit reached. Try again in ${retry.inSeconds}s.'
+            : 'Gemini API rate limit reached.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            duration: const Duration(seconds: 8),
+            content: Text(message),
+            action: SnackBarAction(
+              label: 'View limits',
+              onPressed: () =>
+                  launchUrl(Uri.parse('https://ai.dev/rate-limit')),
+            ),
+          ),
+        );
+      }
+    } catch (e, st) {
+      LogService.instance.error('Recipe edit AI flow failed: $e\n$st');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Recipe AI failed: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
+  }
+
+  Map<String, dynamic> _currentRecipeAiData() {
+    final description = _descriptionController.text.trim();
+    final notes = _notesController.text.trim();
+    final servings = int.tryParse(_servingsController.text);
+    final prepTime = int.tryParse(_prepTimeController.text);
+    final cookTime = int.tryParse(_cookTimeController.text);
+    return {
+      'title': _titleController.text.trim(),
+      if (description.isNotEmpty) 'description': description,
+      'servings': ?servings,
+      'prepTimeMinutes': ?prepTime,
+      'cookTimeMinutes': ?cookTime,
+      'ingredients': _ingredients
+          .map(
+            (i) => {
+              'name': i.name,
+              if (i.quantity != null) 'quantity': i.quantity,
+              if (i.unit != null && i.unit!.isNotEmpty) 'unit': i.unit,
+            },
+          )
+          .toList(),
+      'instructions': _instructions.map((i) => {'text': i.text}).toList(),
+      if (_tags.isNotEmpty) 'tags': _tags,
+      if (notes.isNotEmpty) 'notes': notes,
+    };
+  }
+
   void _applyAiRecipeData(Map<String, dynamic> data) {
     setState(() {
       _titleController.text =
@@ -804,6 +931,12 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
               icon: const Icon(Icons.auto_awesome),
               tooltip: 'Create with AI',
               onPressed: _isUploading ? null : _createWithAi,
+            ),
+          if (_isEditing)
+            IconButton(
+              icon: const Icon(Icons.auto_fix_high),
+              tooltip: 'Edit with AI',
+              onPressed: _isUploading ? null : _editWithAi,
             ),
           TextButton(
             onPressed: _isUploading ? null : _save,

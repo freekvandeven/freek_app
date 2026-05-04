@@ -177,43 +177,71 @@ class GeminiService {
     }
   }
 
+  static const _recipeSchema =
+      'Return ONLY a JSON object with these fields (omit optional fields you cannot determine):\n'
+      '- "title": recipe title (string, required)\n'
+      '- "description": brief one-sentence description (string)\n'
+      '- "servings": number of servings (int)\n'
+      '- "prepTimeMinutes": preparation time in minutes (int)\n'
+      '- "cookTimeMinutes": cooking time in minutes (int)\n'
+      '- "ingredients": list of objects with "name" (string, required), "quantity" (number, optional), "unit" (string, optional)\n'
+      '- "instructions": list of objects with "text" (string, required)\n'
+      '- "tags": list of lowercase category tags such as cuisine or dietary info (list of strings)\n'
+      '- "notes": helpful tips or variations (string)\n'
+      'Respond with ONLY the JSON object, no markdown fences.';
+
   /// Generate a structured recipe from a plain-language prompt.
   /// Returns a JSON map matching the Recipe field schema, or null on failure.
   /// Failures are logged via [LogService] so the developer page surfaces them.
   Future<Map<String, dynamic>?> generateRecipe(String prompt) async {
+    return _runRecipeAi(
+      op: 'generateRecipe',
+      promptBody:
+          'You are a recipe creation assistant. Create a detailed recipe based on the following request:\n\n'
+          '$prompt\n\n'
+          '$_recipeSchema',
+    );
+  }
+
+  /// Apply a user instruction to an existing recipe and return the updated
+  /// recipe in the same JSON schema. Fields the user did not ask to change
+  /// should be preserved by the model.
+  Future<Map<String, dynamic>?> editRecipe(
+    Map<String, dynamic> existing,
+    String instruction,
+  ) async {
+    return _runRecipeAi(
+      op: 'editRecipe',
+      promptBody:
+          'You are a recipe editing assistant. Apply the user\'s instruction '
+          'to an existing recipe and return the updated recipe.\n\n'
+          'EXISTING RECIPE (JSON):\n${jsonEncode(existing)}\n\n'
+          'USER INSTRUCTION:\n$instruction\n\n'
+          '$_recipeSchema\n'
+          'Preserve fields the user did not ask to change.',
+    );
+  }
+
+  Future<Map<String, dynamic>?> _runRecipeAi({
+    required String op,
+    required String promptBody,
+  }) async {
     if (!isConfigured) {
       LogService.instance.warning(
-        'Gemini generateRecipe called but no API key is configured',
+        'Gemini $op called but no API key is configured',
       );
       return null;
     }
     LogService.instance.info(
-      'Gemini generateRecipe: requesting (model=$_modelName, '
-      'promptLen=${prompt.length})',
+      'Gemini $op: requesting (model=$_modelName, promptLen=${promptBody.length})',
     );
     try {
       final response = await _getModel().generateContent([
-        Content.text(
-          'You are a recipe creation assistant. Create a detailed recipe based on the following request:\n\n'
-          '$prompt\n\n'
-          'Return ONLY a JSON object with these fields (omit optional fields you cannot determine):\n'
-          '- "title": recipe title (string, required)\n'
-          '- "description": brief one-sentence description (string)\n'
-          '- "servings": number of servings (int)\n'
-          '- "prepTimeMinutes": preparation time in minutes (int)\n'
-          '- "cookTimeMinutes": cooking time in minutes (int)\n'
-          '- "ingredients": list of objects with "name" (string, required), "quantity" (number, optional), "unit" (string, optional)\n'
-          '- "instructions": list of objects with "text" (string, required)\n'
-          '- "tags": list of lowercase category tags such as cuisine or dietary info (list of strings)\n'
-          '- "notes": helpful tips or variations (string)\n'
-          'Respond with ONLY the JSON object, no markdown fences.',
-        ),
+        Content.text(promptBody),
       ]);
       final text = response.text?.trim();
       if (text == null || text.isEmpty) {
-        LogService.instance.error(
-          'Gemini generateRecipe: empty response from model',
-        );
+        LogService.instance.error('Gemini $op: empty response from model');
         return null;
       }
       final cleaned = text
@@ -222,19 +250,19 @@ class GeminiService {
           .trim();
       try {
         final decoded = jsonDecode(cleaned) as Map<String, dynamic>;
-        LogService.instance.info('Gemini generateRecipe: success');
+        LogService.instance.info('Gemini $op: success');
         return decoded;
       } on FormatException catch (e) {
         final preview = cleaned.length > 500
             ? '${cleaned.substring(0, 500)}…'
             : cleaned;
         LogService.instance.error(
-          'Gemini generateRecipe: JSON parse failed: $e\nResponse: $preview',
+          'Gemini $op: JSON parse failed: $e\nResponse: $preview',
         );
         return null;
       }
     } catch (e, st) {
-      LogService.instance.error('Gemini generateRecipe failed: $e\n$st');
+      LogService.instance.error('Gemini $op failed: $e\n$st');
       if (_isRateLimitError(e)) {
         throw GeminiRateLimitException(
           e.toString(),

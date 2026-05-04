@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- AI editing for existing recipes — the recipe edit page now shows an "Edit with AI" wand icon (next to the existing "Create with AI" sparkle, which only appears for new recipes); enter an instruction like "make it vegetarian" or "double the servings" and Gemini receives the current form data plus the instruction and returns an updated recipe in the same JSON schema. Mirrors the existing AI Assist on knowledge pages, reuses the rate-limit handling and developer logging from BUG-0029/BUG-0030 (WISH-0061)
 - WIP Items home-screen widget (Android) — aggregates work-in-progress items from recipes, knowledge, shopping, and feedback; emoji-prefixed first 5 items + total count; tracks the user's accent color; tapping the widget opens a new `/wip` overview page that lists every WIP item grouped by source with tap-through to each item's detail page; pinning shortcut available in Settings → Widgets next to the existing Daily Task Preview shortcut (WISH-0060)
 
 ### Fixed
