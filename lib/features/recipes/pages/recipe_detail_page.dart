@@ -58,313 +58,349 @@ class _RecipeDetailPageState extends ConsumerState<RecipeDetailPage> {
     ColorScheme colorScheme,
     List<Recipe> allRecipes,
   ) {
-    return Scaffold(
-      appBar: AppBar(
-        title: QuickActionsTitle(child: Text(recipe.title)),
-        actions: [
-          IconButton(
-            icon: Icon(
-              recipe.isFavorite ? Icons.favorite : Icons.favorite_border,
-              color: recipe.isFavorite ? Colors.red : null,
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: QuickActionsTitle(child: Text(recipe.title)),
+          actions: [
+            IconButton(
+              icon: Icon(
+                recipe.isFavorite ? Icons.favorite : Icons.favorite_border,
+                color: recipe.isFavorite ? Colors.red : null,
+              ),
+              onPressed: () =>
+                  ref.read(recipeListProvider.notifier).toggleFavorite(recipe),
             ),
-            onPressed: () =>
-                ref.read(recipeListProvider.notifier).toggleFavorite(recipe),
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () => context.push('/recipes/${recipe.id}/edit'),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Delete Recipe'),
+                    content: Text('Delete "${recipe.title}"?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true && context.mounted) {
+                  await ref
+                      .read(recipeListProvider.notifier)
+                      .deleteRecipe(recipe.id);
+                  if (context.mounted) context.pop();
+                }
+              },
+            ),
+          ],
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'General'),
+              Tab(text: 'Ingredients'),
+              Tab(text: 'Instructions'),
+            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () => context.push('/recipes/${recipe.id}/edit'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete),
-            onPressed: () async {
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('Delete Recipe'),
-                  content: Text('Delete "${recipe.title}"?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Cancel'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text('Delete'),
-                    ),
+        ),
+        body: Column(
+          children: [
+            ResponsiveCenter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Wrap(
+                  spacing: 16,
+                  runSpacing: 8,
+                  children: [
+                    if (recipe.servings != null) _servingsAdjuster(recipe),
+                    if (recipe.prepTimeMinutes != null)
+                      _infoChip(
+                        Icons.timer_outlined,
+                        '${recipe.prepTimeMinutes} min prep',
+                      ),
+                    if (recipe.cookTimeMinutes != null)
+                      _infoChip(
+                        Icons.local_fire_department,
+                        '${recipe.cookTimeMinutes} min cook',
+                      ),
                   ],
                 ),
-              );
-              if (confirm == true && context.mounted) {
-                await ref
-                    .read(recipeListProvider.notifier)
-                    .deleteRecipe(recipe.id);
-                if (context.mounted) context.pop();
-              }
-            },
-          ),
-        ],
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _generalTab(context, recipe, colorScheme, allRecipes),
+                  _ingredientsTab(context, recipe),
+                  _instructionsTab(context, recipe),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
-      body: ResponsiveCenter(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            // Images
-            if (recipe.images.isNotEmpty) ...[
-              SizedBox(
-                height: 200,
-                child: recipe.images.length == 1
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: CachedNetworkImage(
-                          imageUrl: recipe.images.first,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) => const Center(
-                            child: Icon(Icons.broken_image, size: 48),
-                          ),
+    );
+  }
+
+  Widget _generalTab(
+    BuildContext context,
+    Recipe recipe,
+    ColorScheme colorScheme,
+    List<Recipe> allRecipes,
+  ) {
+    return ResponsiveCenter(
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          if (recipe.images.isNotEmpty) ...[
+            SizedBox(
+              height: 200,
+              child: recipe.images.length == 1
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: CachedNetworkImage(
+                        imageUrl: recipe.images.first,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorWidget: (_, __, ___) => const Center(
+                          child: Icon(Icons.broken_image, size: 48),
                         ),
-                      )
-                    : ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: recipe.images.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 8),
-                        itemBuilder: (context, index) {
-                          final isPrimary = index == recipe.primaryImageIndex;
-                          return Stack(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: CachedNetworkImage(
-                                  imageUrl: recipe.images[index],
+                      ),
+                    )
+                  : ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: recipe.images.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (context, index) {
+                        final isPrimary = index == recipe.primaryImageIndex;
+                        return Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: CachedNetworkImage(
+                                imageUrl: recipe.images[index],
+                                width: 280,
+                                height: 200,
+                                fit: BoxFit.cover,
+                                errorWidget: (_, __, ___) => const SizedBox(
                                   width: 280,
-                                  height: 200,
-                                  fit: BoxFit.cover,
-                                  errorWidget: (_, __, ___) => const SizedBox(
-                                    width: 280,
-                                    child: Center(
-                                      child: Icon(Icons.broken_image, size: 48),
+                                  child: Center(
+                                    child: Icon(Icons.broken_image, size: 48),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            if (isPrimary)
+                              Positioned(
+                                top: 8,
+                                left: 8,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.primary,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    'Primary',
+                                    style: TextStyle(
+                                      color: colorScheme.onPrimary,
+                                      fontSize: 12,
                                     ),
                                   ),
                                 ),
                               ),
-                              if (isPrimary)
-                                Positioned(
-                                  top: 8,
-                                  left: 8,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: colorScheme.primary,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      'Primary',
-                                      style: TextStyle(
-                                        color: colorScheme.onPrimary,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          );
-                        },
-                      ),
-              ),
-              const SizedBox(height: 16),
-            ],
+                          ],
+                        );
+                      },
+                    ),
+            ),
+            const SizedBox(height: 16),
+          ],
 
-            if (recipe.description != null) ...[
-              Text(
-                recipe.description!,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            // Metadata row
+          if (recipe.tags.isNotEmpty) ...[
             Wrap(
-              spacing: 16,
-              runSpacing: 8,
+              spacing: 6,
+              children: recipe.tags
+                  .map(
+                    (t) => Chip(
+                      label: Text(t),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  )
+                  .toList(),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          if (recipe.description != null) ...[
+            Text(
+              recipe.description!,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          if (recipe.subRecipeIds.isNotEmpty) ...[
+            Text('Components', style: Theme.of(context).textTheme.titleMedium),
+            const Divider(),
+            ...recipe.subRecipeIds.map((subId) {
+              final sub = allRecipes.where((r) => r.id == subId).firstOrNull;
+              if (sub == null) return const SizedBox.shrink();
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.link),
+                title: Text(sub.title),
+                subtitle: sub.description != null
+                    ? Text(
+                        sub.description!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      )
+                    : null,
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/recipes/${sub.id}'),
+              );
+            }),
+            const SizedBox(height: 16),
+          ],
+
+          if (recipe.videoLinks.isNotEmpty) ...[
+            Text('Videos', style: Theme.of(context).textTheme.titleMedium),
+            const Divider(),
+            ...recipe.videoLinks.map(
+              (url) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _VideoLinkCard(url: url),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          if (recipe.notes != null) ...[
+            Text('Notes', style: Theme.of(context).textTheme.titleMedium),
+            const Divider(),
+            Text(recipe.notes!),
+            const SizedBox(height: 16),
+          ],
+
+          if (recipe.source != null)
+            Text(
+              'Source: ${recipe.source}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _ingredientsTab(BuildContext context, Recipe recipe) {
+    if (recipe.ingredients.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: Text('No ingredients listed'),
+        ),
+      );
+    }
+    return ResponsiveCenter(
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: recipe.ingredients.map((i) {
+          final scaledQty =
+              (i.quantity != null &&
+                  recipe.servings != null &&
+                  recipe.servings! > 0 &&
+                  _currentServings != null)
+              ? i.quantity! * _currentServings! / recipe.servings!
+              : i.quantity;
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
               children: [
-                if (recipe.servings != null) _servingsAdjuster(recipe),
-                if (recipe.prepTimeMinutes != null)
-                  _infoChip(
-                    Icons.timer_outlined,
-                    '${recipe.prepTimeMinutes} min prep',
-                  ),
-                if (recipe.cookTimeMinutes != null)
-                  _infoChip(
-                    Icons.local_fire_department,
-                    '${recipe.cookTimeMinutes} min cook',
-                  ),
+                const Icon(Icons.fiber_manual_record, size: 8),
+                const SizedBox(width: 8),
+                Text(
+                  [
+                    if (scaledQty != null) _formatQuantity(scaledQty),
+                    if (i.unit != null) i.unit,
+                    i.name,
+                  ].join(' '),
+                ),
               ],
             ),
+          );
+        }).toList(),
+      ),
+    );
+  }
 
-            if (recipe.tags.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 6,
-                children: recipe.tags
-                    .map(
-                      (t) => Chip(
-                        label: Text(t),
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
-
-            // Sub-recipes (components)
-            if (recipe.subRecipeIds.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              Text(
-                'Components',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const Divider(),
-              ...recipe.subRecipeIds.map((subId) {
-                final sub = allRecipes.where((r) => r.id == subId).firstOrNull;
-                if (sub == null) return const SizedBox.shrink();
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.link),
-                  title: Text(sub.title),
-                  subtitle: sub.description != null
-                      ? Text(
-                          sub.description!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        )
-                      : null,
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/recipes/${sub.id}'),
-                );
-              }),
-            ],
-
-            // Ingredients
-            if (recipe.ingredients.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              Text(
-                'Ingredients',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const Divider(),
-              ...recipe.ingredients.map((i) {
-                final scaledQty =
-                    (i.quantity != null &&
-                        recipe.servings != null &&
-                        recipe.servings! > 0 &&
-                        _currentServings != null)
-                    ? i.quantity! * _currentServings! / recipe.servings!
-                    : i.quantity;
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.fiber_manual_record, size: 8),
-                      const SizedBox(width: 8),
-                      Text(
-                        [
-                          if (scaledQty != null) _formatQuantity(scaledQty),
-                          if (i.unit != null) i.unit,
-                          i.name,
-                        ].join(' '),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-            ],
-
-            // Instructions
-            if (recipe.instructions.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              Text(
-                'Instructions',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const Divider(),
-              ...recipe.instructions.asMap().entries.map(
-                (entry) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CircleAvatar(
-                            radius: 12,
-                            child: Text(
-                              '${entry.key + 1}',
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(child: Text(entry.value.text)),
-                        ],
-                      ),
-                      if (entry.value.imageUrl != null) ...[
-                        const SizedBox(height: 8),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: CachedNetworkImage(
-                            imageUrl: entry.value.imageUrl!,
-                            height: 150,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorWidget: (_, __, ___) =>
-                                const SizedBox.shrink(),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            ],
-
-            // Videos
-            if (recipe.videoLinks.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              Text('Videos', style: Theme.of(context).textTheme.titleMedium),
-              const Divider(),
-              ...recipe.videoLinks.map(
-                (url) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _VideoLinkCard(url: url),
-                ),
-              ),
-            ],
-
-            // Notes
-            if (recipe.notes != null) ...[
-              const SizedBox(height: 24),
-              Text('Notes', style: Theme.of(context).textTheme.titleMedium),
-              const Divider(),
-              Text(recipe.notes!),
-            ],
-
-            // Source
-            if (recipe.source != null) ...[
-              const SizedBox(height: 24),
-              Text(
-                'Source: ${recipe.source}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ],
+  Widget _instructionsTab(BuildContext context, Recipe recipe) {
+    if (recipe.instructions.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: Text('No instructions listed'),
         ),
+      );
+    }
+    return ResponsiveCenter(
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: recipe.instructions.asMap().entries.map((entry) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 12,
+                      child: Text(
+                        '${entry.key + 1}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(entry.value.text)),
+                  ],
+                ),
+                if (entry.value.imageUrl != null) ...[
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: CachedNetworkImage(
+                      imageUrl: entry.value.imageUrl!,
+                      height: 150,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        }).toList(),
       ),
     );
   }

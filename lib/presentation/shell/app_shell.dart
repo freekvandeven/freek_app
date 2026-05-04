@@ -88,6 +88,10 @@ class AppShell extends StatelessWidget {
     return visible.indexOf(8); // More
   }
 
+  // Routes where the bottom navigation bar is hidden to maximise content
+  // space — currently any recipe view/edit/new screen.
+  static final _hideBottomNavRe = RegExp(r'^/recipes/[^/]+(/.*)?$');
+
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
@@ -95,25 +99,30 @@ class AppShell extends StatelessWidget {
     final displaySelected = _displaySelected(visible);
     final useRail = width >= _kRailBreakpoint;
     final extendedRail = width >= _kExtendedRailBreakpoint;
+    final hideBottomNav = _hideBottomNavRe.hasMatch(
+      GoRouterState.of(context).matchedLocation,
+    );
 
     final destinations = visible.map((i) => _allDestinations[i]).toList();
 
     if (!useRail) {
       return Scaffold(
         body: navigationShell,
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: displaySelected,
-          onDestinationSelected: (i) => _onTap(i, visible),
-          destinations: destinations
-              .map(
-                (d) => NavigationDestination(
-                  icon: Icon(d.icon),
-                  selectedIcon: Icon(d.selectedIcon),
-                  label: d.label,
-                ),
-              )
-              .toList(),
-        ),
+        bottomNavigationBar: hideBottomNav
+            ? null
+            : NavigationBar(
+                selectedIndex: displaySelected,
+                onDestinationSelected: (i) => _onTap(i, visible),
+                destinations: destinations
+                    .map(
+                      (d) => NavigationDestination(
+                        icon: Icon(d.icon),
+                        selectedIcon: Icon(d.selectedIcon),
+                        label: d.label,
+                      ),
+                    )
+                    .toList(),
+              ),
       );
     }
 
