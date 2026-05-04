@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Knowledge page Contents panel no longer shows trailing `#` markers — closing ATX heading hashes (e.g. `## My Heading ##`) are stripped from the table-of-contents text while inline `#`s without preceding whitespace (like `C#`) are preserved (BUG-0028)
 - AI recipe generation failures now report the actual cause — the Gemini service logs every failure path (auth missing, empty response, JSON parse error, API exception) via `LogService` so they appear on the developer page; the JSON-fence stripping regex was also fixed (`^```json?` only made the `n` optional, not the whole `json` literal); the recipe page now catches unexpected exceptions and surfaces the message in the snackbar (BUG-0029)
+- Gemini rate-limit (HTTP 429 / quota exceeded) errors are now surfaced explicitly — `GeminiService` throws a typed `GeminiRateLimitException` (with parsed retry-after duration), and the recipe AI flow shows a snackbar with the wait time and a "View limits" action that opens https://ai.dev/rate-limit (BUG-0030)
 
 ## [0.8.0] - 2026-05-01
 

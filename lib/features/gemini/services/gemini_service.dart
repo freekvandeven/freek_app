@@ -6,6 +6,33 @@ import 'package:http/http.dart' as http;
 
 import '../../../services/log_service.dart';
 
+/// Thrown when a Gemini call fails due to API quota/rate limiting.
+/// Callers should surface a clear message and link the user to
+/// https://ai.dev/rate-limit so they can monitor their usage.
+class GeminiRateLimitException implements Exception {
+  final String message;
+  final Duration? retryAfter;
+  const GeminiRateLimitException(this.message, {this.retryAfter});
+  @override
+  String toString() => message;
+}
+
+bool _isRateLimitError(Object error) {
+  final msg = error.toString().toLowerCase();
+  return msg.contains('quota') ||
+      msg.contains('rate limit') ||
+      msg.contains('rate-limit') ||
+      msg.contains('429') ||
+      msg.contains('exceeded your current quota');
+}
+
+Duration? _parseRetryAfter(String message) {
+  final match = RegExp(r'retry in ([\d.]+)\s*s').firstMatch(message);
+  final seconds = double.tryParse(match?.group(1) ?? '');
+  if (seconds == null) return null;
+  return Duration(milliseconds: (seconds * 1000).round());
+}
+
 class GeminiService {
   static const defaultModel = 'gemini-2.0-flash';
 
@@ -208,6 +235,12 @@ class GeminiService {
       }
     } catch (e, st) {
       LogService.instance.error('Gemini generateRecipe failed: $e\n$st');
+      if (_isRateLimitError(e)) {
+        throw GeminiRateLimitException(
+          e.toString(),
+          retryAfter: _parseRetryAfter(e.toString()),
+        );
+      }
       return null;
     }
   }

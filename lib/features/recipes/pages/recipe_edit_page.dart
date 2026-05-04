@@ -8,6 +8,8 @@ import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
+import 'package:url_launcher/url_launcher.dart';
+
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
 import '../../../services/image_upload_service.dart';
 import '../../../services/log_service.dart';
@@ -15,6 +17,7 @@ import '../../auth/providers/auth_providers.dart';
 import '../../catalog/models/catalog_item.dart';
 import '../../catalog/providers/catalog_providers.dart';
 import '../../gemini/providers/gemini_providers.dart';
+import '../../gemini/services/gemini_service.dart';
 import '../models/recipe.dart';
 import '../providers/recipe_providers.dart';
 import '../utils/video_link_parser.dart';
@@ -681,6 +684,24 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
         return;
       }
       _applyAiRecipeData(data);
+    } on GeminiRateLimitException catch (e) {
+      if (mounted) {
+        final retry = e.retryAfter;
+        final message = retry != null
+            ? 'Gemini API rate limit reached. Try again in ${retry.inSeconds}s.'
+            : 'Gemini API rate limit reached.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            duration: const Duration(seconds: 8),
+            content: Text(message),
+            action: SnackBarAction(
+              label: 'View limits',
+              onPressed: () =>
+                  launchUrl(Uri.parse('https://ai.dev/rate-limit')),
+            ),
+          ),
+        );
+      }
     } catch (e, st) {
       LogService.instance.error('Recipe AI flow failed unexpectedly: $e\n$st');
       if (mounted) {
