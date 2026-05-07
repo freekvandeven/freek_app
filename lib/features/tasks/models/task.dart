@@ -22,6 +22,12 @@ class Task {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  /// ID of the parent task this task is a subtask of, or null if it's a
+  /// root task. Subtasks are limited to a single nesting level — a task
+  /// with [parentTaskId] set cannot itself be picked as a parent — to
+  /// keep the model and UI simple and prevent cycles.
+  final String? parentTaskId;
+
   Task({
     String? id,
     required this.title,
@@ -37,6 +43,7 @@ class Task {
     this.repeatType,
     this.repeatInterval = 1,
     this.repeatEndDate,
+    this.parentTaskId,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) : id = id ?? const Uuid().v4(),
@@ -57,12 +64,14 @@ class Task {
     RepeatType? repeatType,
     int? repeatInterval,
     DateTime? repeatEndDate,
+    String? parentTaskId,
     bool clearDueDate = false,
     bool clearCompletedAt = false,
     bool clearDescription = false,
     bool clearCategory = false,
     bool clearRepeatType = false,
     bool clearRepeatEndDate = false,
+    bool clearParentTaskId = false,
   }) {
     return Task(
       id: id,
@@ -81,6 +90,9 @@ class Task {
       repeatEndDate: clearRepeatEndDate
           ? null
           : (repeatEndDate ?? this.repeatEndDate),
+      parentTaskId: clearParentTaskId
+          ? null
+          : (parentTaskId ?? this.parentTaskId),
       createdAt: createdAt,
       updatedAt: DateTime.now(),
     );
@@ -101,6 +113,7 @@ class Task {
     'repeatType': repeatType?.name,
     'repeatInterval': repeatInterval,
     'repeatEndDate': repeatEndDate?.toIso8601String(),
+    'parentTaskId': parentTaskId,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
   };
@@ -138,6 +151,7 @@ class Task {
       repeatEndDate: map['repeatEndDate'] != null
           ? DateTime.parse(map['repeatEndDate'] as String)
           : null,
+      parentTaskId: map['parentTaskId'] as String?,
       createdAt: DateTime.parse(map['createdAt'] as String),
       updatedAt: DateTime.parse(map['updatedAt'] as String),
     );

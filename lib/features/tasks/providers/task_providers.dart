@@ -50,13 +50,31 @@ class TaskListNotifier extends AsyncNotifier<List<Task>> {
         await uploader.deleteImage(url);
       }
     }
+    // Unlink any subtasks so children don't end up orphaned with a dangling
+    // parentTaskId. Children become root tasks; users can re-link or delete.
+    final all = state.valueOrNull ?? [];
+    for (final child in all.where((t) => t.parentTaskId == id)) {
+      await _service.updateTask(child.copyWith(clearParentTaskId: true));
+    }
     await _service.deleteTask(id);
     LogService.instance.info('Task deleted: $id');
     ref.invalidateSelf();
   }
 
-  Future<void> toggleComplete(Task task) async {
+  /// Returns null on success, or a user-facing reason string when the toggle
+  /// was refused (currently: completing a parent task whose subtasks are not
+  /// all done yet). Uncompleting is always allowed.
+  Future<String?> toggleComplete(Task task) async {
     if (!task.isCompleted) {
+      // Block completion if any subtask is still open.
+      final all = state.valueOrNull ?? [];
+      final openSubtasks = all
+          .where((t) => t.parentTaskId == task.id && !t.isCompleted)
+          .length;
+      if (openSubtasks > 0) {
+        return 'Complete the $openSubtasks remaining subtask'
+            '${openSubtasks == 1 ? '' : 's'} first';
+      }
       // Mark as completed
       final updated = task.copyWith(
         isCompleted: true,
@@ -82,11 +100,12 @@ class TaskListNotifier extends AsyncNotifier<List<Task>> {
         await _service.createTask(nextTask);
       }
     } else {
-      // Mark as not completed
+      // Mark as not completed — always allowed, per spec.
       final updated = task.copyWith(isCompleted: false, clearCompletedAt: true);
       await _service.updateTask(updated);
     }
     ref.invalidateSelf();
+    return null;
   }
 }
 

@@ -14,6 +14,7 @@ class TaskListPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tasksAsync = ref.watch(filteredTasksProvider);
+    final allTasks = ref.watch(taskListProvider).valueOrNull ?? const [];
     final filter = ref.watch(taskFilterProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -88,12 +89,7 @@ class TaskListPage extends ConsumerWidget {
                           ],
                         ),
                       )
-                    : ListView.builder(
-                        padding: const EdgeInsets.only(bottom: 80),
-                        itemCount: tasks.length,
-                        itemBuilder: (context, index) =>
-                            _TaskTile(task: tasks[index]),
-                      ),
+                    : _buildTaskList(tasks, allTasks),
               ),
             ),
           ],
@@ -105,11 +101,64 @@ class TaskListPage extends ConsumerWidget {
       ),
     );
   }
+
+  Widget _buildTaskList(List<Task> visible, List<Task> allTasks) {
+    final visibleIds = {for (final t in visible) t.id};
+
+    // Subtask groupings: visible-only for rendering, full for parent counts.
+    final visibleChildrenByParent = <String, List<Task>>{};
+    for (final t in visible.where((t) => t.parentTaskId != null)) {
+      visibleChildrenByParent.putIfAbsent(t.parentTaskId!, () => []).add(t);
+    }
+    final allChildrenByParent = <String, List<Task>>{};
+    for (final t in allTasks.where((t) => t.parentTaskId != null)) {
+      allChildrenByParent.putIfAbsent(t.parentTaskId!, () => []).add(t);
+    }
+
+    // A task is rendered at root level if it has no parent OR its parent
+    // isn't currently visible (so it won't get attached to a tile above).
+    final roots = visible
+        .where(
+          (t) => t.parentTaskId == null || !visibleIds.contains(t.parentTaskId),
+        )
+        .toList();
+
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 80),
+      itemCount: roots.length,
+      itemBuilder: (context, index) {
+        final root = roots[index];
+        final allChildren = allChildrenByParent[root.id] ?? const [];
+        final visibleChildren = visibleChildrenByParent[root.id] ?? const [];
+        final completed = allChildren.where((t) => t.isCompleted).length;
+        return Column(
+          children: [
+            _TaskTile(
+              task: root,
+              subtaskTotal: allChildren.length,
+              subtasksCompleted: completed,
+            ),
+            for (final child in visibleChildren)
+              Padding(
+                padding: const EdgeInsets.only(left: 32),
+                child: _TaskTile(task: child),
+              ),
+          ],
+        );
+      },
+    );
+  }
 }
 
 class _TaskTile extends ConsumerWidget {
   final Task task;
-  const _TaskTile({required this.task});
+  final int subtaskTotal;
+  final int subtasksCompleted;
+  const _TaskTile({
+    required this.task,
+    this.subtaskTotal = 0,
+    this.subtasksCompleted = 0,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -129,7 +178,13 @@ class _TaskTile extends ConsumerWidget {
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Delete Task'),
-            content: Text('Delete "${task.title}"?'),
+            content: Text(
+              subtaskTotal > 0
+                  ? 'Delete "${task.title}"? Its $subtaskTotal '
+                        'subtask${subtaskTotal == 1 ? '' : 's'} will be unlinked '
+                        'and become root tasks.'
+                  : 'Delete "${task.title}"?',
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
@@ -148,8 +203,16 @@ class _TaskTile extends ConsumerWidget {
       child: ListTile(
         leading: Checkbox(
           value: task.isCompleted,
-          onChanged: (_) =>
-              ref.read(taskListProvider.notifier).toggleComplete(task),
+          onChanged: (_) async {
+            final reason = await ref
+                .read(taskListProvider.notifier)
+                .toggleComplete(task);
+            if (reason != null && context.mounted) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(reason)));
+            }
+          },
         ),
         title: Text(
           task.title,
@@ -194,6 +257,28 @@ class _TaskTile extends ConsumerWidget {
             task.category!,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: colorScheme.onSecondaryContainer,
+            ),
+          ),
+        ),
+      );
+    }
+    if (subtaskTotal > 0) {
+      final allDone = subtasksCompleted == subtaskTotal;
+      parts.add(
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: allDone
+                ? colorScheme.tertiaryContainer
+                : colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            '$subtasksCompleted/$subtaskTotal subtasks',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: allDone
+                  ? colorScheme.onTertiaryContainer
+                  : colorScheme.onSurfaceVariant,
             ),
           ),
         ),

@@ -38,6 +38,7 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
   RepeatType _repeatType = RepeatType.daily;
   int _repeatInterval = 1;
   DateTime? _repeatEndDate;
+  String? _parentTaskId;
   bool _isEditing = false;
 
   @override
@@ -71,6 +72,7 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
         _repeatType = task.repeatType ?? RepeatType.daily;
         _repeatInterval = task.repeatInterval;
         _repeatEndDate = task.repeatEndDate;
+        _parentTaskId = task.parentTaskId;
       });
     }
   }
@@ -148,6 +150,8 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
             repeatInterval: _isRepeatable ? _repeatInterval : 1,
             repeatEndDate: _isRepeatable ? _repeatEndDate : null,
             clearRepeatEndDate: !_isRepeatable,
+            parentTaskId: _parentTaskId,
+            clearParentTaskId: _parentTaskId == null,
           );
           await ref.read(taskListProvider.notifier).updateTask(updated);
         }
@@ -164,6 +168,7 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
           repeatType: _isRepeatable ? _repeatType : null,
           repeatInterval: _isRepeatable ? _repeatInterval : 1,
           repeatEndDate: _isRepeatable ? _repeatEndDate : null,
+          parentTaskId: _parentTaskId,
         );
         await ref.read(taskListProvider.notifier).addTask(task);
       }
@@ -333,6 +338,51 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
                   );
                 },
                 onSelected: (value) => _categoryController.text = value,
+              ),
+              const SizedBox(height: 16),
+
+              // Parent task (subtasks limited to one nesting level — only
+              // root tasks (no parent) are eligible parents, and a task
+              // cannot be its own parent).
+              Consumer(
+                builder: (context, ref, _) {
+                  final all =
+                      ref.watch(taskListProvider).valueOrNull ?? const [];
+                  final candidates =
+                      all
+                          .where(
+                            (t) =>
+                                t.id != widget.taskId && t.parentTaskId == null,
+                          )
+                          .toList()
+                        ..sort(
+                          (a, b) => a.title.toLowerCase().compareTo(
+                            b.title.toLowerCase(),
+                          ),
+                        );
+                  // If the current parent isn't in the candidates (e.g. it
+                  // was deleted), null it out to avoid a dropdown error.
+                  final parentValue =
+                      candidates.any((t) => t.id == _parentTaskId)
+                      ? _parentTaskId
+                      : null;
+                  return DropdownButtonFormField<String?>(
+                    initialValue: parentValue,
+                    decoration: const InputDecoration(
+                      labelText: 'Parent task',
+                      prefixIcon: Icon(Icons.account_tree_outlined),
+                    ),
+                    items: [
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('None (root task)'),
+                      ),
+                      for (final t in candidates)
+                        DropdownMenuItem(value: t.id, child: Text(t.title)),
+                    ],
+                    onChanged: (v) => setState(() => _parentTaskId = v),
+                  );
+                },
               ),
               const SizedBox(height: 16),
 
