@@ -73,14 +73,22 @@ class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
   }
 
   Future<void> addEvent(CalendarEvent event) async {
-    await ref.read(calendarServiceProvider).addEvent(event);
+    final service = ref.read(calendarServiceProvider);
+    await service.addEvent(event);
     LogService.instance.info('Calendar event created: ${event.title}');
 
     final connected = ref.read(googleCalendarConnectedProvider);
     final syncEnabled =
         ref.read(currentUserProvider)?.settings.syncToGoogleCalendar ?? true;
     if (connected && syncEnabled) {
-      await ref.read(googleCalendarServiceProvider).createEvent(event);
+      final googleId = await ref
+          .read(googleCalendarServiceProvider)
+          .createEvent(event);
+      if (googleId != null) {
+        // Persist the Google ID on the local copy so future fetches dedup
+        // and subsequent edits/deletes can reach the Google event.
+        await service.updateEvent(event.copyWith(googleEventId: googleId));
+      }
     }
 
     ref.invalidateSelf();
@@ -89,6 +97,13 @@ class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
   Future<void> updateEvent(CalendarEvent event) async {
     await ref.read(calendarServiceProvider).updateEvent(event);
     LogService.instance.info('Calendar event updated: ${event.id}');
+
+    final connected = ref.read(googleCalendarConnectedProvider);
+    if (connected && event.googleEventId != null) {
+      await ref
+          .read(googleCalendarServiceProvider)
+          .updateEvent(event.googleEventId!, event);
+    }
     ref.invalidateSelf();
   }
 
@@ -103,6 +118,13 @@ class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
     }
     await ref.read(calendarServiceProvider).deleteEvent(id);
     LogService.instance.info('Calendar event deleted: $id');
+
+    final connected = ref.read(googleCalendarConnectedProvider);
+    if (connected && event?.googleEventId != null) {
+      await ref
+          .read(googleCalendarServiceProvider)
+          .deleteEvent(event!.googleEventId!);
+    }
     ref.invalidateSelf();
   }
 }
@@ -115,6 +137,11 @@ final calendarEventsProvider =
 /// Merges local events (Firestore + tasks + finance) with Google Calendar events.
 /// Kept as a sync Provider so it never participates in the async rebuild cycle
 /// that causes ConcurrentModificationError in Riverpod's listener graph.
+///
+/// Dedups by [CalendarEvent.googleEventId]: any Google event whose raw ID is
+/// already referenced by a local event is dropped from the merge so synced
+/// events appear exactly once. Local events are preserved as-is so any
+/// app-only fields (imageUrls, sourceId) stay visible.
 final allCalendarEventsProvider = Provider<AsyncValue<List<CalendarEvent>>>((
   ref,
 ) {
@@ -123,7 +150,21 @@ final allCalendarEventsProvider = Provider<AsyncValue<List<CalendarEvent>>>((
 
   return base.whenData((baseEvents) {
     final googleEvents = google.valueOrNull ?? [];
-    final combined = [...baseEvents, ...googleEvents];
+    final linkedGoogleIds = <String>{
+      for (final e in baseEvents)
+        if (e.googleEventId != null) e.googleEventId!,
+    };
+    final filteredGoogle = linkedGoogleIds.isEmpty
+        ? googleEvents
+        : googleEvents.where((g) {
+            // Display IDs are prefixed `gcal_<rawId>` — strip the prefix.
+            const prefix = 'gcal_';
+            final raw = g.id.startsWith(prefix)
+                ? g.id.substring(prefix.length)
+                : g.id;
+            return !linkedGoogleIds.contains(raw);
+          }).toList();
+    final combined = [...baseEvents, ...filteredGoogle];
     combined.sort((a, b) => a.date.compareTo(b.date));
     return combined;
   });

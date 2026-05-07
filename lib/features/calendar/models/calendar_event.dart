@@ -15,6 +15,11 @@ class CalendarEvent {
   final List<String> imageUrls;
   final DateTime createdAt;
 
+  /// Raw Google Calendar event ID this local event has been synced to,
+  /// or null if the event has not been pushed to Google. Used to dedup
+  /// the merge with the Google fetch and to push subsequent updates/deletes.
+  final String? googleEventId;
+
   CalendarEvent({
     String? id,
     required this.title,
@@ -26,6 +31,7 @@ class CalendarEvent {
     this.sourceId,
     this.color,
     this.imageUrls = const [],
+    this.googleEventId,
     DateTime? createdAt,
   }) : id = id ?? const Uuid().v4(),
        createdAt = createdAt ?? DateTime.now();
@@ -39,9 +45,11 @@ class CalendarEvent {
     EventType? type,
     String? color,
     List<String>? imageUrls,
+    String? googleEventId,
     bool clearDescription = false,
     bool clearEndDate = false,
     bool clearColor = false,
+    bool clearGoogleEventId = false,
   }) {
     return CalendarEvent(
       id: id,
@@ -54,6 +62,9 @@ class CalendarEvent {
       sourceId: sourceId,
       color: clearColor ? null : (color ?? this.color),
       imageUrls: imageUrls ?? this.imageUrls,
+      googleEventId: clearGoogleEventId
+          ? null
+          : (googleEventId ?? this.googleEventId),
       createdAt: createdAt,
     );
   }
@@ -69,6 +80,7 @@ class CalendarEvent {
     'sourceId': sourceId,
     'color': color,
     'imageUrls': imageUrls,
+    'googleEventId': googleEventId,
     'createdAt': createdAt.toIso8601String(),
   };
 
@@ -91,6 +103,7 @@ class CalendarEvent {
       imageUrls: map['imageUrls'] is List
           ? (map['imageUrls'] as List<dynamic>).map((e) => e as String).toList()
           : const [],
+      googleEventId: map['googleEventId'] as String?,
       createdAt: DateTime.parse(map['createdAt'] as String),
     );
   }

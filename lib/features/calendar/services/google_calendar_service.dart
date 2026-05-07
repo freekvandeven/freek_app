@@ -237,6 +237,102 @@ class GoogleCalendarService {
     return id;
   }
 
+  /// Patches an existing event in the user's primary Google Calendar.
+  /// Returns true on success, false on failure.
+  Future<bool> updateEvent(String googleEventId, CalendarEvent event) async {
+    return _writeEvent(
+      method: 'PATCH',
+      googleEventId: googleEventId,
+      body: _buildEventBody(event),
+      op: 'updateEvent',
+      title: event.title,
+    );
+  }
+
+  /// Deletes an event from the user's primary Google Calendar.
+  /// Returns true on success or if the remote event was already gone.
+  Future<bool> deleteEvent(String googleEventId) async {
+    return _writeEvent(
+      method: 'DELETE',
+      googleEventId: googleEventId,
+      body: null,
+      op: 'deleteEvent',
+      title: googleEventId,
+    );
+  }
+
+  Future<bool> _writeEvent({
+    required String method,
+    required String googleEventId,
+    required Map<String, dynamic>? body,
+    required String op,
+    required String title,
+  }) async {
+    if (!isSupported) return false;
+    _account ??= _googleSignIn.currentUser;
+    if (_account == null) return false;
+
+    final scopeGranted = await _googleSignIn.requestScopes([_calendarScope]);
+    if (!scopeGranted) {
+      LogService.instance.warning(
+        'Google Calendar $op: calendar scope not granted',
+      );
+      return false;
+    }
+    _account = _googleSignIn.currentUser;
+    if (_account == null) return false;
+
+    Map<String, String> headers;
+    try {
+      headers = await _account!.authHeaders;
+    } catch (ex) {
+      LogService.instance.error(
+        'Google Calendar $op: failed to get auth headers: $ex',
+      );
+      return false;
+    }
+
+    final uri = Uri.https(
+      'www.googleapis.com',
+      '/calendar/v3/calendars/primary/events/$googleEventId',
+    );
+
+    final http.Response response;
+    try {
+      switch (method) {
+        case 'PATCH':
+          response = await http.patch(
+            uri,
+            headers: {...headers, 'Content-Type': 'application/json'},
+            body: jsonEncode(body),
+          );
+        case 'DELETE':
+          response = await http.delete(uri, headers: headers);
+        default:
+          return false;
+      }
+    } catch (ex) {
+      LogService.instance.error('Google Calendar $op HTTP error: $ex');
+      return false;
+    }
+
+    // 200/204 success, 410 = already deleted (treat as success for delete)
+    final ok =
+        response.statusCode == 200 ||
+        response.statusCode == 204 ||
+        (method == 'DELETE' && response.statusCode == 410);
+    if (!ok) {
+      LogService.instance.error(
+        'Google Calendar $op failed ${response.statusCode}: ${response.body}',
+      );
+      return false;
+    }
+    LogService.instance.info(
+      'Google Calendar $op succeeded for "$title" (gcal_id=$googleEventId)',
+    );
+    return true;
+  }
+
   Map<String, dynamic> _buildEventBody(CalendarEvent event) {
     final body = <String, dynamic>{'summary': event.title};
     if (event.description != null && event.description!.isNotEmpty) {
