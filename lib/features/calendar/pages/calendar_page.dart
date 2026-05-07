@@ -78,6 +78,31 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
     }
   }
 
+  Future<void> _syncFromGoogle() async {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      const SnackBar(
+        duration: Duration(seconds: 2),
+        content: Text('Syncing from Google Calendar…'),
+      ),
+    );
+    final result = await ref
+        .read(calendarEventsProvider.notifier)
+        .syncFromGoogle();
+    if (!mounted) return;
+    messenger.hideCurrentSnackBar();
+    final patched = result.patched;
+    final deleted = result.deleted;
+    final parts = <String>[
+      if (patched > 0) '$patched updated',
+      if (deleted > 0) '$deleted deleted',
+    ];
+    final summary = parts.isEmpty
+        ? 'Already up to date'
+        : 'Sync complete: ${parts.join(', ')}';
+    messenger.showSnackBar(SnackBar(content: Text(summary)));
+  }
+
   Future<void> _showMonthYearPicker() async {
     final picked = await showDatePicker(
       context: context,
@@ -113,6 +138,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
             tooltip: 'Calendar integrations',
             onSelected: (value) {
               if (value == 'google') _toggleGoogleCalendar();
+              if (value == 'sync') _syncFromGoogle();
             },
             itemBuilder: (context) => [
               PopupMenuItem(
@@ -137,6 +163,16 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                   dense: true,
                 ),
               ),
+              if (googleConnected)
+                const PopupMenuItem(
+                  value: 'sync',
+                  child: ListTile(
+                    leading: Icon(Icons.refresh, color: Colors.blue),
+                    title: Text('Sync from Google now'),
+                    subtitle: Text('Pull recent edits made in Google Calendar'),
+                    dense: true,
+                  ),
+                ),
             ],
           ),
           IconButton(

@@ -12,6 +12,13 @@ import '../services/calendar_service.dart';
 import '../services/firestore_calendar_service.dart';
 import 'google_calendar_providers.dart';
 
+/// Result of [CalendarEventsNotifier.syncFromGoogle].
+class GoogleSyncResult {
+  final int patched;
+  final int deleted;
+  const GoogleSyncResult({required this.patched, required this.deleted});
+}
+
 final calendarServiceProvider = Provider<CalendarService>((ref) {
   if (AppConfig.useFirebase) {
     final userId = ref.watch(currentUserProvider)?.id ?? '';
@@ -107,13 +114,15 @@ class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
     ref.invalidateSelf();
   }
 
-  /// Pulls fresh Google Calendar data and patches any linked local events
-  /// whose stored fields differ. Google is treated as last-write-wins for
-  /// title, description, date, endDate, and isAllDay; local-only fields
-  /// (imageUrls, sourceId, color) are preserved. No-ops when not connected.
-  Future<void> syncFromGoogle() async {
+  /// Pulls fresh Google Calendar data and reconciles linked local events.
+  /// Google is treated as last-write-wins for title, description, date,
+  /// endDate, and isAllDay; local-only fields (imageUrls, sourceId, color)
+  /// are preserved. Linked locals whose date falls inside the fetch window
+  /// but no longer exist in Google are deleted locally too. No-ops when
+  /// not connected.
+  Future<GoogleSyncResult> syncFromGoogle() async {
     final connected = ref.read(googleCalendarConnectedProvider);
-    if (!connected) return;
+    if (!connected) return const GoogleSyncResult(patched: 0, deleted: 0);
     ref.invalidate(googleCalendarEventsProvider);
     final googleEvents = await ref.read(googleCalendarEventsProvider.future);
     final localEvents = state.valueOrNull ?? [];
@@ -122,13 +131,30 @@ class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
         if (g.id.startsWith('gcal_')) g.id.substring(5): g,
     };
 
+    // Window the Google fetch covers (must match googleCalendarEventsProvider)
+    final now = DateTime.now();
+    final windowStart = DateTime(now.year, now.month - 1, 1);
+    final windowEnd = DateTime(now.year, now.month + 2, 0);
+
     final service = ref.read(calendarServiceProvider);
     var patched = 0;
+    var deleted = 0;
     for (final local in localEvents) {
       final gid = local.googleEventId;
       if (gid == null) continue;
       final google = byGoogleId[gid];
-      if (google == null) continue;
+      if (google == null) {
+        // Possibly deleted on Google — only act if the event sat inside the
+        // window we actually fetched. Outside the window the absence is
+        // ambiguous.
+        final inWindow =
+            !local.date.isBefore(windowStart) && local.date.isBefore(windowEnd);
+        if (inWindow) {
+          await service.deleteEvent(local.id);
+          deleted++;
+        }
+        continue;
+      }
       if (_isInSyncWithGoogle(local, google)) continue;
 
       final updated = local.copyWith(
@@ -143,12 +169,13 @@ class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
       await service.updateEvent(updated);
       patched++;
     }
-    if (patched > 0) {
+    if (patched > 0 || deleted > 0) {
       LogService.instance.info(
-        'Calendar sync from Google: patched $patched local event(s)',
+        'Calendar sync from Google: patched $patched, deleted $deleted',
       );
       ref.invalidateSelf();
     }
+    return GoogleSyncResult(patched: patched, deleted: deleted);
   }
 
   static bool _isInSyncWithGoogle(CalendarEvent local, CalendarEvent google) {
