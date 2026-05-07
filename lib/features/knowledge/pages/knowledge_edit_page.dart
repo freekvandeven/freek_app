@@ -2,9 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../auth/providers/auth_providers.dart';
 import '../../gemini/providers/gemini_providers.dart';
@@ -32,8 +34,11 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
   String? _parentId;
   bool _isWip = false;
   bool _isLoading = true;
+  bool _showPreview = false;
   KnowledgePage? _existing;
   Timer? _autosaveTimer;
+
+  static const double _previewBreakpoint = 900;
 
   @override
   void initState() {
@@ -277,12 +282,24 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
         allPages.valueOrNull?.where((p) => p.id != widget.pageId).toList() ??
         [];
 
+    final width = MediaQuery.sizeOf(context).width;
+    final canShowPreview = width >= _previewBreakpoint;
+    final showPreview = _showPreview && canShowPreview;
+
     return Scaffold(
       appBar: AppBar(
         title: QuickActionsTitle(
           child: Text(isEditing ? 'Edit Page' : 'New Page'),
         ),
         actions: [
+          if (canShowPreview)
+            IconButton(
+              isSelected: _showPreview,
+              icon: const Icon(Icons.preview_outlined),
+              selectedIcon: const Icon(Icons.preview),
+              tooltip: _showPreview ? 'Hide preview' : 'Show preview',
+              onPressed: () => setState(() => _showPreview = !_showPreview),
+            ),
           IconButton(
             icon: const Icon(Icons.auto_awesome_outlined),
             tooltip: 'AI Assist',
@@ -373,28 +390,100 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
             ),
             const SizedBox(height: 8),
 
-            // Markdown toolbar
-            _MarkdownToolbar(
-              controller: _contentController,
-              focusNode: _contentFocusNode,
-            ),
-            const SizedBox(height: 4),
-
-            // Content
-            TextFormField(
-              controller: _contentController,
-              focusNode: _contentFocusNode,
-              decoration: const InputDecoration(
-                labelText: 'Content (Markdown)',
-                border: OutlineInputBorder(),
-                alignLabelWithHint: true,
-                hintText: '# Heading\n\nWrite your content in Markdown...',
+            // Content area — single column or side-by-side preview
+            if (showPreview)
+              SizedBox(
+                height: 600,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        children: [
+                          _MarkdownToolbar(
+                            controller: _contentController,
+                            focusNode: _contentFocusNode,
+                          ),
+                          const SizedBox(height: 4),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _contentController,
+                              focusNode: _contentFocusNode,
+                              decoration: const InputDecoration(
+                                labelText: 'Content (Markdown)',
+                                border: OutlineInputBorder(),
+                                alignLabelWithHint: true,
+                              ),
+                              expands: true,
+                              maxLines: null,
+                              minLines: null,
+                              validator: (v) => v == null || v.trim().isEmpty
+                                  ? 'Required'
+                                  : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(child: _previewPanel(context)),
+                  ],
+                ),
+              )
+            else ...[
+              _MarkdownToolbar(
+                controller: _contentController,
+                focusNode: _contentFocusNode,
               ),
-              maxLines: 20,
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Required' : null,
-            ),
+              const SizedBox(height: 4),
+              TextFormField(
+                controller: _contentController,
+                focusNode: _contentFocusNode,
+                decoration: const InputDecoration(
+                  labelText: 'Content (Markdown)',
+                  border: OutlineInputBorder(),
+                  alignLabelWithHint: true,
+                  hintText: '# Heading\n\nWrite your content in Markdown...',
+                ),
+                maxLines: 20,
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Required' : null,
+              ),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _previewPanel(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: scheme.outline.withValues(alpha: 0.4)),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(12),
+          child: ValueListenableBuilder<TextEditingValue>(
+            valueListenable: _contentController,
+            builder: (context, value, _) {
+              final empty = value.text.trim().isEmpty;
+              return MarkdownBody(
+                data: empty ? '_Preview will appear here…_' : value.text,
+                selectable: true,
+                onTapLink: (text, href, title) async {
+                  if (href == null) return;
+                  final uri = Uri.tryParse(href);
+                  if (uri != null && await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
+                },
+              );
+            },
+          ),
         ),
       ),
     );
