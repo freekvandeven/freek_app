@@ -14,6 +14,9 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'config/app_config.dart';
 import 'features/auth/providers/auth_providers.dart';
+import 'features/calendar/providers/calendar_providers.dart';
+import 'features/calendar/providers/google_calendar_providers.dart';
+import 'features/calendar/widgets/google_calendar_sync_ticker.dart';
 import 'features/notifications/providers/notification_providers.dart';
 import 'features/settings/providers/settings_providers.dart';
 import 'features/tasks/providers/task_providers.dart';
@@ -168,17 +171,27 @@ class PersonalApp extends ConsumerWidget {
           }
         });
 
-        return MaterialApp.router(
-          title: 'Freek App',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.lightTheme(seedColor),
-          darkTheme: AppTheme.darkTheme(seedColor),
-          themeMode: ref.watch(themeModeProvider),
-          routerConfig: router,
-          builder: (context, child) => LockScreen(
-            enabled: biometricEnabled,
-            child: child!,
-            onSignOut: () => ref.read(authServiceProvider).signOut(),
+        // Trigger an initial Google→local sync the first time the user
+        // connects Google Calendar in this session.
+        ref.listen(googleCalendarConnectedProvider, (prev, next) {
+          if (prev != true && next == true) {
+            ref.read(calendarEventsProvider.notifier).syncFromGoogle();
+          }
+        });
+
+        return GoogleCalendarSyncTicker(
+          child: MaterialApp.router(
+            title: 'Freek App',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme(seedColor),
+            darkTheme: AppTheme.darkTheme(seedColor),
+            themeMode: ref.watch(themeModeProvider),
+            routerConfig: router,
+            builder: (context, child) => LockScreen(
+              enabled: biometricEnabled,
+              child: child!,
+              onSignOut: () => ref.read(authServiceProvider).signOut(),
+            ),
           ),
         );
       },

@@ -107,6 +107,58 @@ class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
     ref.invalidateSelf();
   }
 
+  /// Pulls fresh Google Calendar data and patches any linked local events
+  /// whose stored fields differ. Google is treated as last-write-wins for
+  /// title, description, date, endDate, and isAllDay; local-only fields
+  /// (imageUrls, sourceId, color) are preserved. No-ops when not connected.
+  Future<void> syncFromGoogle() async {
+    final connected = ref.read(googleCalendarConnectedProvider);
+    if (!connected) return;
+    ref.invalidate(googleCalendarEventsProvider);
+    final googleEvents = await ref.read(googleCalendarEventsProvider.future);
+    final localEvents = state.valueOrNull ?? [];
+    final byGoogleId = <String, CalendarEvent>{
+      for (final g in googleEvents)
+        if (g.id.startsWith('gcal_')) g.id.substring(5): g,
+    };
+
+    final service = ref.read(calendarServiceProvider);
+    var patched = 0;
+    for (final local in localEvents) {
+      final gid = local.googleEventId;
+      if (gid == null) continue;
+      final google = byGoogleId[gid];
+      if (google == null) continue;
+      if (_isInSyncWithGoogle(local, google)) continue;
+
+      final updated = local.copyWith(
+        title: google.title,
+        description: google.description,
+        clearDescription: google.description == null,
+        date: google.date,
+        endDate: google.endDate,
+        clearEndDate: google.endDate == null,
+        isAllDay: google.isAllDay,
+      );
+      await service.updateEvent(updated);
+      patched++;
+    }
+    if (patched > 0) {
+      LogService.instance.info(
+        'Calendar sync from Google: patched $patched local event(s)',
+      );
+      ref.invalidateSelf();
+    }
+  }
+
+  static bool _isInSyncWithGoogle(CalendarEvent local, CalendarEvent google) {
+    return local.title == google.title &&
+        (local.description ?? '') == (google.description ?? '') &&
+        local.date == google.date &&
+        local.endDate == google.endDate &&
+        local.isAllDay == google.isAllDay;
+  }
+
   Future<void> deleteEvent(String id) async {
     final events = state.valueOrNull ?? [];
     final event = events.where((e) => e.id == id).firstOrNull;
