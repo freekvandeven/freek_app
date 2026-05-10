@@ -28,6 +28,8 @@ final calendarServiceProvider = Provider<CalendarService>((ref) {
 });
 
 class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
+  bool _syncing = false;
+
   @override
   Future<List<CalendarEvent>> build() async {
     // Watch sync-derived providers only — no FutureProvider dependencies here.
@@ -123,59 +125,69 @@ class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
   Future<GoogleSyncResult> syncFromGoogle() async {
     final connected = ref.read(googleCalendarConnectedProvider);
     if (!connected) return const GoogleSyncResult(patched: 0, deleted: 0);
-    ref.invalidate(googleCalendarEventsProvider);
-    final googleEvents = await ref.read(googleCalendarEventsProvider.future);
-    final localEvents = state.valueOrNull ?? [];
-    final byGoogleId = <String, CalendarEvent>{
-      for (final g in googleEvents)
-        if (g.id.startsWith('gcal_')) g.id.substring(5): g,
-    };
+    // Re-entry guard: if a sync is already running, skip rather than fire a
+    // second concurrent fetch. Prevents the OAuth-popup loop from BUG-0032
+    // where lifecycle resume kept stacking sync calls on top of each other.
+    if (_syncing) return const GoogleSyncResult(patched: 0, deleted: 0);
+    _syncing = true;
+    try {
+      ref.invalidate(googleCalendarEventsProvider);
+      final googleEvents = await ref.read(googleCalendarEventsProvider.future);
+      final localEvents = state.valueOrNull ?? [];
+      final byGoogleId = <String, CalendarEvent>{
+        for (final g in googleEvents)
+          if (g.id.startsWith('gcal_')) g.id.substring(5): g,
+      };
 
-    // Window the Google fetch covers (must match googleCalendarEventsProvider)
-    final now = DateTime.now();
-    final windowStart = DateTime(now.year, now.month - 1, 1);
-    final windowEnd = DateTime(now.year, now.month + 2, 0);
+      // Window the Google fetch covers (must match googleCalendarEventsProvider)
+      final now = DateTime.now();
+      final windowStart = DateTime(now.year, now.month - 1, 1);
+      final windowEnd = DateTime(now.year, now.month + 2, 0);
 
-    final service = ref.read(calendarServiceProvider);
-    var patched = 0;
-    var deleted = 0;
-    for (final local in localEvents) {
-      final gid = local.googleEventId;
-      if (gid == null) continue;
-      final google = byGoogleId[gid];
-      if (google == null) {
-        // Possibly deleted on Google — only act if the event sat inside the
-        // window we actually fetched. Outside the window the absence is
-        // ambiguous.
-        final inWindow =
-            !local.date.isBefore(windowStart) && local.date.isBefore(windowEnd);
-        if (inWindow) {
-          await service.deleteEvent(local.id);
-          deleted++;
+      final service = ref.read(calendarServiceProvider);
+      var patched = 0;
+      var deleted = 0;
+      for (final local in localEvents) {
+        final gid = local.googleEventId;
+        if (gid == null) continue;
+        final google = byGoogleId[gid];
+        if (google == null) {
+          // Possibly deleted on Google — only act if the event sat inside the
+          // window we actually fetched. Outside the window the absence is
+          // ambiguous.
+          final inWindow =
+              !local.date.isBefore(windowStart) &&
+              local.date.isBefore(windowEnd);
+          if (inWindow) {
+            await service.deleteEvent(local.id);
+            deleted++;
+          }
+          continue;
         }
-        continue;
-      }
-      if (_isInSyncWithGoogle(local, google)) continue;
+        if (_isInSyncWithGoogle(local, google)) continue;
 
-      final updated = local.copyWith(
-        title: google.title,
-        description: google.description,
-        clearDescription: google.description == null,
-        date: google.date,
-        endDate: google.endDate,
-        clearEndDate: google.endDate == null,
-        isAllDay: google.isAllDay,
-      );
-      await service.updateEvent(updated);
-      patched++;
+        final updated = local.copyWith(
+          title: google.title,
+          description: google.description,
+          clearDescription: google.description == null,
+          date: google.date,
+          endDate: google.endDate,
+          clearEndDate: google.endDate == null,
+          isAllDay: google.isAllDay,
+        );
+        await service.updateEvent(updated);
+        patched++;
+      }
+      if (patched > 0 || deleted > 0) {
+        LogService.instance.info(
+          'Calendar sync from Google: patched $patched, deleted $deleted',
+        );
+        ref.invalidateSelf();
+      }
+      return GoogleSyncResult(patched: patched, deleted: deleted);
+    } finally {
+      _syncing = false;
     }
-    if (patched > 0 || deleted > 0) {
-      LogService.instance.info(
-        'Calendar sync from Google: patched $patched, deleted $deleted',
-      );
-      ref.invalidateSelf();
-    }
-    return GoogleSyncResult(patched: patched, deleted: deleted);
   }
 
   static bool _isInSyncWithGoogle(CalendarEvent local, CalendarEvent google) {

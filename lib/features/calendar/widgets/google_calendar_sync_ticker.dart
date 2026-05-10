@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,6 +11,12 @@ import '../providers/google_calendar_providers.dart';
 /// edits made directly in Google Calendar are pulled back into linked
 /// local Firestore events. A "first cut" pre-webhook implementation per
 /// WISH-0066. Renders its [child] as-is.
+///
+/// On web both triggers are disabled because the OAuth popup itself
+/// fires AppLifecycleState.resumed on close (BUG-0032: popup → paused →
+/// popup close → resumed → resync → popup again, infinite loop). Web
+/// users still get the initial-on-connect sync (from main.dart) and the
+/// manual "Sync from Google now" action in the calendar AppBar menu.
 class GoogleCalendarSyncTicker extends ConsumerStatefulWidget {
   final Widget child;
   const GoogleCalendarSyncTicker({super.key, required this.child});
@@ -28,14 +35,17 @@ class _GoogleCalendarSyncTickerState
   @override
   void initState() {
     super.initState();
+    if (kIsWeb) return;
     WidgetsBinding.instance.addObserver(this);
     _timer = Timer.periodic(_pollInterval, (_) => _sync());
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _timer?.cancel();
+    if (!kIsWeb) {
+      WidgetsBinding.instance.removeObserver(this);
+      _timer?.cancel();
+    }
     super.dispose();
   }
 
