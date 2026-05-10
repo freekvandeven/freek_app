@@ -88,7 +88,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
     );
     final result = await ref
         .read(calendarEventsProvider.notifier)
-        .syncFromGoogle();
+        .syncFromGoogle(force: true);
     if (!mounted) return;
     messenger.hideCurrentSnackBar();
     final patched = result.patched;

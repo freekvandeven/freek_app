@@ -29,6 +29,8 @@ final calendarServiceProvider = Provider<CalendarService>((ref) {
 
 class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
   bool _syncing = false;
+  DateTime? _lastSyncAt;
+  static const _autoSyncCooldown = Duration(seconds: 10);
 
   @override
   Future<List<CalendarEvent>> build() async {
@@ -122,14 +124,25 @@ class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
   /// are preserved. Linked locals whose date falls inside the fetch window
   /// but no longer exist in Google are deleted locally too. No-ops when
   /// not connected.
-  Future<GoogleSyncResult> syncFromGoogle() async {
+  Future<GoogleSyncResult> syncFromGoogle({bool force = false}) async {
     final connected = ref.read(googleCalendarConnectedProvider);
     if (!connected) return const GoogleSyncResult(patched: 0, deleted: 0);
     // Re-entry guard: if a sync is already running, skip rather than fire a
     // second concurrent fetch. Prevents the OAuth-popup loop from BUG-0032
     // where lifecycle resume kept stacking sync calls on top of each other.
     if (_syncing) return const GoogleSyncResult(patched: 0, deleted: 0);
+    // Cooldown: automatic triggers can fire in bursts (initial-on-connect +
+    // calendar-page-mount + provider listeners all colliding). Skip auto
+    // syncs that arrive within [_autoSyncCooldown] of the previous one.
+    // The manual "Sync from Google now" action passes force: true.
+    if (!force && _lastSyncAt != null) {
+      final since = DateTime.now().difference(_lastSyncAt!);
+      if (since < _autoSyncCooldown) {
+        return const GoogleSyncResult(patched: 0, deleted: 0);
+      }
+    }
     _syncing = true;
+    _lastSyncAt = DateTime.now();
     try {
       ref.invalidate(googleCalendarEventsProvider);
       final googleEvents = await ref.read(googleCalendarEventsProvider.future);
@@ -193,9 +206,20 @@ class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
   static bool _isInSyncWithGoogle(CalendarEvent local, CalendarEvent google) {
     return local.title == google.title &&
         (local.description ?? '') == (google.description ?? '') &&
-        local.date == google.date &&
-        local.endDate == google.endDate &&
+        _sameMoment(local.date, google.date) &&
+        _sameMoment(local.endDate, google.endDate) &&
         local.isAllDay == google.isAllDay;
+  }
+
+  /// Compare two [DateTime]s by their absolute moment in time rather than
+  /// Dart's default == (which considers `isUtc`). Without this, a naive
+  /// DateTime read back from Firestore won't equal Google's `.toLocal()`'d
+  /// DateTime even when they represent the same instant — causing
+  /// syncFromGoogle to patch the same event on every poll forever.
+  static bool _sameMoment(DateTime? a, DateTime? b) {
+    if (a == null && b == null) return true;
+    if (a == null || b == null) return false;
+    return a.microsecondsSinceEpoch == b.microsecondsSinceEpoch;
   }
 
   Future<void> deleteEvent(String id) async {
