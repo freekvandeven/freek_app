@@ -37,6 +37,8 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
   bool _showPreview = false;
   KnowledgePage? _existing;
   Timer? _autosaveTimer;
+  DateTime? _lastAutosaveAt;
+  String? _lastSavedSnapshot;
 
   static const double _previewBreakpoint = 900;
 
@@ -66,6 +68,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
         _isWip = page.isWip;
         _isLoading = false;
       });
+      _lastSavedSnapshot = _autosaveSnapshot();
     } else {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -84,8 +87,33 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
     }
   }
 
+  String _autosaveSnapshot() {
+    return [
+      _titleController.text.trim(),
+      _contentController.text,
+      _tags.join(','),
+      _parentId ?? '',
+      _isWip ? '1' : '0',
+    ].join('||');
+  }
+
   Future<void> _autosave() async {
     if (!mounted || !_formKey.currentState!.validate()) return;
+
+    // Browser-throttled Timer.periodic ticks can pile up when the tab is
+    // backgrounded and all fire when it regains focus (BUG-0033). Skip
+    // any tick that arrives within 80% of the configured interval.
+    final intervalMin =
+        ref.read(currentUserProvider)?.settings.autosaveIntervalMinutes ?? 0;
+    if (intervalMin > 0 && _lastAutosaveAt != null) {
+      final since = DateTime.now().difference(_lastAutosaveAt!);
+      final minWait = Duration(milliseconds: intervalMin * 60 * 800);
+      if (since < minWait) return;
+    }
+
+    // Skip if nothing has changed since the previous save.
+    final snapshot = _autosaveSnapshot();
+    if (snapshot == _lastSavedSnapshot) return;
 
     final notifier = ref.read(knowledgeListProvider.notifier);
     try {
@@ -110,6 +138,8 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
         await notifier.addPage(page);
         if (mounted) setState(() => _existing = page);
       }
+      _lastAutosaveAt = DateTime.now();
+      _lastSavedSnapshot = snapshot;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

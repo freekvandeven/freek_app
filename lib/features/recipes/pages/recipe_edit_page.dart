@@ -56,6 +56,8 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
   bool _isWip = false;
   Recipe? _existingRecipe;
   Timer? _autosaveTimer;
+  DateTime? _lastAutosaveAt;
+  String? _lastSavedSnapshot;
 
   @override
   void initState() {
@@ -88,6 +90,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
         _subRecipeIds = List.from(recipe.subRecipeIds);
         _isWip = recipe.isWip;
       });
+      _lastSavedSnapshot = _autosaveSnapshot();
     }
     if (mounted) _setupAutosaveTimer();
   }
@@ -104,9 +107,46 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     }
   }
 
+  String _autosaveSnapshot() {
+    return [
+      _titleController.text.trim(),
+      _descriptionController.text.trim(),
+      _servingsController.text.trim(),
+      _prepTimeController.text.trim(),
+      _cookTimeController.text.trim(),
+      _sourceController.text.trim(),
+      _notesController.text.trim(),
+      _ingredients
+          .map((i) => '${i.name}|${i.quantity ?? ''}|${i.unit ?? ''}')
+          .join(';'),
+      _instructions.map((i) => i.text).join(';'),
+      _tags.join(','),
+      _savedImageUrls.join(','),
+      _primaryImageIndex.toString(),
+      _videoLinks.join(','),
+      _subRecipeIds.join(','),
+      _isWip ? '1' : '0',
+    ].join('||');
+  }
+
   Future<void> _autosave() async {
     if (!mounted || _existingRecipe == null) return;
     if (!_formKey.currentState!.validate()) return;
+
+    // Browser-throttled Timer.periodic ticks can pile up when the tab is
+    // backgrounded and all fire when it regains focus (BUG-0033). Skip
+    // any tick that arrives within 80% of the configured interval.
+    final intervalMin =
+        ref.read(currentUserProvider)?.settings.autosaveIntervalMinutes ?? 0;
+    if (intervalMin > 0 && _lastAutosaveAt != null) {
+      final since = DateTime.now().difference(_lastAutosaveAt!);
+      final minWait = Duration(milliseconds: intervalMin * 60 * 800);
+      if (since < minWait) return;
+    }
+
+    // Skip if nothing has changed since the previous save.
+    final snapshot = _autosaveSnapshot();
+    if (snapshot == _lastSavedSnapshot) return;
 
     final description = _descriptionController.text.trim();
     final source = _sourceController.text.trim();
@@ -134,6 +174,8 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
         clearNotes: notes.isEmpty,
       );
       await ref.read(recipeListProvider.notifier).updateRecipe(updated);
+      _lastAutosaveAt = DateTime.now();
+      _lastSavedSnapshot = snapshot;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
