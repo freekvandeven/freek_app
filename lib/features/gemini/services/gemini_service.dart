@@ -1,10 +1,20 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:http/http.dart' as http;
 
 import '../../../services/log_service.dart';
+import 'gemini_oauth_service.dart';
+
+/// Authentication mode for the Gemini API.
+///
+/// - [apiKey]: the user enters a Google AI Studio key in Settings; quota
+///   counts against the project that owns the key. The request URL gets
+///   a `?key=...` query parameter.
+/// - [oauth]: the user signs in with their Google account (broad
+///   cloud-platform scope); quota counts against their Google account.
+///   The request gets an `Authorization: Bearer <token>` header.
+enum GeminiAuthMode { apiKey, oauth }
 
 /// Thrown when a Gemini call fails due to API quota/rate limiting.
 /// Callers should surface a clear message and link the user to
@@ -35,43 +45,171 @@ Duration? _parseRetryAfter(String message) {
 
 class GeminiService {
   static const defaultModel = 'gemini-2.5-flash';
+  static const _apiBase = 'https://generativelanguage.googleapis.com/v1beta';
 
-  GenerativeModel? _model;
-  ChatSession? _chat;
+  GeminiAuthMode _authMode = GeminiAuthMode.apiKey;
   String? _apiKey;
+  GeminiOAuthService? _oauth;
   String _modelName = defaultModel;
+  final List<Map<String, dynamic>> _chatHistory = [];
 
-  bool get isConfigured => _apiKey != null && _apiKey!.isNotEmpty;
+  bool get isConfigured {
+    switch (_authMode) {
+      case GeminiAuthMode.apiKey:
+        return _apiKey != null && _apiKey!.isNotEmpty;
+      case GeminiAuthMode.oauth:
+        return _oauth != null && _oauth!.account != null;
+    }
+  }
 
+  /// Configure with an API key. Switches the service to [GeminiAuthMode.apiKey].
   void configure(String apiKey, {String? model}) {
     final newModel = model ?? _modelName;
-    if (apiKey != _apiKey || newModel != _modelName) {
+    if (_authMode != GeminiAuthMode.apiKey ||
+        apiKey != _apiKey ||
+        newModel != _modelName) {
+      _authMode = GeminiAuthMode.apiKey;
       _apiKey = apiKey;
       _modelName = newModel;
-      _model = null;
-      _chat = null;
+      _chatHistory.clear();
+    }
+  }
+
+  /// Configure with a Gemini OAuth account. Switches the service to
+  /// [GeminiAuthMode.oauth]. The `oauth` service is expected to have a
+  /// signed-in account; if not, [isConfigured] returns false and calls
+  /// will be no-ops.
+  void configureOauth(GeminiOAuthService oauth, {String? model}) {
+    final newModel = model ?? _modelName;
+    if (_authMode != GeminiAuthMode.oauth ||
+        !identical(_oauth, oauth) ||
+        newModel != _modelName) {
+      _authMode = GeminiAuthMode.oauth;
+      _oauth = oauth;
+      _modelName = newModel;
+      _chatHistory.clear();
     }
   }
 
   void setModel(String model) {
     if (model != _modelName) {
       _modelName = model;
-      _model = null;
-      _chat = null;
+      _chatHistory.clear();
     }
+  }
+
+  void resetChat() {
+    _chatHistory.clear();
+  }
+
+  /// Build the URI for an API endpoint, appending `?key=...` for API-key mode.
+  Uri _uri(String path) {
+    if (_authMode == GeminiAuthMode.apiKey) {
+      return Uri.parse('$_apiBase$path?key=$_apiKey');
+    }
+    return Uri.parse('$_apiBase$path');
+  }
+
+  /// Build the headers for a Gemini API request, attaching a Bearer token
+  /// for OAuth mode. Returns null if OAuth mode is selected but we can't
+  /// obtain auth headers (user not signed in).
+  Future<Map<String, String>?> _headers({bool json = true}) async {
+    final headers = <String, String>{
+      if (json) 'Content-Type': 'application/json',
+    };
+    if (_authMode == GeminiAuthMode.oauth) {
+      final oauthHeaders = await _oauth?.authHeaders();
+      if (oauthHeaders == null) return null;
+      headers.addAll(oauthHeaders);
+    }
+    return headers;
+  }
+
+  /// POST to a `:method` endpoint on a model (e.g. `generateContent`).
+  /// Throws [GeminiRateLimitException] on 429/quota responses. Returns
+  /// the parsed JSON body on success or null on any other failure.
+  Future<Map<String, dynamic>?> _postModel(
+    String method,
+    Map<String, dynamic> body, {
+    String? op,
+  }) async {
+    if (!isConfigured) {
+      LogService.instance.warning(
+        'Gemini ${op ?? method} called but service is not configured '
+        '(mode=${_authMode.name})',
+      );
+      return null;
+    }
+    final headers = await _headers();
+    if (headers == null) {
+      LogService.instance.warning(
+        'Gemini ${op ?? method}: no auth headers available (mode=${_authMode.name})',
+      );
+      return null;
+    }
+    final uri = _uri('/models/$_modelName:$method');
+    final http.Response response;
+    try {
+      response = await http.post(uri, headers: headers, body: jsonEncode(body));
+    } catch (e, st) {
+      LogService.instance.error('Gemini ${op ?? method} HTTP error: $e\n$st');
+      return null;
+    }
+    if (response.statusCode == 429 ||
+        (response.statusCode >= 400 && _isRateLimitError(response.body))) {
+      LogService.instance.error(
+        'Gemini ${op ?? method} rate-limited (${response.statusCode}): ${response.body}',
+      );
+      throw GeminiRateLimitException(
+        response.body,
+        retryAfter: _parseRetryAfter(response.body),
+      );
+    }
+    if (response.statusCode != 200) {
+      LogService.instance.error(
+        'Gemini ${op ?? method} failed (${response.statusCode}): ${response.body}',
+      );
+      return null;
+    }
+    try {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (e) {
+      LogService.instance.error(
+        'Gemini ${op ?? method}: response was not JSON: $e\n${response.body}',
+      );
+      return null;
+    }
+  }
+
+  /// Extract the first text candidate from a generateContent response.
+  String? _firstText(Map<String, dynamic> response) {
+    final candidates = response['candidates'] as List<dynamic>?;
+    if (candidates == null || candidates.isEmpty) return null;
+    final content =
+        (candidates.first as Map<String, dynamic>)['content']
+            as Map<String, dynamic>?;
+    if (content == null) return null;
+    final parts = content['parts'] as List<dynamic>?;
+    if (parts == null || parts.isEmpty) return null;
+    final text = (parts.first as Map<String, dynamic>)['text'] as String?;
+    return text;
   }
 
   /// Fetch available generative models from the Gemini API.
   /// Returns a list of (modelId, displayName) pairs.
   Future<List<({String id, String displayName})>> listModels() async {
-    if (_apiKey == null || _apiKey!.isEmpty) return [];
+    if (!isConfigured) return [];
+    final headers = await _headers(json: false);
+    if (headers == null) return [];
+    final uri = _uri('/models');
     try {
-      final response = await http.get(
-        Uri.parse(
-          'https://generativelanguage.googleapis.com/v1beta/models?key=$_apiKey',
-        ),
-      );
-      if (response.statusCode != 200) return [];
+      final response = await http.get(uri, headers: headers);
+      if (response.statusCode != 200) {
+        LogService.instance.warning(
+          'Gemini listModels failed (${response.statusCode}): ${response.body}',
+        );
+        return [];
+      }
       final body = jsonDecode(response.body) as Map<String, dynamic>;
       final models = body['models'] as List<dynamic>;
       return models
@@ -88,42 +226,67 @@ class GeminiService {
             return (id: id, displayName: displayName);
           })
           .toList();
-    } catch (_) {
+    } catch (e) {
+      LogService.instance.error('Gemini listModels error: $e');
       return [];
     }
   }
 
-  GenerativeModel _getModel() {
-    _model ??= GenerativeModel(model: _modelName, apiKey: _apiKey!);
-    return _model!;
-  }
-
-  ChatSession _getChat() {
-    _chat ??= _getModel().startChat(
-      history: [
-        Content.text(
-          'You are a helpful personal assistant embedded in a life-management app called "Personal App". '
-          'You help with tasks, recipes, finances, calendar planning, knowledge organization, and general questions. '
-          'Keep answers concise and practical.',
-        ),
-        Content.model([
-          TextPart(
-            'Understood! I\'m ready to help you with anything in your Personal App.',
-          ),
-        ]),
-      ],
-    );
-    return _chat!;
-  }
-
+  /// Chat-style message with history continuity.
   Future<String> sendMessage(String message) async {
     if (!isConfigured) {
-      return 'Gemini API key not configured. Add GEMINI_API_KEY to your dotenv file.';
+      return 'Gemini is not configured. Set it up in Settings.';
     }
+    if (_chatHistory.isEmpty) {
+      _chatHistory.addAll([
+        {
+          'role': 'user',
+          'parts': [
+            {
+              'text':
+                  'You are a helpful personal assistant embedded in a life-management '
+                  'app called "Personal App". You help with tasks, recipes, finances, '
+                  'calendar planning, knowledge organization, and general questions. '
+                  'Keep answers concise and practical.',
+            },
+          ],
+        },
+        {
+          'role': 'model',
+          'parts': [
+            {
+              'text':
+                  "Understood! I'm ready to help you with anything in your Personal App.",
+            },
+          ],
+        },
+      ]);
+    }
+    _chatHistory.add({
+      'role': 'user',
+      'parts': [
+        {'text': message},
+      ],
+    });
     try {
-      final response = await _getChat().sendMessage(Content.text(message));
-      return response.text ?? 'No response received.';
+      final response = await _postModel('generateContent', {
+        'contents': _chatHistory,
+      }, op: 'sendMessage');
+      if (response == null) {
+        _chatHistory.removeLast();
+        return 'No response received.';
+      }
+      final text = _firstText(response) ?? '';
+      _chatHistory.add({
+        'role': 'model',
+        'parts': [
+          {'text': text},
+        ],
+      });
+      return text.isEmpty ? 'No response received.' : text;
     } catch (e) {
+      _chatHistory.removeLast();
+      if (e is GeminiRateLimitException) rethrow;
       return 'Error: $e';
     }
   }
@@ -136,43 +299,60 @@ class GeminiService {
     List<String> locations = const [],
   }) async {
     if (!isConfigured) return null;
+    final categoryHint = categories.isNotEmpty
+        ? 'The user has these existing categories: ${categories.join(', ')}. '
+              'Use one of these if the item fits, otherwise suggest a new category.\n'
+        : '';
+    final locationHint = locations.isNotEmpty
+        ? 'The user has these existing locations: ${locations.join(', ')}. '
+              'Use one of these if appropriate.\n'
+        : '';
+    final body = {
+      'contents': [
+        {
+          'parts': [
+            {
+              'text':
+                  'Analyze this image for an inventory management app. '
+                  'Look carefully at the product, packaging, labels, and any visible text.\n'
+                  '$categoryHint$locationHint'
+                  'Return ONLY a JSON object with these fields (omit fields you cannot determine):\n'
+                  '- "name": product/item name (string)\n'
+                  '- "description": brief description (string)\n'
+                  '- "category": item category (string)\n'
+                  '- "location": where this item is typically stored (string)\n'
+                  '- "quantity": count the number of items visible in the image (int)\n'
+                  '- "purchasePrice": price if visible on a label or tag, in EUR (number)\n'
+                  '- "expiryDate": expiry/best-before date if visible, in ISO 8601 format YYYY-MM-DD (string)\n'
+                  '- "barcode": barcode or EAN number if visible (string)\n'
+                  'Respond with ONLY the JSON object, no markdown fences.',
+            },
+            {
+              'inlineData': {
+                'mimeType': mimeType,
+                'data': base64Encode(imageBytes),
+              },
+            },
+          ],
+        },
+      ],
+    };
     try {
-      final categoryHint = categories.isNotEmpty
-          ? 'The user has these existing categories: ${categories.join(', ')}. '
-                'Use one of these if the item fits, otherwise suggest a new category.\n'
-          : '';
-      final locationHint = locations.isNotEmpty
-          ? 'The user has these existing locations: ${locations.join(', ')}. '
-                'Use one of these if appropriate.\n'
-          : '';
-      final response = await _getModel().generateContent([
-        Content.multi([
-          TextPart(
-            'Analyze this image for an inventory management app. '
-            'Look carefully at the product, packaging, labels, and any visible text.\n'
-            '$categoryHint$locationHint'
-            'Return ONLY a JSON object with these fields (omit fields you cannot determine):\n'
-            '- "name": product/item name (string)\n'
-            '- "description": brief description (string)\n'
-            '- "category": item category (string)\n'
-            '- "location": where this item is typically stored (string)\n'
-            '- "quantity": count the number of items visible in the image (int)\n'
-            '- "purchasePrice": price if visible on a label or tag, in EUR (number)\n'
-            '- "expiryDate": expiry/best-before date if visible, in ISO 8601 format YYYY-MM-DD (string)\n'
-            '- "barcode": barcode or EAN number if visible (string)\n'
-            'Respond with ONLY the JSON object, no markdown fences.',
-          ),
-          DataPart(mimeType, imageBytes),
-        ]),
-      ]);
-      final text = response.text?.trim();
+      final response = await _postModel(
+        'generateContent',
+        body,
+        op: 'analyzeInventoryImage',
+      );
+      if (response == null) return null;
+      final text = _firstText(response)?.trim();
       if (text == null || text.isEmpty) return null;
-      // Strip markdown fences if present
       final cleaned = text
-          .replaceAll(RegExp(r'^```json?\s*|\s*```$'), '')
+          .replaceFirst(RegExp(r'^```(?:json)?\s*'), '')
+          .replaceFirst(RegExp(r'\s*```\s*$'), '')
           .trim();
       return jsonDecode(cleaned) as Map<String, dynamic>;
     } catch (e) {
+      LogService.instance.error('Gemini analyzeInventoryImage error: $e');
       return null;
     }
   }
@@ -226,49 +406,40 @@ class GeminiService {
     required String op,
     required String promptBody,
   }) async {
-    if (!isConfigured) {
-      LogService.instance.warning(
-        'Gemini $op called but no API key is configured',
-      );
+    LogService.instance.info(
+      'Gemini $op: requesting (model=$_modelName, '
+      'authMode=${_authMode.name}, promptLen=${promptBody.length})',
+    );
+    final response = await _postModel('generateContent', {
+      'contents': [
+        {
+          'parts': [
+            {'text': promptBody},
+          ],
+        },
+      ],
+    }, op: op);
+    if (response == null) return null;
+    final text = _firstText(response)?.trim();
+    if (text == null || text.isEmpty) {
+      LogService.instance.error('Gemini $op: empty response from model');
       return null;
     }
-    LogService.instance.info(
-      'Gemini $op: requesting (model=$_modelName, promptLen=${promptBody.length})',
-    );
+    final cleaned = text
+        .replaceFirst(RegExp(r'^```(?:json)?\s*'), '')
+        .replaceFirst(RegExp(r'\s*```\s*$'), '')
+        .trim();
     try {
-      final response = await _getModel().generateContent([
-        Content.text(promptBody),
-      ]);
-      final text = response.text?.trim();
-      if (text == null || text.isEmpty) {
-        LogService.instance.error('Gemini $op: empty response from model');
-        return null;
-      }
-      final cleaned = text
-          .replaceFirst(RegExp(r'^```(?:json)?\s*'), '')
-          .replaceFirst(RegExp(r'\s*```\s*$'), '')
-          .trim();
-      try {
-        final decoded = jsonDecode(cleaned) as Map<String, dynamic>;
-        LogService.instance.info('Gemini $op: success');
-        return decoded;
-      } on FormatException catch (e) {
-        final preview = cleaned.length > 500
-            ? '${cleaned.substring(0, 500)}…'
-            : cleaned;
-        LogService.instance.error(
-          'Gemini $op: JSON parse failed: $e\nResponse: $preview',
-        );
-        return null;
-      }
-    } catch (e, st) {
-      LogService.instance.error('Gemini $op failed: $e\n$st');
-      if (_isRateLimitError(e)) {
-        throw GeminiRateLimitException(
-          e.toString(),
-          retryAfter: _parseRetryAfter(e.toString()),
-        );
-      }
+      final decoded = jsonDecode(cleaned) as Map<String, dynamic>;
+      LogService.instance.info('Gemini $op: success');
+      return decoded;
+    } on FormatException catch (e) {
+      final preview = cleaned.length > 500
+          ? '${cleaned.substring(0, 500)}…'
+          : cleaned;
+      LogService.instance.error(
+        'Gemini $op: JSON parse failed: $e\nResponse: $preview',
+      );
       return null;
     }
   }
@@ -276,23 +447,23 @@ class GeminiService {
   /// Apply an AI instruction to a markdown document and return the result.
   Future<String> editMarkdown(String content, String instruction) async {
     if (!isConfigured) return content;
-    try {
-      final response = await _getModel().generateContent([
-        Content.text(
-          'You are a markdown editor assistant. Apply the following instruction to the markdown content below.\n\n'
-          'INSTRUCTION: $instruction\n\n'
-          'MARKDOWN:\n$content\n\n'
-          'Return ONLY the modified markdown, no explanations, no code fences.',
-        ),
-      ]);
-      final result = response.text?.trim();
-      return (result == null || result.isEmpty) ? content : result;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  void resetChat() {
-    _chat = null;
+    final response = await _postModel('generateContent', {
+      'contents': [
+        {
+          'parts': [
+            {
+              'text':
+                  'You are a markdown editor assistant. Apply the following instruction to the markdown content below.\n\n'
+                  'INSTRUCTION: $instruction\n\n'
+                  'MARKDOWN:\n$content\n\n'
+                  'Return ONLY the modified markdown, no explanations, no code fences.',
+            },
+          ],
+        },
+      ],
+    }, op: 'editMarkdown');
+    if (response == null) return content;
+    final result = _firstText(response)?.trim();
+    return (result == null || result.isEmpty) ? content : result;
   }
 }

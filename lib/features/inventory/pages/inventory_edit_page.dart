@@ -15,7 +15,6 @@ import '../../catalog/models/catalog_item.dart';
 import '../../catalog/providers/catalog_providers.dart';
 import '../../gemini/providers/gemini_providers.dart';
 import '../../settings/providers/currency_providers.dart';
-import '../../settings/providers/settings_providers.dart';
 import '../models/inventory_item.dart';
 import '../providers/inventory_providers.dart';
 
@@ -176,19 +175,15 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
   }
 
   Future<void> _scanWithAi() async {
-    final service = ref.read(geminiServiceProvider);
-    final model = ref.read(geminiModelProvider);
-    if (!service.isConfigured) {
-      final apiKey = await ref.read(geminiApiKeyServiceProvider).getApiKey();
-      service.configure(apiKey, model: model);
-    } else {
-      service.setModel(model);
-    }
-    if (!service.isConfigured) {
+    final ready = await configureGeminiForCurrentSettings(ref);
+    if (!ready) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Configure a Gemini API key in Settings first'),
+            content: Text(
+              'Gemini is not configured. Set up an API key or sign in '
+              'with Google in Settings → AI.',
+            ),
           ),
         );
       }
@@ -201,6 +196,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
 
     setState(() => _isScanning = true);
     try {
+      final service = ref.read(geminiServiceProvider);
       final bytes = await image.readAsBytes();
       final mimeType = image.mimeType ?? 'image/jpeg';
       final result = await service.analyzeInventoryImage(

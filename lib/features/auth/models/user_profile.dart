@@ -10,6 +10,8 @@ class UserSettings {
   // 0 = disabled; otherwise interval in minutes
   final int autosaveIntervalMinutes;
   final bool syncToGoogleCalendar;
+  // 'apiKey' (default) or 'oauth' — which Gemini auth mode to use
+  final String geminiAuthMode;
 
   const UserSettings({
     this.themeMode = 'system',
@@ -22,6 +24,7 @@ class UserSettings {
     this.expiryReminderDays = const [7, 1],
     this.autosaveIntervalMinutes = 0,
     this.syncToGoogleCalendar = true,
+    this.geminiAuthMode = 'apiKey',
   });
 
   UserSettings copyWith({
@@ -37,6 +40,7 @@ class UserSettings {
     List<int>? expiryReminderDays,
     int? autosaveIntervalMinutes,
     bool? syncToGoogleCalendar,
+    String? geminiAuthMode,
   }) {
     return UserSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -52,6 +56,7 @@ class UserSettings {
       autosaveIntervalMinutes:
           autosaveIntervalMinutes ?? this.autosaveIntervalMinutes,
       syncToGoogleCalendar: syncToGoogleCalendar ?? this.syncToGoogleCalendar,
+      geminiAuthMode: geminiAuthMode ?? this.geminiAuthMode,
     );
   }
 
@@ -66,6 +71,7 @@ class UserSettings {
     'expiryReminderDays': expiryReminderDays,
     'autosaveIntervalMinutes': autosaveIntervalMinutes,
     'syncToGoogleCalendar': syncToGoogleCalendar,
+    'geminiAuthMode': geminiAuthMode,
   };
 
   factory UserSettings.fromMap(Map<String, dynamic> map) {
@@ -84,6 +90,7 @@ class UserSettings {
           const [7, 1],
       autosaveIntervalMinutes: map['autosaveIntervalMinutes'] as int? ?? 0,
       syncToGoogleCalendar: map['syncToGoogleCalendar'] as bool? ?? true,
+      geminiAuthMode: map['geminiAuthMode'] as String? ?? 'apiKey',
     );
   }
 }

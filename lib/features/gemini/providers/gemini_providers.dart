@@ -1,22 +1,78 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../auth/providers/auth_providers.dart';
 import '../../settings/providers/settings_providers.dart';
 import '../services/gemini_api_key_service.dart';
+import '../services/gemini_oauth_service.dart';
 import '../services/gemini_service.dart';
 
 final geminiApiKeyServiceProvider = Provider<GeminiApiKeyService>((ref) {
   return GeminiApiKeyService();
 });
 
+final geminiOAuthServiceProvider = Provider<GeminiOAuthService>((ref) {
+  return GeminiOAuthService();
+});
+
 final geminiServiceProvider = Provider<GeminiService>((ref) {
   return GeminiService();
 });
 
-/// Whether an API key is available (from secure storage or dotenv).
-final geminiApiKeyAvailableProvider = FutureProvider<bool>((ref) async {
-  final key = await ref.watch(geminiApiKeyServiceProvider).getApiKey();
-  return key.isNotEmpty;
+/// Which Gemini auth mode the user has selected.
+/// 'apiKey' (default) or 'oauth' — read from UserSettings.
+final geminiAuthModeProvider = Provider<GeminiAuthMode>((ref) {
+  final user = ref.watch(currentUserProvider);
+  return user?.settings.geminiAuthMode == 'oauth'
+      ? GeminiAuthMode.oauth
+      : GeminiAuthMode.apiKey;
 });
+
+/// Whether the Gemini OAuth account is currently connected.
+final geminiOAuthConnectedProvider = StateProvider<bool>((ref) => false);
+
+/// Whether the Gemini service has whatever auth it needs for the current
+/// mode. For API-key mode this means a key is set; for OAuth mode it
+/// means the user is signed in.
+final geminiAvailableProvider = FutureProvider<bool>((ref) async {
+  final mode = ref.watch(geminiAuthModeProvider);
+  if (mode == GeminiAuthMode.apiKey) {
+    final key = await ref.watch(geminiApiKeyServiceProvider).getApiKey();
+    return key.isNotEmpty;
+  }
+  return ref.watch(geminiOAuthConnectedProvider);
+});
+
+/// Legacy alias used by older call sites. Reflects the current auth
+/// mode's availability so existing checks keep working.
+final geminiApiKeyAvailableProvider = FutureProvider<bool>((ref) async {
+  return ref.watch(geminiAvailableProvider.future);
+});
+
+/// Configure [geminiServiceProvider]'s service instance to match the
+/// user's current settings (auth mode, model). Call this from any page
+/// before triggering a Gemini request to make sure the service has
+/// current credentials. Returns true when the service is ready to use,
+/// false when the user hasn't set up the chosen auth mode yet.
+Future<bool> configureGeminiForCurrentSettings(WidgetRef ref) async {
+  final service = ref.read(geminiServiceProvider);
+  final model = ref.read(geminiModelProvider);
+  final mode = ref.read(geminiAuthModeProvider);
+  if (mode == GeminiAuthMode.oauth) {
+    final oauth = ref.read(geminiOAuthServiceProvider);
+    if (oauth.account == null) {
+      final ok = await oauth.trySilentSignIn();
+      if (!ok) return false;
+      ref.read(geminiOAuthConnectedProvider.notifier).state = true;
+    }
+    service.configureOauth(oauth, model: model);
+    return service.isConfigured;
+  }
+  // API-key mode
+  final apiKey = await ref.read(geminiApiKeyServiceProvider).getApiKey();
+  if (apiKey.isEmpty) return false;
+  service.configure(apiKey, model: model);
+  return true;
+}
 
 class ChatMessage {
   final String text;
@@ -36,17 +92,41 @@ class GeminiChatNotifier extends Notifier<List<ChatMessage>> {
   @override
   List<ChatMessage> build() => [];
 
+  Future<bool> _ensureConfigured() async {
+    final service = ref.read(geminiServiceProvider);
+    final model = ref.read(geminiModelProvider);
+    final mode = ref.read(geminiAuthModeProvider);
+    if (mode == GeminiAuthMode.oauth) {
+      final oauth = ref.read(geminiOAuthServiceProvider);
+      if (oauth.account == null) {
+        final ok = await oauth.trySilentSignIn();
+        if (!ok) return false;
+        ref.read(geminiOAuthConnectedProvider.notifier).state = true;
+      }
+      service.configureOauth(oauth, model: model);
+      return service.isConfigured;
+    }
+    final apiKey = await ref.read(geminiApiKeyServiceProvider).getApiKey();
+    if (apiKey.isEmpty) return false;
+    service.configure(apiKey, model: model);
+    return true;
+  }
+
   Future<void> sendMessage(String message) async {
     state = [...state, ChatMessage(text: message, isUser: true)];
 
-    final service = ref.read(geminiServiceProvider);
-    final model = ref.read(geminiModelProvider);
-    if (!service.isConfigured) {
-      final apiKey = await ref.read(geminiApiKeyServiceProvider).getApiKey();
-      service.configure(apiKey, model: model);
-    } else {
-      service.setModel(model);
+    final ok = await _ensureConfigured();
+    if (!ok) {
+      state = [
+        ...state,
+        ChatMessage(
+          text: 'Gemini is not configured. Set it up in Settings → AI.',
+          isUser: false,
+        ),
+      ];
+      return;
     }
+    final service = ref.read(geminiServiceProvider);
     final response = await service.sendMessage(message);
 
     state = [...state, ChatMessage(text: response, isUser: false)];

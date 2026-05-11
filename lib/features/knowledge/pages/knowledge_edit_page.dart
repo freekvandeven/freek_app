@@ -10,7 +10,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../auth/providers/auth_providers.dart';
 import '../../gemini/providers/gemini_providers.dart';
-import '../../settings/providers/settings_providers.dart';
 import '../models/knowledge_page.dart';
 import '../providers/knowledge_providers.dart';
 
@@ -266,14 +265,21 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
     );
 
     try {
-      final service = ref.read(geminiServiceProvider);
-      final model = ref.read(geminiModelProvider);
-      if (!service.isConfigured) {
-        final apiKey = await ref.read(geminiApiKeyServiceProvider).getApiKey();
-        service.configure(apiKey, model: model);
-      } else {
-        service.setModel(model);
+      final ready = await configureGeminiForCurrentSettings(ref);
+      if (!ready) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Gemini is not configured. Set it up in Settings → AI.',
+              ),
+            ),
+          );
+        }
+        return;
       }
+      final service = ref.read(geminiServiceProvider);
       final result = await service.editMarkdown(
         _contentController.text,
         instruction,

@@ -253,7 +253,11 @@ class SettingsPage extends ConsumerWidget {
             _StorageUsageTile(user: user),
 
             const _SectionHeader('AI'),
-            _GeminiApiKeyTile(),
+            _GeminiAuthModeTile(),
+            if (settings.geminiAuthMode == 'oauth')
+              _GeminiOAuthTile()
+            else
+              _GeminiApiKeyTile(),
             _GeminiModelTile(),
 
             if (defaultTargetPlatform == TargetPlatform.android)
@@ -586,6 +590,121 @@ class _SectionHeader extends StatelessWidget {
           color: Theme.of(context).colorScheme.primary,
         ),
       ),
+    );
+  }
+}
+
+class _GeminiAuthModeTile extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(currentUserProvider);
+    if (user == null) return const SizedBox.shrink();
+    final mode = user.settings.geminiAuthMode;
+    return ListTile(
+      leading: const Icon(Icons.vpn_key_outlined),
+      title: const Text('Authentication mode'),
+      subtitle: Text(
+        mode == 'oauth'
+            ? 'Sign in with Google — uses your Google account quota'
+            : 'API key — uses the AI Studio key you configure below',
+      ),
+      onTap: () => _show(context, ref, mode),
+    );
+  }
+
+  void _show(BuildContext context, WidgetRef ref, String current) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Gemini authentication'),
+        children: [
+          RadioGroup<String>(
+            groupValue: current,
+            onChanged: (v) => _select(ctx, ref, v),
+            child: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                RadioListTile<String>(
+                  value: 'apiKey',
+                  title: Text('API key'),
+                  subtitle: Text(
+                    'Paste a key from Google AI Studio. Quota counts '
+                    'against the project that owns the key.',
+                  ),
+                ),
+                RadioListTile<String>(
+                  value: 'oauth',
+                  title: Text('Sign in with Google'),
+                  subtitle: Text(
+                    'No key to manage. Quota counts against your Google '
+                    'account. Requires granting the cloud-platform scope.',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _select(BuildContext ctx, WidgetRef ref, String? value) async {
+    if (value == null) return;
+    final user = ref.read(currentUserProvider);
+    if (user == null) return;
+    final updated = user.copyWith(
+      settings: user.settings.copyWith(geminiAuthMode: value),
+    );
+    await ref.read(authServiceProvider).updateProfile(updated);
+    if (ctx.mounted) Navigator.pop(ctx);
+  }
+}
+
+class _GeminiOAuthTile extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final connected = ref.watch(geminiOAuthConnectedProvider);
+    final oauth = ref.watch(geminiOAuthServiceProvider);
+    final email = oauth.account?.email;
+    return ListTile(
+      leading: Icon(
+        Icons.account_circle_outlined,
+        color: connected ? Colors.green : null,
+      ),
+      title: Text(connected ? 'Connected' : 'Sign in with Google'),
+      subtitle: Text(
+        connected
+            ? (email ?? 'OAuth active')
+            : 'Grant Gemini access to your Google account',
+      ),
+      trailing: connected
+          ? IconButton(
+              icon: Icon(
+                Icons.logout,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              tooltip: 'Disconnect',
+              onPressed: () async {
+                await oauth.disconnect();
+                ref.read(geminiOAuthConnectedProvider.notifier).state = false;
+              },
+            )
+          : const Icon(Icons.login),
+      onTap: connected
+          ? null
+          : () async {
+              final success = await oauth.signIn();
+              ref.read(geminiOAuthConnectedProvider.notifier).state = success;
+              if (!success && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Gemini OAuth sign-in failed or was cancelled',
+                    ),
+                  ),
+                );
+              }
+            },
     );
   }
 }

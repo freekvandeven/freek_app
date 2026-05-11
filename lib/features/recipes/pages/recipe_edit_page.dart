@@ -18,7 +18,6 @@ import '../../catalog/models/catalog_item.dart';
 import '../../catalog/providers/catalog_providers.dart';
 import '../../gemini/providers/gemini_providers.dart';
 import '../../gemini/services/gemini_service.dart';
-import '../../settings/providers/settings_providers.dart';
 import '../models/recipe.dart';
 import '../providers/recipe_providers.dart';
 import '../utils/video_link_parser.dart';
@@ -662,26 +661,21 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
   }
 
   Future<void> _createWithAi() async {
-    final geminiService = ref.read(geminiServiceProvider);
-    final model = ref.read(geminiModelProvider);
-    if (!geminiService.isConfigured) {
-      final apiKey = await ref.read(geminiApiKeyServiceProvider).getApiKey();
-      if (apiKey.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Gemini API key not configured. Set it in Settings.',
-              ),
+    final ready = await configureGeminiForCurrentSettings(ref);
+    if (!ready) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Gemini is not configured. Set up an API key or sign in '
+              'with Google in Settings → AI.',
             ),
-          );
-        }
-        return;
+          ),
+        );
       }
-      geminiService.configure(apiKey, model: model);
-    } else {
-      geminiService.setModel(model);
+      return;
     }
+    final geminiService = ref.read(geminiServiceProvider);
 
     if (!mounted) return;
     final promptCtrl = TextEditingController();
@@ -761,26 +755,21 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
   }
 
   Future<void> _editWithAi() async {
-    final geminiService = ref.read(geminiServiceProvider);
-    final model = ref.read(geminiModelProvider);
-    if (!geminiService.isConfigured) {
-      final apiKey = await ref.read(geminiApiKeyServiceProvider).getApiKey();
-      if (apiKey.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Gemini API key not configured. Set it in Settings.',
-              ),
+    final ready = await configureGeminiForCurrentSettings(ref);
+    if (!ready) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Gemini is not configured. Set up an API key or sign in '
+              'with Google in Settings → AI.',
             ),
-          );
-        }
-        return;
+          ),
+        );
       }
-      geminiService.configure(apiKey, model: model);
-    } else {
-      geminiService.setModel(model);
+      return;
     }
+    final geminiService = ref.read(geminiServiceProvider);
 
     if (!mounted) return;
     final promptCtrl = TextEditingController();
