@@ -9,7 +9,13 @@ Codebase at repo root; Cloud Functions in `functions/`.
 
 ## Feedback Workflow
 
-When working on feedback items (bugs or wishes), each has a **reference ID** (e.g., `BUG-0001`, `WISH-0003`).
+Feedback items come in three flavours, each with their own reference-ID prefix:
+
+| Type | Prefix | When to use |
+|------|--------|-------------|
+| Bug | `BUG-0001` | Something is broken / behaves incorrectly |
+| Wish | `WISH-0003` | A new feature the user wants |
+| Improvement | `IMPR-0001` | Refactor / cleanup / non-functional quality work (perf, code health, tests, dead-code removal, docs, observability) |
 
 ### After completing each feedback item:
 
@@ -25,6 +31,23 @@ When working on feedback items (bugs or wishes), each has a **reference ID** (e.
    If the script fails (missing API key), note the reference ID and summary in the commit message instead.
 
 4. Update relevant docs in `docs/` when behavior changes.
+
+### Filing new feedback yourself
+
+You can create feedback items directly via:
+
+```bash
+./scripts/create-feedback.sh <bug|wish|improvement> "<TITLE>" "<DESCRIPTION>"
+```
+
+The Cloud Function assigns the next reference ID (`BUG-0034`, `IMPR-0007`, etc.) and prints it.
+
+**Use this when** you discover something genuinely out-of-scope during the current task:
+- A real bug unrelated to what the user asked for — file it, don't silently fix it.
+- A refactor or cleanup opportunity worth tracking but not worth doing now — file as `improvement`.
+- A feature idea that came up in discussion that should be remembered — file as `wish`.
+
+**Don't use this** as a substitute for fixing in-scope work, and don't file generic AI-style "consider adding tests for X" items unless they're tied to a concrete observation. Each filed item should be something you'd want to see on a real backlog.
 
 ## Commit Guidelines
 
@@ -88,6 +111,7 @@ After every creation or modification of `functions/`:
 | Script | Purpose |
 |--------|---------|
 | `./scripts/update-feedback-summary.sh <ID> "<text>"` | Post AI summary to feedback item |
+| `./scripts/create-feedback.sh <bug\|wish\|improvement> "<title>" "<description>"` | File a new feedback item; returns the assigned reference ID |
 | `./scripts/pre-commit.sh` | Lint + test (runs automatically via git hook) |
 | `./scripts/run-integration-tests.sh` | Full integration test suite with emulators |
 | `./scripts/generate-docs.sh` | Generate Dart + Cloud Functions docs |

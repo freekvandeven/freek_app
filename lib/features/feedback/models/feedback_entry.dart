@@ -1,6 +1,23 @@
 import 'package:uuid/uuid.dart';
 
-enum FeedbackType { wish, bug }
+enum FeedbackType { wish, bug, improvement }
+
+extension FeedbackTypeLabel on FeedbackType {
+  /// Human-readable label used in clipboard exports and UI badges.
+  String get label => switch (this) {
+    FeedbackType.wish => 'Wish',
+    FeedbackType.bug => 'Bug',
+    FeedbackType.improvement => 'Improvement',
+  };
+
+  /// Prefix used for the auto-generated `BUG-NNNN` / `WISH-NNNN` /
+  /// `IMPR-NNNN` reference IDs.
+  String get referencePrefix => switch (this) {
+    FeedbackType.wish => 'WISH',
+    FeedbackType.bug => 'BUG',
+    FeedbackType.improvement => 'IMPR',
+  };
+}
 
 enum FeedbackStatus { open, acknowledged, resolved }
 
@@ -114,7 +131,7 @@ class FeedbackEntry {
   );
 
   String toClipboardText() {
-    final typeLabel = type == FeedbackType.bug ? 'Bug' : 'Wish';
+    final typeLabel = type.label;
     final refPrefix = referenceId != null ? ' ($referenceId)' : '';
     final buf = StringBuffer(
       '**[$typeLabel] $title**$refPrefix\n\n'

@@ -256,6 +256,11 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
                   label: Text('Bug'),
                   icon: Icon(Icons.bug_report),
                 ),
+                ButtonSegment(
+                  value: FeedbackType.improvement,
+                  label: Text('Improvement'),
+                  icon: Icon(Icons.tune),
+                ),
               ],
               selected: {_type},
               onSelectionChanged: (selected) {

@@ -18,6 +18,9 @@ class FeedbackListPage extends ConsumerWidget {
     final wishes = exportable
         .where((e) => e.type == FeedbackType.wish)
         .toList();
+    final improvements = exportable
+        .where((e) => e.type == FeedbackType.improvement)
+        .toList();
 
     final buffer = StringBuffer();
     buffer.writeln('# Freek App — Feedback & Improvement Instructions');
@@ -142,6 +145,41 @@ class FeedbackListPage extends ConsumerWidget {
       }
     }
 
+    if (improvements.isNotEmpty) {
+      buffer.writeln('## Improvements (${improvements.length})');
+      buffer.writeln();
+      for (final imp in improvements) {
+        final ref = imp.referenceId != null ? ' (${imp.referenceId})' : '';
+        buffer.writeln('### [Improvement] ${imp.title}$ref');
+        buffer.writeln();
+        buffer.writeln(imp.description);
+        buffer.writeln();
+        buffer.writeln(
+          '- Status: ${imp.status.name[0].toUpperCase()}${imp.status.name.substring(1)}',
+        );
+        buffer.writeln(
+          '- Reported: ${imp.createdAt.toIso8601String().substring(0, 10)}',
+        );
+        if (imp.attachedLogs != null && imp.attachedLogs!.isNotEmpty) {
+          buffer.writeln();
+          buffer.writeln('#### Attached Logs');
+          buffer.writeln();
+          buffer.writeln('```');
+          buffer.writeln(imp.attachedLogs);
+          buffer.writeln('```');
+        }
+        if (imp.imageUrls.isNotEmpty) {
+          buffer.writeln();
+          buffer.writeln('#### Attached Images (${imp.imageUrls.length})');
+          buffer.writeln();
+          for (final url in imp.imageUrls) {
+            buffer.writeln('- $url');
+          }
+        }
+        buffer.writeln();
+      }
+    }
+
     Clipboard.setData(ClipboardData(text: buffer.toString()));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -186,6 +224,9 @@ class FeedbackListPage extends ConsumerWidget {
               } else if (value == 'bug') {
                 ref.read(feedbackTypeFilterProvider.notifier).state =
                     FeedbackType.bug;
+              } else if (value == 'improvement') {
+                ref.read(feedbackTypeFilterProvider.notifier).state =
+                    FeedbackType.improvement;
               } else if (value == 'all_status') {
                 ref.read(feedbackStatusFilterProvider.notifier).state = null;
               } else if (value == 'all_manual') {
@@ -219,6 +260,11 @@ class FeedbackListPage extends ConsumerWidget {
                 value: 'bug',
                 checked: typeFilter == FeedbackType.bug,
                 child: const Text('Bugs'),
+              ),
+              CheckedPopupMenuItem(
+                value: 'improvement',
+                checked: typeFilter == FeedbackType.improvement,
+                child: const Text('Improvements'),
               ),
               const PopupMenuDivider(),
               const PopupMenuItem(enabled: false, child: Text('Status')),
@@ -300,12 +346,16 @@ class _FeedbackTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final color = entry.type == FeedbackType.bug
-        ? Colors.red
-        : Theme.of(context).colorScheme.primary;
-    final icon = entry.type == FeedbackType.bug
-        ? Icons.bug_report
-        : Icons.lightbulb;
+    final color = switch (entry.type) {
+      FeedbackType.bug => Colors.red,
+      FeedbackType.improvement => Colors.teal,
+      FeedbackType.wish => Theme.of(context).colorScheme.primary,
+    };
+    final icon = switch (entry.type) {
+      FeedbackType.bug => Icons.bug_report,
+      FeedbackType.improvement => Icons.tune,
+      FeedbackType.wish => Icons.lightbulb,
+    };
 
     return ListTile(
       leading: Icon(icon, color: color),

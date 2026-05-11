@@ -33,7 +33,7 @@ class FeedbackListNotifier extends AsyncNotifier<List<FeedbackEntry>> {
     // Auto-generate reference ID if not set.
     if (entry.referenceId == null) {
       final entries = await ref.read(feedbackServiceProvider).getEntries();
-      final prefix = entry.type == FeedbackType.bug ? 'BUG' : 'WISH';
+      final prefix = entry.type.referencePrefix;
       final sameType = entries.where((e) => e.type == entry.type).toList();
       int maxNum = 0;
       for (final e in sameType) {

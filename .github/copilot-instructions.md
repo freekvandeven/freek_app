@@ -7,7 +7,34 @@ The codebase is at the repository root with Cloud Functions in `functions/`.
 
 ## Feedback Workflow
 
-When working on feedback items (bugs or wishes), each item has a **reference ID** (e.g., `BUG-0001`, `WISH-0003`).
+There are three kinds of feedback items, each with their own reference-ID prefix:
+
+| Type | Prefix | When to use |
+|------|--------|-------------|
+| Bug | `BUG-0001` | Something is broken / behaves incorrectly |
+| Wish | `WISH-0003` | A new feature the user wants |
+| Improvement | `IMPR-0001` | Refactor / cleanup / non-functional quality improvement (perf, code health, tests, dead-code removal, docs, observability) |
+
+### Filing new items yourself
+
+If, while working, you discover a bug or want to defer an improvement instead of doing it inline, you can create a new feedback item directly with:
+
+```bash
+./scripts/create-feedback.sh <bug|wish|improvement> "<TITLE>" "<DESCRIPTION>"
+```
+
+Examples:
+```bash
+./scripts/create-feedback.sh improvement \
+  "Drop unused google_generative_ai dependency" \
+  "WISH-0067 replaced the SDK with direct HTTP; removing the dep shaves bundle size."
+
+./scripts/create-feedback.sh bug \
+  "Knowledge TOC rerenders on every keystroke" \
+  "Profiling shows _TocPanel rebuilds for unrelated text edits. Should memoise on heading list."
+```
+
+The Cloud Function auto-assigns the next reference ID (e.g. `IMPR-0007`) and prints it. **Don't** file feedback items as a substitute for fixing in-scope work the user has asked you to handle — file them for genuinely out-of-scope discoveries, deferred items, or "we should track this".
 
 ### After completing each feedback item:
 
