@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- Split `settings_page.dart` (1202 lines, twelve unrelated tile widgets and three picker dialogs) into nine per-section widget files under `lib/features/settings/widgets/` — `ProfileSection`, `AppearanceSection`, `PreferencesSection`, `CalendarSection`, `DataSection`, `StorageSection`, `AiSection`, `WidgetsSection`, `AccountSection`. The shared `SettingsSectionHeader` and `CurrencyPickerDialog` (with its `currencyOptions` map and `currencySymbol()` helper) also moved out. `settings_page.dart` is now a 46-line thin composition page that just stacks the sections. No UI or behaviour change (IMPR-0004)
+
 ### Added
 - Third feedback category: "Improvement" (alongside Bug and Wish) — for refactors, cleanups, perf work, dead-code removal, observability, and other non-functional quality work that doesn't fit "bug" or "wish". The list page filter, type chip (teal `Icons.tune`), edit-form segmented selector, and clipboard export all recognize the new type. Auto-generated reference IDs use the `IMPR-NNNN` prefix
 - New `createFeedback` Cloud Function (HTTP, Bearer auth via the existing `FEEDBACK_API_KEY` secret) so an AI assistant can file a bug / wish / improvement directly into the feedback database without going through the app UI. The function scans both the public collection and every user's private collection to pick the next non-colliding reference ID for the requested type. Accompanying `scripts/create-feedback.sh` wrapper mirrors the existing `update-feedback-summary.sh` script. `CLAUDE.md` and `.github/copilot-instructions.md` now describe when (and when not) to file items vs. fixing them inline
