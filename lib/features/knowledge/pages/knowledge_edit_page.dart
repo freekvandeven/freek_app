@@ -12,6 +12,8 @@ import '../../auth/providers/auth_providers.dart';
 import '../../gemini/providers/gemini_providers.dart';
 import '../models/knowledge_page.dart';
 import '../providers/knowledge_providers.dart';
+import '../utils/autosave_snapshot.dart';
+import '../utils/markdown_toolbar_logic.dart';
 
 class KnowledgeEditPage extends ConsumerStatefulWidget {
   final String? pageId;
@@ -86,15 +88,13 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
     }
   }
 
-  String _autosaveSnapshot() {
-    return [
-      _titleController.text.trim(),
-      _contentController.text,
-      _tags.join(','),
-      _parentId ?? '',
-      _isWip ? '1' : '0',
-    ].join('||');
-  }
+  String _autosaveSnapshot() => knowledgeAutosaveSnapshot(
+    title: _titleController.text,
+    content: _contentController.text,
+    tags: _tags,
+    parentId: _parentId,
+    isWip: _isWip,
+  );
 
   Future<void> _autosave() async {
     if (!mounted || !_formKey.currentState!.validate()) return;
@@ -535,18 +535,12 @@ class _MarkdownToolbar extends StatefulWidget {
   State<_MarkdownToolbar> createState() => _MarkdownToolbarState();
 }
 
-enum _MdFormat { h1, h2, h3, bold, italic, code, bullet, numbered, quote }
-
 class _MarkdownToolbarState extends State<_MarkdownToolbar> {
   // Last known valid selection — updated while the field has focus.
   // Clicking a toolbar button blurs the field on web/desktop, making
   // controller.selection invalid, so we cache it here instead.
   TextSelection _lastSel = const TextSelection.collapsed(offset: 0);
-  Set<_MdFormat> _active = const {};
-
-  static final _numberedRe = RegExp(r'^\d+\.\s');
-  static final _trailingHashesRe = RegExp(r'\s+#+\s*$');
-  static final _leadingHeadingRe = RegExp(r'^#{1,6}\s+');
+  Set<MarkdownFormat> _active = const {};
 
   @override
   void initState() {
@@ -563,218 +557,57 @@ class _MarkdownToolbarState extends State<_MarkdownToolbar> {
   void _onChange() {
     final sel = widget.controller.selection;
     if (sel.isValid) _lastSel = sel;
-    final next = _detectFormats();
+    final next = detectMarkdownFormats(widget.controller.text, _lastSel);
     if (!setEquals(next, _active)) {
       setState(() => _active = next);
     }
   }
 
-  Set<_MdFormat> _detectFormats() {
-    final text = widget.controller.text;
-    final sel = _lastSel;
-    if (text.isEmpty) return const {};
-    final start = sel.start.clamp(0, text.length);
-    final lineStart = text.lastIndexOf('\n', start - 1) + 1;
-    final lineEndIdx = text.indexOf('\n', start);
-    final lineEnd = lineEndIdx == -1 ? text.length : lineEndIdx;
-    final line = text.substring(lineStart, lineEnd);
-
-    final out = <_MdFormat>{};
-
-    // Line-prefix formats — single heading level wins (longest first)
-    if (line.startsWith('### ')) {
-      out.add(_MdFormat.h3);
-    } else if (line.startsWith('## ')) {
-      out.add(_MdFormat.h2);
-    } else if (line.startsWith('# ')) {
-      out.add(_MdFormat.h1);
-    }
-    if (line.startsWith('- ')) out.add(_MdFormat.bullet);
-    if (_numberedRe.hasMatch(line)) out.add(_MdFormat.numbered);
-    if (line.startsWith('> ')) out.add(_MdFormat.quote);
-
-    // Wrap formats — only when the user has a non-empty selection
-    if (!sel.isCollapsed) {
-      bool wrapped(String marker) {
-        final m = marker.length;
-        if (sel.start < m || sel.end + m > text.length) {
-          // Inner not possible
-        } else if (text.substring(sel.start - m, sel.start) == marker &&
-            text.substring(sel.end, sel.end + m) == marker) {
-          return true;
-        }
-        // Whole-marker case: selection itself starts/ends with the marker
-        if (sel.end - sel.start >= 2 * m) {
-          final selText = text.substring(sel.start, sel.end);
-          if (selText.startsWith(marker) && selText.endsWith(marker)) {
-            return true;
-          }
-        }
-        return false;
-      }
-
-      // Bold first; italic only if not bold (since `**` contains `*`)
-      final bold = wrapped('**');
-      if (bold) out.add(_MdFormat.bold);
-      if (!bold && wrapped('*')) out.add(_MdFormat.italic);
-      if (wrapped('`')) out.add(_MdFormat.code);
-    }
-
-    return out;
-  }
-
-  void _setText(String text, TextSelection selection) {
+  void _apply(ToolbarEditResult result) {
     widget.controller.value = TextEditingValue(
-      text: text,
-      selection: selection,
+      text: result.text,
+      selection: result.selection,
     );
     widget.focusNode.requestFocus();
   }
 
-  void _insertAtLineStart(String prefix) {
-    final text = widget.controller.text;
-    final start = _lastSel.start.clamp(0, text.length);
-    final lineStart = text.lastIndexOf('\n', start - 1) + 1;
-    final newText =
-        text.substring(0, lineStart) + prefix + text.substring(lineStart);
-    _setText(newText, TextSelection.collapsed(offset: start + prefix.length));
-  }
-
-  void _wrapSelection(String before, String after) {
-    final text = widget.controller.text;
-    final sel = _lastSel;
-    if (sel.isCollapsed) {
-      final pos = sel.start.clamp(0, text.length);
-      _setText(
-        text.substring(0, pos) + before + after + text.substring(pos),
-        TextSelection.collapsed(offset: pos + before.length),
-      );
-    } else {
-      final selected = text.substring(sel.start, sel.end);
-      final replacement = before + selected + after;
-      _setText(
-        text.substring(0, sel.start) + replacement + text.substring(sel.end),
-        TextSelection.collapsed(offset: sel.start + replacement.length),
-      );
-    }
-  }
-
   void _toggleHeading(int level) {
+    _apply(toggleHeading(widget.controller.text, _lastSel, level));
+  }
+
+  void _toggleWrap(String marker, MarkdownFormat fmt) {
     final text = widget.controller.text;
-    final start = _lastSel.start.clamp(0, text.length);
-    final lineStart = text.lastIndexOf('\n', start - 1) + 1;
-    final lineEndIdx = text.indexOf('\n', start);
-    final lineEnd = lineEndIdx == -1 ? text.length : lineEndIdx;
-    final line = text.substring(lineStart, lineEnd);
-    final hashes = '#' * level;
-    final activePrefix = '$hashes ';
-
-    String newLine;
-    if (line.startsWith(activePrefix)) {
-      // Already this level — strip leading prefix and optional trailing close.
-      newLine = line
-          .substring(activePrefix.length)
-          .replaceFirst(_trailingHashesRe, '');
-    } else {
-      // Different level or no heading — strip any heading prefix, then wrap.
-      final stripped = line
-          .replaceFirst(_leadingHeadingRe, '')
-          .replaceFirst(_trailingHashesRe, '');
-      newLine = '$activePrefix$stripped $hashes';
-    }
-    final newText =
-        text.substring(0, lineStart) + newLine + text.substring(lineEnd);
-    final caret = (lineStart + newLine.length).clamp(0, newText.length);
-    _setText(newText, TextSelection.collapsed(offset: caret));
+    _apply(
+      _active.contains(fmt)
+          ? unwrapSelection(text, _lastSel, marker)
+          : wrapSelection(text, _lastSel, marker, marker),
+    );
   }
 
-  void _toggleWrap(String marker, _MdFormat fmt) {
-    if (_active.contains(fmt)) {
-      _unwrapSelection(marker);
-    } else {
-      _wrapSelection(marker, marker);
-    }
-  }
-
-  void _unwrapSelection(String marker) {
+  void _toggleLinePrefix(String prefix, MarkdownFormat fmt) {
     final text = widget.controller.text;
-    final sel = _lastSel;
-    if (sel.isCollapsed) return;
-    final m = marker.length;
-    final selText = text.substring(sel.start, sel.end);
-
-    // Whole-markers selected: strip marker prefix/suffix from the selection.
-    if (selText.length >= 2 * m &&
-        selText.startsWith(marker) &&
-        selText.endsWith(marker)) {
-      final inner = selText.substring(m, selText.length - m);
-      _setText(
-        text.substring(0, sel.start) + inner + text.substring(sel.end),
-        TextSelection(
-          baseOffset: sel.start,
-          extentOffset: sel.start + inner.length,
-        ),
-      );
-      return;
-    }
-    // Markers immediately outside the selection.
-    if (sel.start >= m &&
-        sel.end + m <= text.length &&
-        text.substring(sel.start - m, sel.start) == marker &&
-        text.substring(sel.end, sel.end + m) == marker) {
-      _setText(
-        text.substring(0, sel.start - m) +
-            selText +
-            text.substring(sel.end + m),
-        TextSelection(baseOffset: sel.start - m, extentOffset: sel.end - m),
-      );
-    }
-  }
-
-  void _toggleLinePrefix(String prefix, _MdFormat fmt) {
-    if (_active.contains(fmt)) {
-      _removeLinePrefix(prefix);
-    } else {
-      _insertAtLineStart(prefix);
-    }
-  }
-
-  void _removeLinePrefix(String prefix) {
-    final text = widget.controller.text;
-    final start = _lastSel.start.clamp(0, text.length);
-    final lineStart = text.lastIndexOf('\n', start - 1) + 1;
-    final lineEndIdx = text.indexOf('\n', start);
-    final lineEnd = lineEndIdx == -1 ? text.length : lineEndIdx;
-    final line = text.substring(lineStart, lineEnd);
-    if (!line.startsWith(prefix)) return;
-    final newText =
-        text.substring(0, lineStart) +
-        line.substring(prefix.length) +
-        text.substring(lineEnd);
-    final caret = (start - prefix.length).clamp(lineStart, newText.length);
-    _setText(newText, TextSelection.collapsed(offset: caret));
+    _apply(
+      _active.contains(fmt)
+          ? removeLinePrefix(text, _lastSel, prefix)
+          : insertAtLineStart(text, _lastSel, prefix),
+    );
   }
 
   void _toggleNumbered() {
-    if (!_active.contains(_MdFormat.numbered)) {
-      _insertAtLineStart('1. ');
-      return;
-    }
     final text = widget.controller.text;
-    final start = _lastSel.start.clamp(0, text.length);
-    final lineStart = text.lastIndexOf('\n', start - 1) + 1;
-    final lineEndIdx = text.indexOf('\n', start);
-    final lineEnd = lineEndIdx == -1 ? text.length : lineEndIdx;
-    final line = text.substring(lineStart, lineEnd);
-    final match = _numberedRe.firstMatch(line);
-    if (match == null) return;
-    final removed = match.end;
-    final newText =
-        text.substring(0, lineStart) +
-        line.substring(removed) +
-        text.substring(lineEnd);
-    final caret = (start - removed).clamp(lineStart, newText.length);
-    _setText(newText, TextSelection.collapsed(offset: caret));
+    _apply(
+      _active.contains(MarkdownFormat.numbered)
+          ? removeNumberedPrefix(text, _lastSel)
+          : insertAtLineStart(text, _lastSel, '1. '),
+    );
+  }
+
+  void _wrapSelectionInline(String before, String after) {
+    _apply(wrapSelection(widget.controller.text, _lastSel, before, after));
+  }
+
+  void _insertAtLineStart(String prefix) {
+    _apply(insertAtLineStart(widget.controller.text, _lastSel, prefix));
   }
 
   @override
@@ -795,19 +628,19 @@ class _MarkdownToolbarState extends State<_MarkdownToolbar> {
             _ToolbarTextButton(
               label: 'H1',
               color: color,
-              active: _active.contains(_MdFormat.h1),
+              active: _active.contains(MarkdownFormat.h1),
               onTap: () => _toggleHeading(1),
             ),
             _ToolbarTextButton(
               label: 'H2',
               color: color,
-              active: _active.contains(_MdFormat.h2),
+              active: _active.contains(MarkdownFormat.h2),
               onTap: () => _toggleHeading(2),
             ),
             _ToolbarTextButton(
               label: 'H3',
               color: color,
-              active: _active.contains(_MdFormat.h3),
+              active: _active.contains(MarkdownFormat.h3),
               onTap: () => _toggleHeading(3),
             ),
             _divider(),
@@ -815,44 +648,44 @@ class _MarkdownToolbarState extends State<_MarkdownToolbar> {
               icon: Icons.format_bold,
               color: color,
               tooltip: 'Bold',
-              active: _active.contains(_MdFormat.bold),
-              onTap: () => _toggleWrap('**', _MdFormat.bold),
+              active: _active.contains(MarkdownFormat.bold),
+              onTap: () => _toggleWrap('**', MarkdownFormat.bold),
             ),
             _ToolbarIconButton(
               icon: Icons.format_italic,
               color: color,
               tooltip: 'Italic',
-              active: _active.contains(_MdFormat.italic),
-              onTap: () => _toggleWrap('*', _MdFormat.italic),
+              active: _active.contains(MarkdownFormat.italic),
+              onTap: () => _toggleWrap('*', MarkdownFormat.italic),
             ),
             _ToolbarIconButton(
               icon: Icons.code,
               color: color,
               tooltip: 'Inline code',
-              active: _active.contains(_MdFormat.code),
-              onTap: () => _toggleWrap('`', _MdFormat.code),
+              active: _active.contains(MarkdownFormat.code),
+              onTap: () => _toggleWrap('`', MarkdownFormat.code),
             ),
             _divider(),
             _ToolbarIconButton(
               icon: Icons.format_list_bulleted,
               color: color,
               tooltip: 'Bullet list',
-              active: _active.contains(_MdFormat.bullet),
-              onTap: () => _toggleLinePrefix('- ', _MdFormat.bullet),
+              active: _active.contains(MarkdownFormat.bullet),
+              onTap: () => _toggleLinePrefix('- ', MarkdownFormat.bullet),
             ),
             _ToolbarIconButton(
               icon: Icons.format_list_numbered,
               color: color,
               tooltip: 'Numbered list',
-              active: _active.contains(_MdFormat.numbered),
+              active: _active.contains(MarkdownFormat.numbered),
               onTap: _toggleNumbered,
             ),
             _ToolbarIconButton(
               icon: Icons.format_quote,
               color: color,
               tooltip: 'Blockquote',
-              active: _active.contains(_MdFormat.quote),
-              onTap: () => _toggleLinePrefix('> ', _MdFormat.quote),
+              active: _active.contains(MarkdownFormat.quote),
+              onTap: () => _toggleLinePrefix('> ', MarkdownFormat.quote),
             ),
             _divider(),
             _ToolbarIconButton(
@@ -860,7 +693,7 @@ class _MarkdownToolbarState extends State<_MarkdownToolbar> {
               color: color,
               tooltip: 'Link',
               active: false,
-              onTap: () => _wrapSelection('[', '](url)'),
+              onTap: () => _wrapSelectionInline('[', '](url)'),
             ),
             _ToolbarIconButton(
               icon: Icons.horizontal_rule,

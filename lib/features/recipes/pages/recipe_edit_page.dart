@@ -20,6 +20,7 @@ import '../../gemini/providers/gemini_providers.dart';
 import '../../gemini/services/gemini_service.dart';
 import '../models/recipe.dart';
 import '../providers/recipe_providers.dart';
+import '../utils/autosave_snapshot.dart';
 import '../utils/video_link_parser.dart';
 
 class RecipeEditPage extends ConsumerStatefulWidget {
@@ -106,27 +107,23 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     }
   }
 
-  String _autosaveSnapshot() {
-    return [
-      _titleController.text.trim(),
-      _descriptionController.text.trim(),
-      _servingsController.text.trim(),
-      _prepTimeController.text.trim(),
-      _cookTimeController.text.trim(),
-      _sourceController.text.trim(),
-      _notesController.text.trim(),
-      _ingredients
-          .map((i) => '${i.name}|${i.quantity ?? ''}|${i.unit ?? ''}')
-          .join(';'),
-      _instructions.map((i) => i.text).join(';'),
-      _tags.join(','),
-      _savedImageUrls.join(','),
-      _primaryImageIndex.toString(),
-      _videoLinks.join(','),
-      _subRecipeIds.join(','),
-      _isWip ? '1' : '0',
-    ].join('||');
-  }
+  String _autosaveSnapshot() => recipeAutosaveSnapshot(
+    title: _titleController.text,
+    description: _descriptionController.text,
+    servings: _servingsController.text,
+    prepTime: _prepTimeController.text,
+    cookTime: _cookTimeController.text,
+    source: _sourceController.text,
+    notes: _notesController.text,
+    ingredients: _ingredients,
+    instructions: _instructions,
+    tags: _tags,
+    savedImageUrls: _savedImageUrls,
+    primaryImageIndex: _primaryImageIndex,
+    videoLinks: _videoLinks,
+    subRecipeIds: _subRecipeIds,
+    isWip: _isWip,
+  );
 
   Future<void> _autosave() async {
     if (!mounted || _existingRecipe == null) return;

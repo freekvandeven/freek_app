@@ -27,7 +27,11 @@ class GeminiRateLimitException implements Exception {
   String toString() => message;
 }
 
-bool _isRateLimitError(Object error) {
+/// True when [error] looks like a Gemini API rate-limit / quota error.
+/// Matches any of: `quota`, `rate limit`, `rate-limit`, `429`, or
+/// `exceeded your current quota` (case-insensitive). Accepts any type
+/// (`String`, `Exception`, raw HTTP response body…) — calls `toString()`.
+bool isGeminiRateLimitError(Object error) {
   final msg = error.toString().toLowerCase();
   return msg.contains('quota') ||
       msg.contains('rate limit') ||
@@ -36,11 +40,24 @@ bool _isRateLimitError(Object error) {
       msg.contains('exceeded your current quota');
 }
 
-Duration? _parseRetryAfter(String message) {
+/// Parses a "Please retry in X.Ys" hint out of a Gemini error message
+/// and returns it as a [Duration]. Returns null when no such hint is
+/// present.
+Duration? parseGeminiRetryAfter(String message) {
   final match = RegExp(r'retry in ([\d.]+)\s*s').firstMatch(message);
   final seconds = double.tryParse(match?.group(1) ?? '');
   if (seconds == null) return null;
   return Duration(milliseconds: (seconds * 1000).round());
+}
+
+/// Strips a leading ` ```json ` or ` ``` ` fence and a trailing ` ``` `
+/// fence from [text]. Used to clean up generateContent responses where
+/// the model wrapped its JSON in markdown despite being asked not to.
+String stripCodeFences(String text) {
+  return text
+      .replaceFirst(RegExp(r'^```(?:json)?\s*'), '')
+      .replaceFirst(RegExp(r'\s*```\s*$'), '')
+      .trim();
 }
 
 class GeminiService {
@@ -156,13 +173,13 @@ class GeminiService {
       return null;
     }
     if (response.statusCode == 429 ||
-        (response.statusCode >= 400 && _isRateLimitError(response.body))) {
+        (response.statusCode >= 400 && isGeminiRateLimitError(response.body))) {
       LogService.instance.error(
         'Gemini ${op ?? method} rate-limited (${response.statusCode}): ${response.body}',
       );
       throw GeminiRateLimitException(
         response.body,
-        retryAfter: _parseRetryAfter(response.body),
+        retryAfter: parseGeminiRetryAfter(response.body),
       );
     }
     if (response.statusCode != 200) {
@@ -346,10 +363,7 @@ class GeminiService {
       if (response == null) return null;
       final text = _firstText(response)?.trim();
       if (text == null || text.isEmpty) return null;
-      final cleaned = text
-          .replaceFirst(RegExp(r'^```(?:json)?\s*'), '')
-          .replaceFirst(RegExp(r'\s*```\s*$'), '')
-          .trim();
+      final cleaned = stripCodeFences(text);
       return jsonDecode(cleaned) as Map<String, dynamic>;
     } catch (e) {
       LogService.instance.error('Gemini analyzeInventoryImage error: $e');
@@ -425,10 +439,7 @@ class GeminiService {
       LogService.instance.error('Gemini $op: empty response from model');
       return null;
     }
-    final cleaned = text
-        .replaceFirst(RegExp(r'^```(?:json)?\s*'), '')
-        .replaceFirst(RegExp(r'\s*```\s*$'), '')
-        .trim();
+    final cleaned = stripCodeFences(text);
     try {
       final decoded = jsonDecode(cleaned) as Map<String, dynamic>;
       LogService.instance.info('Gemini $op: success');

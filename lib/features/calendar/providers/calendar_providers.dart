@@ -10,6 +10,7 @@ import '../../tasks/providers/task_providers.dart';
 import '../models/calendar_event.dart';
 import '../services/calendar_service.dart';
 import '../services/firestore_calendar_service.dart';
+import '../utils/sync_compare.dart';
 import 'google_calendar_providers.dart';
 
 /// Result of [CalendarEventsNotifier.syncFromGoogle].
@@ -177,7 +178,7 @@ class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
           }
           continue;
         }
-        if (_isInSyncWithGoogle(local, google)) continue;
+        if (eventInSyncWithGoogle(local, google)) continue;
 
         final updated = local.copyWith(
           title: google.title,
@@ -201,25 +202,6 @@ class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
     } finally {
       _syncing = false;
     }
-  }
-
-  static bool _isInSyncWithGoogle(CalendarEvent local, CalendarEvent google) {
-    return local.title == google.title &&
-        (local.description ?? '') == (google.description ?? '') &&
-        _sameMoment(local.date, google.date) &&
-        _sameMoment(local.endDate, google.endDate) &&
-        local.isAllDay == google.isAllDay;
-  }
-
-  /// Compare two [DateTime]s by their absolute moment in time rather than
-  /// Dart's default == (which considers `isUtc`). Without this, a naive
-  /// DateTime read back from Firestore won't equal Google's `.toLocal()`'d
-  /// DateTime even when they represent the same instant — causing
-  /// syncFromGoogle to patch the same event on every poll forever.
-  static bool _sameMoment(DateTime? a, DateTime? b) {
-    if (a == null && b == null) return true;
-    if (a == null || b == null) return false;
-    return a.microsecondsSinceEpoch == b.microsecondsSinceEpoch;
   }
 
   Future<void> deleteEvent(String id) async {
