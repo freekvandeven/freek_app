@@ -201,108 +201,13 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-
-    // Check for unsaved tag text.
-    final tagCtrl = _autocompleteTagController ?? _tagController;
-    final pendingTag = tagCtrl.text.trim().toLowerCase();
-    if (pendingTag.isNotEmpty) {
-      final action = await showDialog<String>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Unsaved Tag'),
-          content: Text(
-            'You typed "$pendingTag" in the tag field but didn\'t add it. '
-            'Would you like to add it before saving?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, 'cancel'),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, 'discard'),
-              child: const Text('Discard'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, 'add'),
-              child: const Text('Add Tag'),
-            ),
-          ],
-        ),
-      );
-      if (action == null || action == 'cancel') return;
-      if (action == 'add') _addTag();
-    }
+    if (!await _confirmUnsavedTag()) return;
 
     setState(() => _isUploading = true);
     try {
-      // Upload pending images
-      final uploader = ref.read(imageUploadServiceProvider);
-      for (final pending in _pendingImages) {
-        final url = await uploader.uploadImageBytes(
-          pending.bytes,
-          fileName: pending.fileName,
-          folder: 'recipes',
-        );
-        _savedImageUrls.add(url);
-      }
-
-      final description = _descriptionController.text.trim();
-      final source = _sourceController.text.trim();
-      final notes = _notesController.text.trim();
-
-      if (_isEditing) {
-        final service = ref.read(recipeServiceProvider);
-        final existing = await service.getRecipe(widget.recipeId!);
-        if (existing != null) {
-          final updated = existing.copyWith(
-            title: _titleController.text.trim(),
-            description: description.isEmpty ? null : description,
-            clearDescription: description.isEmpty,
-            servings: int.tryParse(_servingsController.text),
-            prepTimeMinutes: int.tryParse(_prepTimeController.text),
-            cookTimeMinutes: int.tryParse(_cookTimeController.text),
-            ingredients: _ingredients,
-            instructions: _instructions,
-            tags: _tags,
-            images: _savedImageUrls,
-            primaryImageIndex: _primaryImageIndex,
-            videoLinks: _videoLinks,
-            subRecipeIds: _subRecipeIds,
-            isWip: _isWip,
-            source: source.isEmpty ? null : source,
-            clearSource: source.isEmpty,
-            notes: notes.isEmpty ? null : notes,
-            clearNotes: notes.isEmpty,
-          );
-          await ref.read(recipeListProvider.notifier).updateRecipe(updated);
-        }
-      } else {
-        final recipe = Recipe(
-          title: _titleController.text.trim(),
-          description: description.isEmpty ? null : description,
-          servings: int.tryParse(_servingsController.text),
-          prepTimeMinutes: int.tryParse(_prepTimeController.text),
-          cookTimeMinutes: int.tryParse(_cookTimeController.text),
-          ingredients: _ingredients,
-          instructions: _instructions,
-          tags: _tags,
-          images: _savedImageUrls,
-          primaryImageIndex: _primaryImageIndex,
-          videoLinks: _videoLinks,
-          subRecipeIds: _subRecipeIds,
-          isWip: _isWip,
-          source: source.isEmpty ? null : source,
-          notes: notes.isEmpty ? null : notes,
-        );
-        await ref.read(recipeListProvider.notifier).addRecipe(recipe);
-      }
-
-      // Delete removed images from Storage
-      for (final url in _removedImageUrls) {
-        await uploader.deleteImage(url);
-      }
-
+      await _uploadPendingImages();
+      await _persistRecipe();
+      await _deleteRemovedImages();
       if (mounted) context.pop();
     } catch (e) {
       if (mounted) {
@@ -313,6 +218,125 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }
+  }
+
+  /// Prompts the user when there's untagged text still in the tag field.
+  /// Returns true to continue saving, false to abort.
+  Future<bool> _confirmUnsavedTag() async {
+    final tagCtrl = _autocompleteTagController ?? _tagController;
+    final pendingTag = tagCtrl.text.trim().toLowerCase();
+    if (pendingTag.isEmpty) return true;
+    final action = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Unsaved Tag'),
+        content: Text(
+          'You typed "$pendingTag" in the tag field but didn\'t add it. '
+          'Would you like to add it before saving?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'cancel'),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'discard'),
+            child: const Text('Discard'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, 'add'),
+            child: const Text('Add Tag'),
+          ),
+        ],
+      ),
+    );
+    if (action == null || action == 'cancel') return false;
+    if (action == 'add') _addTag();
+    return true;
+  }
+
+  Future<void> _uploadPendingImages() async {
+    final uploader = ref.read(imageUploadServiceProvider);
+    for (final pending in _pendingImages) {
+      final url = await uploader.uploadImageBytes(
+        pending.bytes,
+        fileName: pending.fileName,
+        folder: 'recipes',
+      );
+      _savedImageUrls.add(url);
+    }
+  }
+
+  Future<void> _deleteRemovedImages() async {
+    final uploader = ref.read(imageUploadServiceProvider);
+    for (final url in _removedImageUrls) {
+      await uploader.deleteImage(url);
+    }
+  }
+
+  /// Build a fresh [Recipe] from the current form state (used for the
+  /// "new recipe" path).
+  Recipe _newRecipeFromForm() {
+    final description = _descriptionController.text.trim();
+    final source = _sourceController.text.trim();
+    final notes = _notesController.text.trim();
+    return Recipe(
+      title: _titleController.text.trim(),
+      description: description.isEmpty ? null : description,
+      servings: int.tryParse(_servingsController.text),
+      prepTimeMinutes: int.tryParse(_prepTimeController.text),
+      cookTimeMinutes: int.tryParse(_cookTimeController.text),
+      ingredients: _ingredients,
+      instructions: _instructions,
+      tags: _tags,
+      images: _savedImageUrls,
+      primaryImageIndex: _primaryImageIndex,
+      videoLinks: _videoLinks,
+      subRecipeIds: _subRecipeIds,
+      isWip: _isWip,
+      source: source.isEmpty ? null : source,
+      notes: notes.isEmpty ? null : notes,
+    );
+  }
+
+  /// Build an updated copy of [existing] from the current form state.
+  Recipe _existingRecipeFromForm(Recipe existing) {
+    final description = _descriptionController.text.trim();
+    final source = _sourceController.text.trim();
+    final notes = _notesController.text.trim();
+    return existing.copyWith(
+      title: _titleController.text.trim(),
+      description: description.isEmpty ? null : description,
+      clearDescription: description.isEmpty,
+      servings: int.tryParse(_servingsController.text),
+      prepTimeMinutes: int.tryParse(_prepTimeController.text),
+      cookTimeMinutes: int.tryParse(_cookTimeController.text),
+      ingredients: _ingredients,
+      instructions: _instructions,
+      tags: _tags,
+      images: _savedImageUrls,
+      primaryImageIndex: _primaryImageIndex,
+      videoLinks: _videoLinks,
+      subRecipeIds: _subRecipeIds,
+      isWip: _isWip,
+      source: source.isEmpty ? null : source,
+      clearSource: source.isEmpty,
+      notes: notes.isEmpty ? null : notes,
+      clearNotes: notes.isEmpty,
+    );
+  }
+
+  Future<void> _persistRecipe() async {
+    final notifier = ref.read(recipeListProvider.notifier);
+    if (!_isEditing) {
+      await notifier.addRecipe(_newRecipeFromForm());
+      return;
+    }
+    final existing = await ref
+        .read(recipeServiceProvider)
+        .getRecipe(widget.recipeId!);
+    if (existing == null) return;
+    await notifier.updateRecipe(_existingRecipeFromForm(existing));
   }
 
   void _addIngredient() {
@@ -1091,228 +1115,50 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                 ),
               const SizedBox(height: 16),
 
-              // Ingredients
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Ingredients',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  TextButton.icon(
-                    onPressed: _addIngredient,
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Add'),
-                  ),
-                ],
-              ),
-              ..._ingredients.asMap().entries.map(
-                (entry) => ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                  title: Text(
-                    [
-                      if (entry.value.quantity != null)
-                        entry.value.quantity!.toString(),
-                      if (entry.value.unit != null) entry.value.unit,
-                      entry.value.name,
-                    ].join(' '),
-                  ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.remove_circle_outline, size: 20),
-                    onPressed: () =>
-                        setState(() => _ingredients.removeAt(entry.key)),
-                  ),
-                ),
+              _RecipeIngredientsSection(
+                ingredients: _ingredients,
+                onAdd: _addIngredient,
+                onRemove: (i) => setState(() => _ingredients.removeAt(i)),
               ),
               const SizedBox(height: 16),
 
-              // Instructions
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Instructions',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  TextButton.icon(
-                    onPressed: _addInstruction,
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Add'),
-                  ),
-                ],
-              ),
-              ReorderableListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _instructions.length,
-                onReorder: (old, newIdx) {
+              _RecipeInstructionsSection(
+                instructions: _instructions,
+                onAdd: _addInstruction,
+                onRemove: (i) => setState(() => _instructions.removeAt(i)),
+                onReorder: (int oldIdx, int newIdx) {
                   setState(() {
-                    if (newIdx > old) newIdx--;
-                    final item = _instructions.removeAt(old);
+                    if (newIdx > oldIdx) newIdx--;
+                    final item = _instructions.removeAt(oldIdx);
                     _instructions.insert(newIdx, item);
                   });
                 },
-                itemBuilder: (context, index) => ListTile(
-                  key: ValueKey(index),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                  leading: CircleAvatar(
-                    radius: 12,
-                    child: Text(
-                      '${index + 1}',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  ),
-                  title: Text(
-                    _instructions[index].text,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: _instructions[index].imageUrl != null
-                      ? Text(
-                          _instructions[index].imageUrl!,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey,
-                          ),
-                        )
-                      : null,
-                  trailing: IconButton(
-                    icon: const Icon(Icons.remove_circle_outline, size: 20),
-                    onPressed: () =>
-                        setState(() => _instructions.removeAt(index)),
-                  ),
-                ),
               ),
               const SizedBox(height: 16),
 
-              // Images
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Images',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  TextButton.icon(
-                    onPressed: _addImage,
-                    icon: const Icon(Icons.add_photo_alternate, size: 18),
-                    label: const Text('Add'),
-                  ),
-                ],
+              _RecipeImagesSection(
+                savedImageUrls: _savedImageUrls,
+                pendingImages: _pendingImages,
+                primaryImageIndex: _primaryImageIndex,
+                onAdd: _addImage,
+                onSetPrimary: (int i) => setState(() => _primaryImageIndex = i),
+                onRemove: (int i) {
+                  setState(() {
+                    final totalCount =
+                        _savedImageUrls.length + _pendingImages.length;
+                    if (i < _savedImageUrls.length) {
+                      _removedImageUrls.add(_savedImageUrls[i]);
+                      _savedImageUrls.removeAt(i);
+                    } else {
+                      _pendingImages.removeAt(i - _savedImageUrls.length);
+                    }
+                    final newTotal = totalCount - 1;
+                    if (_primaryImageIndex >= newTotal) {
+                      _primaryImageIndex = newTotal <= 0 ? 0 : newTotal - 1;
+                    }
+                  });
+                },
               ),
-              if (_savedImageUrls.isNotEmpty || _pendingImages.isNotEmpty)
-                SizedBox(
-                  height: 80,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _savedImageUrls.length + _pendingImages.length,
-                    itemBuilder: (context, index) {
-                      final isExisting = index < _savedImageUrls.length;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: Stack(
-                          children: [
-                            GestureDetector(
-                              onTap: () =>
-                                  setState(() => _primaryImageIndex = index),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: isExisting
-                                    ? CachedNetworkImage(
-                                        imageUrl: _savedImageUrls[index],
-                                        width: 80,
-                                        height: 80,
-                                        fit: BoxFit.cover,
-                                        errorWidget: (_, __, ___) => Container(
-                                          width: 80,
-                                          height: 80,
-                                          color: Colors.grey[300],
-                                          child: const Icon(Icons.broken_image),
-                                        ),
-                                      )
-                                    : Image.memory(
-                                        _pendingImages[index -
-                                                _savedImageUrls.length]
-                                            .bytes,
-                                        width: 80,
-                                        height: 80,
-                                        fit: BoxFit.cover,
-                                      ),
-                              ),
-                            ),
-                            if (index == _primaryImageIndex)
-                              Positioned(
-                                top: 2,
-                                left: 2,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                    vertical: 1,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: const Text(
-                                    'Primary',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 9,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            Positioned(
-                              top: 0,
-                              right: 0,
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    final totalCount =
-                                        _savedImageUrls.length +
-                                        _pendingImages.length;
-                                    if (isExisting) {
-                                      _removedImageUrls.add(
-                                        _savedImageUrls[index],
-                                      );
-                                      _savedImageUrls.removeAt(index);
-                                    } else {
-                                      _pendingImages.removeAt(
-                                        index - _savedImageUrls.length,
-                                      );
-                                    }
-                                    final newTotal = totalCount - 1;
-                                    if (_primaryImageIndex >= newTotal) {
-                                      _primaryImageIndex = newTotal <= 0
-                                          ? 0
-                                          : newTotal - 1;
-                                    }
-                                  });
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.all(2),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.black54,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.close,
-                                    size: 14,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
               const SizedBox(height: 16),
 
               // Video Links
@@ -1563,6 +1409,247 @@ class _RecipePickerSheetState extends State<_RecipePickerSheet> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _RecipeImagesSection extends StatelessWidget {
+  final List<String> savedImageUrls;
+  final List<({Uint8List bytes, String fileName})> pendingImages;
+  final int primaryImageIndex;
+  final VoidCallback onAdd;
+  final void Function(int index) onSetPrimary;
+  final void Function(int index) onRemove;
+
+  const _RecipeImagesSection({
+    required this.savedImageUrls,
+    required this.pendingImages,
+    required this.primaryImageIndex,
+    required this.onAdd,
+    required this.onSetPrimary,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final total = savedImageUrls.length + pendingImages.length;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Images', style: Theme.of(context).textTheme.titleMedium),
+            TextButton.icon(
+              onPressed: onAdd,
+              icon: const Icon(Icons.add_photo_alternate, size: 18),
+              label: const Text('Add'),
+            ),
+          ],
+        ),
+        if (total > 0)
+          SizedBox(
+            height: 80,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: total,
+              itemBuilder: (context, index) {
+                final isExisting = index < savedImageUrls.length;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Stack(
+                    children: [
+                      GestureDetector(
+                        onTap: () => onSetPrimary(index),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: isExisting
+                              ? CachedNetworkImage(
+                                  imageUrl: savedImageUrls[index],
+                                  width: 80,
+                                  height: 80,
+                                  fit: BoxFit.cover,
+                                  errorWidget: (_, __, ___) => Container(
+                                    width: 80,
+                                    height: 80,
+                                    color: Colors.grey[300],
+                                    child: const Icon(Icons.broken_image),
+                                  ),
+                                )
+                              : Image.memory(
+                                  pendingImages[index - savedImageUrls.length]
+                                      .bytes,
+                                  width: 80,
+                                  height: 80,
+                                  fit: BoxFit.cover,
+                                ),
+                        ),
+                      ),
+                      if (index == primaryImageIndex)
+                        Positioned(
+                          top: 2,
+                          left: 2,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'Primary',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                              ),
+                            ),
+                          ),
+                        ),
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: GestureDetector(
+                          onTap: () => onRemove(index),
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: const BoxDecoration(
+                              color: Colors.black54,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.close,
+                              size: 14,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _RecipeIngredientsSection extends StatelessWidget {
+  final List<Ingredient> ingredients;
+  final VoidCallback onAdd;
+  final void Function(int index) onRemove;
+
+  const _RecipeIngredientsSection({
+    required this.ingredients,
+    required this.onAdd,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Ingredients', style: Theme.of(context).textTheme.titleMedium),
+            TextButton.icon(
+              onPressed: onAdd,
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Add'),
+            ),
+          ],
+        ),
+        ...ingredients.asMap().entries.map(
+          (entry) => ListTile(
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            title: Text(
+              [
+                if (entry.value.quantity != null)
+                  entry.value.quantity!.toString(),
+                if (entry.value.unit != null) entry.value.unit,
+                entry.value.name,
+              ].join(' '),
+            ),
+            trailing: IconButton(
+              icon: const Icon(Icons.remove_circle_outline, size: 20),
+              onPressed: () => onRemove(entry.key),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RecipeInstructionsSection extends StatelessWidget {
+  final List<RecipeInstruction> instructions;
+  final VoidCallback onAdd;
+  final void Function(int index) onRemove;
+  final ReorderCallback onReorder;
+
+  const _RecipeInstructionsSection({
+    required this.instructions,
+    required this.onAdd,
+    required this.onRemove,
+    required this.onReorder,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Instructions',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            TextButton.icon(
+              onPressed: onAdd,
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Add'),
+            ),
+          ],
+        ),
+        ReorderableListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: instructions.length,
+          onReorder: onReorder,
+          itemBuilder: (context, index) => ListTile(
+            key: ValueKey(index),
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            leading: CircleAvatar(
+              radius: 12,
+              child: Text('${index + 1}', style: const TextStyle(fontSize: 12)),
+            ),
+            title: Text(
+              instructions[index].text,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: instructions[index].imageUrl != null
+                ? Text(
+                    instructions[index].imageUrl!,
+                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                  )
+                : null,
+            trailing: IconButton(
+              icon: const Icon(Icons.remove_circle_outline, size: 20),
+              onPressed: () => onRemove(index),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
