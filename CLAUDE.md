@@ -76,6 +76,21 @@ lib/
 
 **State management:** Riverpod 2 with code-generation (`@riverpod`). Always run `flutter pub run build_runner build --delete-conflicting-outputs` after generating new providers.
 
+**Local widget state — prefer flutter_hooks:** for new widgets that need ephemeral local state (controllers, focus nodes, animations, simple flags, timers, scroll positions), use `HookWidget` / `HookConsumerWidget` from `flutter_hooks` + `hooks_riverpod` instead of `StatefulWidget` / `ConsumerStatefulWidget`. The common conversions:
+
+| StatefulWidget pattern | Hook replacement |
+|---|---|
+| `final _c = TextEditingController();` + `dispose()` | `final c = useTextEditingController();` |
+| `final _f = FocusNode();` + `dispose()` | `final f = useFocusNode();` |
+| `bool _isLoading = false;` + `setState` | `final isLoading = useState(false); isLoading.value = …` |
+| `final _formKey = GlobalKey<FormState>();` | `final formKey = useMemoized(() => GlobalKey<FormState>(), const []);` |
+| `initState` to subscribe + `dispose` to clean up | `useEffect(() { subscribe(); return unsubscribe; }, deps)` |
+| `Timer.periodic` in `initState` + cancel in `dispose` | wrap in `useEffect(() { final t = Timer.periodic(…); return t.cancel; }, [interval])` |
+
+Hooks must be called in the same order every build — never put a hook call inside an `if`, loop, or after an early `return`. For widgets that also need Riverpod's `ref`, use `HookConsumerWidget` (not plain `HookWidget`).
+
+Existing `StatefulWidget`s don't need a bulk migration — convert opportunistically when you're already editing the file and the win is clear (multiple controllers, several `setState`-only fields, or a lifecycle pair).
+
 **Routing:** GoRouter with shell routes. Add new routes in `lib/routing/`.
 
 **Encryption:** Password vault uses E2E encryption via the `encrypt` package. Do not log or expose plaintext vault data.

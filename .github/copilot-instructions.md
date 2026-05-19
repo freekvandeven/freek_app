@@ -57,6 +57,23 @@ The Cloud Function auto-assigns the next reference ID (e.g. `IMPR-0007`) and pri
 
 3. If the script fails (e.g., missing API key), note the reference ID and summary in the commit message instead.
 
+## Widget State — Prefer flutter_hooks
+
+For new widgets that need ephemeral local state (controllers, focus nodes, animations, simple flags, timers, scroll positions), use `HookWidget` / `HookConsumerWidget` from `flutter_hooks` + `hooks_riverpod` instead of `StatefulWidget` / `ConsumerStatefulWidget`. The common conversions:
+
+| StatefulWidget pattern | Hook replacement |
+|---|---|
+| `final _c = TextEditingController();` + `dispose()` | `final c = useTextEditingController();` |
+| `final _f = FocusNode();` + `dispose()` | `final f = useFocusNode();` |
+| `bool _isLoading = false;` + `setState` | `final isLoading = useState(false); isLoading.value = …` |
+| `final _formKey = GlobalKey<FormState>();` | `final formKey = useMemoized(() => GlobalKey<FormState>(), const []);` |
+| `initState` + `dispose` cleanup pair | `useEffect(() { subscribe(); return unsubscribe; }, deps)` |
+| `Timer.periodic` in `initState` + cancel in `dispose` | `useEffect(() { final t = Timer.periodic(...); return t.cancel; }, [interval])` |
+
+**Rules**: hooks must be called in the same order every build — never inside an `if`, loop, or after an early `return`. For widgets that also need Riverpod's `ref`, use `HookConsumerWidget` (not plain `HookWidget`).
+
+Existing `StatefulWidget`s don't need a bulk migration — convert opportunistically when you're already editing the file and the win is clear (multiple controllers, several `setState`-only fields, or a lifecycle pair).
+
 ## Commit Guidelines
 
 - One feedback item = one commit
