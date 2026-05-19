@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../services/image_upload_service.dart' show formatBytes;
 import '../models/knowledge_page.dart';
 import '../providers/knowledge_providers.dart';
 
@@ -227,6 +228,26 @@ class _KnowledgeViewPageState extends ConsumerState<KnowledgeViewPage> {
               .toList(),
         ),
         const SizedBox(height: 12),
+      ],
+
+      if (page.attachments.isNotEmpty) ...[
+        Text('Attachments', style: Theme.of(context).textTheme.titleMedium),
+        for (final att in page.attachments)
+          ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.insert_drive_file_outlined),
+            title: Text(att.fileName),
+            subtitle: Text(
+              '${att.contentType} · ${formatBytes(att.sizeBytes)}',
+            ),
+            trailing: const Icon(Icons.open_in_new, size: 18),
+            onTap: () => launchUrl(
+              Uri.parse(att.url),
+              mode: LaunchMode.externalApplication,
+            ),
+          ),
+        const SizedBox(height: 16),
       ],
 
       // Markdown content split by heading so each section has a GlobalKey anchor

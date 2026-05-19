@@ -1,5 +1,41 @@
 import 'package:uuid/uuid.dart';
 
+/// A file attached to a knowledge page. Stored as plain data on the
+/// page document so the UI can render the attachment list without an
+/// extra Storage round-trip. The Cloud Function storage triggers
+/// (`onFileUploaded` / `onFileDeleted`) keep the user's
+/// `storageUsedBytes` in sync as files appear and disappear under
+/// `users/{userId}/knowledge/`.
+class KnowledgeAttachment {
+  final String url;
+  final String fileName;
+  final String contentType;
+  final int sizeBytes;
+
+  const KnowledgeAttachment({
+    required this.url,
+    required this.fileName,
+    required this.contentType,
+    required this.sizeBytes,
+  });
+
+  Map<String, dynamic> toMap() => {
+    'url': url,
+    'fileName': fileName,
+    'contentType': contentType,
+    'sizeBytes': sizeBytes,
+  };
+
+  factory KnowledgeAttachment.fromMap(Map<String, dynamic> map) =>
+      KnowledgeAttachment(
+        url: map['url'] as String,
+        fileName: map['fileName'] as String,
+        contentType:
+            map['contentType'] as String? ?? 'application/octet-stream',
+        sizeBytes: (map['sizeBytes'] as num?)?.toInt() ?? 0,
+      );
+}
+
 class KnowledgePage {
   final String id;
   final String title;
@@ -8,6 +44,7 @@ class KnowledgePage {
   final String? parentId;
   final int sortOrder;
   final bool isWip;
+  final List<KnowledgeAttachment> attachments;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -19,6 +56,7 @@ class KnowledgePage {
     this.parentId,
     this.sortOrder = 0,
     this.isWip = false,
+    this.attachments = const [],
     DateTime? createdAt,
     DateTime? updatedAt,
   }) : id = id ?? const Uuid().v4(),
@@ -32,6 +70,7 @@ class KnowledgePage {
     String? Function()? parentId,
     int? sortOrder,
     bool? isWip,
+    List<KnowledgeAttachment>? attachments,
     DateTime? updatedAt,
   }) {
     return KnowledgePage(
@@ -42,6 +81,7 @@ class KnowledgePage {
       parentId: parentId != null ? parentId() : this.parentId,
       sortOrder: sortOrder ?? this.sortOrder,
       isWip: isWip ?? this.isWip,
+      attachments: attachments ?? this.attachments,
       createdAt: createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
     );
@@ -55,6 +95,7 @@ class KnowledgePage {
     'parentId': parentId,
     'sortOrder': sortOrder,
     'isWip': isWip,
+    'attachments': attachments.map((a) => a.toMap()).toList(),
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
   };
@@ -67,6 +108,11 @@ class KnowledgePage {
     parentId: map['parentId'] as String?,
     sortOrder: map['sortOrder'] as int? ?? 0,
     isWip: map['isWip'] as bool? ?? false,
+    attachments:
+        (map['attachments'] as List<dynamic>?)
+            ?.map((e) => KnowledgeAttachment.fromMap(e as Map<String, dynamic>))
+            .toList() ??
+        const [],
     createdAt: DateTime.parse(map['createdAt'] as String),
     updatedAt: DateTime.parse(map['updatedAt'] as String),
   );

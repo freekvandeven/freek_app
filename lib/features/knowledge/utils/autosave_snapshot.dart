@@ -1,3 +1,5 @@
+import '../models/knowledge_page.dart';
+
 /// Canonical string fingerprint of the autosaved fields of a knowledge
 /// page. Compared against the previous snapshot to decide whether the
 /// autosave timer should actually save (BUG-0033 — browser-throttled
@@ -11,6 +13,7 @@ String knowledgeAutosaveSnapshot({
   required List<String> tags,
   required String? parentId,
   required bool isWip,
+  List<KnowledgeAttachment> attachments = const [],
 }) {
   return [
     title.trim(),
@@ -18,5 +21,6 @@ String knowledgeAutosaveSnapshot({
     tags.join(','),
     parentId ?? '',
     isWip ? '1' : '0',
+    attachments.map((a) => a.url).join(','),
   ].join('||');
 }

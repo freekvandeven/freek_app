@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:file_picker/file_picker.dart' as fp;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -152,4 +153,120 @@ class ImageUploadService {
       // Image may have already been deleted or URL is external
     }
   }
+
+  /// Pick any file from the system file picker. Returns the picked file
+  /// (with bytes loaded) or null when the user cancels.
+  ///
+  /// Used for arbitrary attachments (PDFs, documents, archives, etc.) —
+  /// distinct from [pickImage] which goes through the image gallery.
+  Future<fp.PlatformFile?> pickAnyFile() async {
+    final result = await fp.FilePicker.platform.pickFiles(
+      withData: true,
+      allowMultiple: false,
+    );
+    if (result == null || result.files.isEmpty) return null;
+    final picked = result.files.single;
+    if (picked.bytes == null) return null;
+    return picked;
+  }
+
+  /// Upload arbitrary bytes (not necessarily an image) to Firebase
+  /// Storage under `users/{userId}/{folder}/`, return a [FileUpload]
+  /// with the download URL plus the metadata callers need to display the
+  /// attachment in the UI without re-fetching anything.
+  ///
+  /// Throws [StorageLimitExceededException] if the upload would exceed
+  /// the user's remaining quota.
+  Future<FileUpload> uploadFileBytes(
+    Uint8List bytes, {
+    required String fileName,
+    String? contentType,
+    String folder = 'files',
+  }) async {
+    await FirebaseAuth.instance.currentUser?.getIdToken(true);
+
+    final ext = fileName.contains('.') ? fileName.split('.').last : '';
+    final storageName = ext.isEmpty
+        ? const Uuid().v4()
+        : '${const Uuid().v4()}.$ext';
+    final ref = _storage.ref('users/$userId/$folder/$storageName');
+
+    if (storageLimitBytes > 0 &&
+        storageUsedBytes + bytes.length > storageLimitBytes) {
+      throw StorageLimitExceededException(
+        bytes.length,
+        storageUsedBytes,
+        storageLimitBytes,
+      );
+    }
+
+    final effectiveType = contentType ?? _guessContentType(ext);
+    final metadata = SettableMetadata(contentType: effectiveType);
+    await ref.putData(bytes, metadata);
+    final url = await ref.getDownloadURL();
+    LogService.instance.info(
+      'File uploaded: $folder/$storageName (${formatBytes(bytes.length)}, $effectiveType)',
+    );
+    return FileUpload(
+      url: url,
+      fileName: fileName,
+      contentType: effectiveType,
+      sizeBytes: bytes.length,
+    );
+  }
+
+  /// Delete an arbitrary file from Firebase Storage by its download URL.
+  /// Same idempotent behaviour as [deleteImage] — silently ignores
+  /// already-gone files and external URLs.
+  Future<void> deleteFile(String downloadUrl) => deleteImage(downloadUrl);
+
+  String _guessContentType(String ext) {
+    switch (ext.toLowerCase()) {
+      case 'pdf':
+        return 'application/pdf';
+      case 'txt':
+      case 'md':
+        return 'text/plain';
+      case 'html':
+        return 'text/html';
+      case 'json':
+        return 'application/json';
+      case 'zip':
+        return 'application/zip';
+      case 'doc':
+        return 'application/msword';
+      case 'docx':
+        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      case 'xls':
+        return 'application/vnd.ms-excel';
+      case 'xlsx':
+        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      case 'csv':
+        return 'text/csv';
+      case 'png':
+      case 'jpg':
+      case 'jpeg':
+      case 'gif':
+      case 'webp':
+        return 'image/${ext == 'jpg' ? 'jpeg' : ext}';
+      default:
+        return 'application/octet-stream';
+    }
+  }
+}
+
+/// Result of a generic [ImageUploadService.uploadFileBytes] call —
+/// contains everything the UI needs to display the attachment without a
+/// second fetch.
+class FileUpload {
+  final String url;
+  final String fileName;
+  final String contentType;
+  final int sizeBytes;
+  const FileUpload({
+    required this.url,
+    required this.fileName,
+    required this.contentType,
+    required this.sizeBytes,
+  });
 }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/app_config.dart';
+import '../../../services/image_upload_service.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../models/knowledge_page.dart';
 import '../services/firestore_knowledge_service.dart';
@@ -38,7 +39,19 @@ class KnowledgeListNotifier extends AsyncNotifier<List<KnowledgePage>> {
   }
 
   Future<void> deletePage(String id) async {
-    await ref.read(knowledgeServiceProvider).deletePage(id);
+    // Cascade-delete any attached files from Storage so the user's
+    // storageUsedBytes doesn't drift (WISH-0068). The Storage triggers
+    // (onFileDeleted) handle the bookkeeping automatically; we just
+    // have to issue the deletes.
+    final service = ref.read(knowledgeServiceProvider);
+    final page = await service.getPage(id);
+    if (page != null && page.attachments.isNotEmpty) {
+      final uploader = ref.read(imageUploadServiceProvider);
+      for (final att in page.attachments) {
+        await uploader.deleteFile(att.url);
+      }
+    }
+    await service.deletePage(id);
     ref.invalidateSelf();
   }
 }

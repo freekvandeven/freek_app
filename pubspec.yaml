@@ -36,6 +36,7 @@ dependencies:
   google_generative_ai: ^0.4.7
   firebase_storage: ^13.1.0
   image_picker: ^1.2.1
+  file_picker: ^8.1.4
   wakelock_plus: ^1.4.0
   http: ^1.2.0
   flutter_secure_storage: ^10.0.0

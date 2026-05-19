@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../services/image_upload_service.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../gemini/providers/gemini_providers.dart';
 import '../models/knowledge_page.dart';
@@ -36,10 +37,21 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
   bool _isWip = false;
   bool _isLoading = true;
   bool _showPreview = false;
+  bool _isUploadingAttachment = false;
   KnowledgePage? _existing;
   Timer? _autosaveTimer;
   DateTime? _lastAutosaveAt;
   String? _lastSavedSnapshot;
+
+  /// Attachments already persisted to Firestore + Storage. Mutated in
+  /// place on add/remove; the new value is sent on save.
+  List<KnowledgeAttachment> _savedAttachments = [];
+
+  /// Attachment URLs the user removed during this edit session. We hang
+  /// onto these and delete them from Storage on save so a partial edit
+  /// doesn't orphan files; same shape as recipe_edit_page's
+  /// `_removedImageUrls`.
+  final List<String> _removedAttachmentUrls = [];
 
   static const double _previewBreakpoint = 900;
 
@@ -67,6 +79,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
         _tags = List.from(page.tags);
         _parentId = page.parentId;
         _isWip = page.isWip;
+        _savedAttachments = List.of(page.attachments);
         _isLoading = false;
       });
       _lastSavedSnapshot = _autosaveSnapshot();
@@ -94,6 +107,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
     tags: _tags,
     parentId: _parentId,
     isWip: _isWip,
+    attachments: _savedAttachments,
   );
 
   Future<void> _autosave() async {
@@ -124,6 +138,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
             tags: _tags,
             parentId: () => _parentId,
             isWip: _isWip,
+            attachments: _savedAttachments,
           ),
         );
       } else {
@@ -133,6 +148,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
           tags: _tags,
           parentId: _parentId,
           isWip: _isWip,
+          attachments: _savedAttachments,
         );
         await notifier.addPage(page);
         if (mounted) setState(() => _existing = page);
@@ -184,6 +200,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
           tags: _tags,
           parentId: () => _parentId,
           isWip: _isWip,
+          attachments: _savedAttachments,
         ),
       );
     } else {
@@ -194,11 +211,68 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
           tags: _tags,
           parentId: _parentId,
           isWip: _isWip,
+          attachments: _savedAttachments,
         ),
       );
     }
 
+    // Clean up files the user removed during this edit session. Storage
+    // triggers will decrement storageUsedBytes automatically.
+    final uploader = ref.read(imageUploadServiceProvider);
+    for (final url in _removedAttachmentUrls) {
+      await uploader.deleteFile(url);
+    }
+
     if (mounted) context.pop();
+  }
+
+  Future<void> _pickAndUploadAttachment() async {
+    final uploader = ref.read(imageUploadServiceProvider);
+    final picked = await uploader.pickAnyFile();
+    if (picked == null || picked.bytes == null) return;
+
+    setState(() => _isUploadingAttachment = true);
+    try {
+      final upload = await uploader.uploadFileBytes(
+        picked.bytes!,
+        fileName: picked.name,
+        folder: 'knowledge',
+      );
+      if (!mounted) return;
+      setState(() {
+        _savedAttachments = [
+          ..._savedAttachments,
+          KnowledgeAttachment(
+            url: upload.url,
+            fileName: upload.fileName,
+            contentType: upload.contentType,
+            sizeBytes: upload.sizeBytes,
+          ),
+        ];
+      });
+    } on StorageLimitExceededException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingAttachment = false);
+    }
+  }
+
+  void _removeAttachment(int index) {
+    final removed = _savedAttachments[index];
+    setState(() {
+      _savedAttachments = [..._savedAttachments]..removeAt(index);
+      _removedAttachmentUrls.add(removed.url);
+    });
   }
 
   Future<void> _showAiAssist() async {
@@ -425,6 +499,74 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
               contentPadding: EdgeInsets.zero,
             ),
             const SizedBox(height: 8),
+
+            // Attachments
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Attachments',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                TextButton.icon(
+                  onPressed: _isUploadingAttachment
+                      ? null
+                      : _pickAndUploadAttachment,
+                  icon: _isUploadingAttachment
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.attach_file, size: 18),
+                  label: const Text('Add'),
+                ),
+              ],
+            ),
+            if (_savedAttachments.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Text(
+                  'No attachments. Any file type — counts toward your '
+                  'storage quota.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              )
+            else
+              ..._savedAttachments.asMap().entries.map(
+                (entry) => ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.insert_drive_file_outlined),
+                  title: Text(
+                    entry.value.fileName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: Text(
+                    '${entry.value.contentType} · '
+                    '${formatBytes(entry.value.sizeBytes)}',
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.open_in_new, size: 18),
+                        tooltip: 'Open',
+                        onPressed: () => launchUrl(Uri.parse(entry.value.url)),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.remove_circle_outline, size: 20),
+                        tooltip: 'Remove',
+                        onPressed: () => _removeAttachment(entry.key),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            const SizedBox(height: 16),
 
             // Content area — single column or side-by-side preview
             if (showPreview)
