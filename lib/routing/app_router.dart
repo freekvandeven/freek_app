@@ -21,6 +21,7 @@ import '../features/dashboard/pages/dashboard_page.dart';
 import '../features/feedback/models/feedback_entry.dart';
 import '../features/feedback/pages/feedback_edit_page.dart';
 import '../features/feedback/pages/feedback_list_page.dart';
+import '../features/files/pages/files_page.dart';
 import '../features/finances/pages/asset_edit_page.dart';
 import '../features/finances/pages/asset_list_page.dart';
 import '../features/finances/pages/category_management_page.dart';
@@ -435,6 +436,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/shopping',
             builder: (context, state) => const ShoppingListPage(),
+          ),
+          GoRoute(
+            path: '/files',
+            builder: (context, state) => const FilesPage(),
           ),
           GoRoute(
             path: '/wip',

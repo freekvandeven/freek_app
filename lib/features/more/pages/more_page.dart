@@ -54,6 +54,11 @@ class MorePage extends ConsumerWidget {
                 useGo: true,
               ),
               const _MenuItem(
+                icon: Icons.folder_rounded,
+                label: 'Files',
+                route: '/files',
+              ),
+              const _MenuItem(
                 icon: Icons.feedback_rounded,
                 label: 'Feedback',
                 route: '/feedback',
