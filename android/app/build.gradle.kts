@@ -71,6 +71,20 @@ android {
     }
 }
 
+// Pin androidx.glance to its last stable version. The home_widget Flutter
+// plugin uses a dynamic version range for glance-appwidget; once Google
+// published `1.3.0-alpha01` on Maven, Gradle started resolving to that
+// alpha — which pulls in `androidx.compose.remote:remote-creation-android`
+// and demands AGP 9.1 + compileSdk 37, neither of which Flutter stable
+// supports. Remove this pin once home_widget pins glance itself or Flutter
+// ships a toolchain that supports AGP 9.1.
+configurations.all {
+    resolutionStrategy {
+        force("androidx.glance:glance-appwidget:1.1.1")
+        force("androidx.glance:glance:1.1.1")
+    }
+}
+
 flutter {
     source = "../.."
 }
