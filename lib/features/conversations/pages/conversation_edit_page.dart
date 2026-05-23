@@ -141,8 +141,10 @@ class _ConversationEditPageState extends ConsumerState<ConversationEditPage> {
       context: context,
       originalBytes: bytes,
       fileName: file.name,
+      sourcePath: file.path,
     );
     if (result == null || !mounted) return;
+    await result.maybeRemoveSourceFromDevice();
 
     setState(() => _isUploading = true);
     try {

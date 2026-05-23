@@ -93,8 +93,10 @@ class _CatalogEditPageState extends ConsumerState<CatalogEditPage> {
       context: context,
       originalBytes: bytes,
       fileName: xFile.name,
+      sourcePath: xFile.path,
     );
     if (result == null || !mounted) return;
+    await result.maybeRemoveSourceFromDevice();
 
     setState(() {
       _pendingImages = [

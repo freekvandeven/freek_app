@@ -695,8 +695,10 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
       context: context,
       originalBytes: bytes,
       fileName: file.name,
+      sourcePath: file.path,
     );
     if (result == null || !mounted) return;
+    await result.maybeRemoveSourceFromDevice();
 
     setState(() {
       _pendingImages = [

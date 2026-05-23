@@ -77,5 +77,11 @@
 		</array>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Freek App needs access to your photo library to pick images you want to upload, and (if you opt in) to delete pictures you only took for uploading.</string>
+		<key>NSPhotoLibraryAddUsageDescription</key>
+		<string>Freek App may save cropped images back to your photo library.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>Freek App uses the camera to capture photos for uploads such as recipe pictures and inventory items.</string>
 	</dict>
 </plist>

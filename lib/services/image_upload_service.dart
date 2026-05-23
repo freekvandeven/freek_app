@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart' as fp;
@@ -6,7 +7,9 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image/image.dart' as img;
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:photo_manager/photo_manager.dart';
 import 'package:uuid/uuid.dart';
 
 import '../features/auth/providers/auth_providers.dart';
@@ -84,6 +87,98 @@ class ImageUploadService {
     final decoded = img.decodeImage(bytes);
     if (decoded == null) return bytes;
     return Uint8List.fromList(img.encodeJpg(decoded, quality: quality));
+  }
+
+  /// Launch the platform image-cropper UI on the given bytes and return the
+  /// cropped result. Returns the original bytes if the user cancels, or if
+  /// cropping isn't supported on this platform (web/desktop). Falls back to
+  /// the original bytes on any error so the upload flow can still proceed
+  /// (WISH-0070).
+  static Future<Uint8List> cropImage(
+    Uint8List bytes, {
+    String fileExtension = 'jpg',
+  }) async {
+    if (kIsWeb) return bytes;
+    try {
+      // image_cropper needs a file path; write to a temp file under the
+      // platform's tmp dir, run the cropper, read back the cropped bytes.
+      final dir = Directory.systemTemp;
+      final tmp = File('${dir.path}/crop_${const Uuid().v4()}.$fileExtension');
+      await tmp.writeAsBytes(bytes, flush: true);
+      final cropper = ImageCropper();
+      final cropped = await cropper.cropImage(
+        sourcePath: tmp.path,
+        uiSettings: [
+          AndroidUiSettings(toolbarTitle: 'Crop', lockAspectRatio: false),
+          IOSUiSettings(title: 'Crop'),
+        ],
+      );
+      if (cropped == null) {
+        try {
+          await tmp.delete();
+        } catch (_) {}
+        return bytes;
+      }
+      final out = await File(cropped.path).readAsBytes();
+      try {
+        await tmp.delete();
+      } catch (_) {}
+      try {
+        await File(cropped.path).delete();
+      } catch (_) {}
+      return out;
+    } catch (e) {
+      LogService.instance.warning('Image crop failed, using original: $e');
+      return bytes;
+    }
+  }
+
+  /// Try to remove a gallery asset that matches [sourcePath] (the path
+  /// returned by image_picker for a gallery pick). On Android 11+ and
+  /// iOS, this prompts the user for confirmation via the OS dialog —
+  /// the user can still refuse. Returns `true` when the system reports
+  /// the asset(s) as deleted, `false` otherwise (no asset found,
+  /// permission denied, or platform doesn't support it). Never throws —
+  /// the source-removal feature is best-effort by design (WISH-0070).
+  static Future<bool> tryRemoveSourceAsset(String sourcePath) async {
+    if (kIsWeb) return false;
+    try {
+      final permission = await PhotoManager.requestPermissionExtend();
+      if (!permission.isAuth && !permission.hasAccess) {
+        return false;
+      }
+      final fileName = sourcePath
+          .split(Platform.pathSeparator)
+          .last
+          .split('/')
+          .last;
+      // The image_picker temp path doesn't match a gallery asset directly;
+      // we look up the asset by title across the user's image albums.
+      final albums = await PhotoManager.getAssetPathList(
+        type: RequestType.image,
+        onlyAll: true,
+      );
+      if (albums.isEmpty) return false;
+      final all = albums.first;
+      final count = await all.assetCountAsync;
+      // Scan pages of recent assets — the just-picked image is almost
+      // always near the top; cap at 200 to keep this bounded.
+      const pageSize = 50;
+      final pagesToCheck = (count / pageSize).ceil().clamp(0, 4);
+      for (var page = 0; page < pagesToCheck; page++) {
+        final assets = await all.getAssetListPaged(page: page, size: pageSize);
+        for (final asset in assets) {
+          if (asset.title == fileName) {
+            final removed = await PhotoManager.editor.deleteWithIds([asset.id]);
+            return removed.isNotEmpty;
+          }
+        }
+      }
+      return false;
+    } catch (e) {
+      LogService.instance.warning('tryRemoveSourceAsset failed: $e');
+      return false;
+    }
   }
 
   /// Pick an image from gallery and upload it. Returns the download URL.

@@ -474,8 +474,10 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                         context: context,
                         originalBytes: bytes,
                         fileName: file.name,
+                        sourcePath: file.path,
                       );
                       if (result == null) return;
+                      await result.maybeRemoveSourceFromDevice();
                       final url = await service.uploadImageBytes(
                         result.bytes,
                         fileName: result.fileName,
@@ -571,8 +573,10 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
       context: context,
       originalBytes: bytes,
       fileName: file.name,
+      sourcePath: file.path,
     );
     if (result == null || !mounted) return;
+    await result.maybeRemoveSourceFromDevice();
 
     setState(() {
       _pendingImages = [
@@ -594,8 +598,10 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
       context: context,
       originalBytes: bytes,
       fileName: file.name,
+      sourcePath: file.path,
     );
     if (result == null || !mounted) return;
+    await result.maybeRemoveSourceFromDevice();
 
     setState(() {
       _pendingImages = [
