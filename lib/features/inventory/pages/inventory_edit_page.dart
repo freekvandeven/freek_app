@@ -174,6 +174,32 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
     }
   }
 
+  void _confirmDelete() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Item'),
+        content: Text('Delete "${_nameController.text}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await ref
+                  .read(inventoryListProvider.notifier)
+                  .deleteItem(widget.itemId!);
+              if (mounted) context.pop();
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _scanWithAi() async {
     final ready = await configureGeminiForCurrentSettings(ref);
     if (!ready) {
@@ -276,6 +302,12 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
           child: Text(isEditing ? 'Edit Item' : 'New Item'),
         ),
         actions: [
+          if (isEditing)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: 'Delete item',
+              onPressed: _isUploading ? null : _confirmDelete,
+            ),
           IconButton(
             icon: _isScanning
                 ? const SizedBox(
