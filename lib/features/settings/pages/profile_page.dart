@@ -74,17 +74,32 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     if (user == null) return;
 
     final uploadService = ref.read(imageUploadServiceProvider);
-    final file = await uploadService.pickImage();
-    if (file == null || !mounted) return;
+    final source = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Gallery'),
+              onTap: () => Navigator.pop(ctx, 'gallery'),
+            ),
+            const PasteFromClipboardTile(),
+          ],
+        ),
+      ),
+    );
+    if (source == null || !mounted) return;
 
-    final bytes = await file.readAsBytes();
-    if (!mounted) return;
+    final picked = await resolveImageSource(context, source, uploadService);
+    if (picked == null || !mounted) return;
 
     final result = await showImageUploadPreviewDialog(
       context: context,
-      originalBytes: bytes,
-      fileName: file.name,
-      sourcePath: file.path,
+      originalBytes: picked.bytes,
+      fileName: picked.fileName,
+      sourcePath: picked.sourcePath,
     );
     if (result == null || !mounted) return;
     await result.maybeRemoveSourceFromDevice();

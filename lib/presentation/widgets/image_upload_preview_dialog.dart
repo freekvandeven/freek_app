@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../../services/image_upload_service.dart';
+import 'flutter_cropper_page.dart';
 
 /// Result from the image upload preview dialog.
 class ImageUploadResult {
@@ -35,6 +36,78 @@ class ImageUploadResult {
   Future<void> maybeRemoveSourceFromDevice() async {
     if (!removeSourceAfterUpload || sourcePath == null) return;
     await ImageUploadService.tryRemoveSourceAsset(sourcePath!);
+  }
+}
+
+/// What the source picker returns — abstracts away whether the user
+/// chose Gallery, Camera, or Paste from clipboard so callers can hand
+/// it straight to [showImageUploadPreviewDialog] (WISH-0072).
+class PickedImage {
+  final Uint8List bytes;
+  final String fileName;
+
+  /// Filesystem path of the picked file, when applicable (gallery /
+  /// camera). Null for clipboard images.
+  final String? sourcePath;
+
+  const PickedImage({
+    required this.bytes,
+    required this.fileName,
+    this.sourcePath,
+  });
+}
+
+/// Resolve one of the standard source identifiers ('gallery', 'camera',
+/// 'clipboard') into bytes + filename. Shows a snackbar and returns
+/// null if the clipboard has no image. The caller chooses the source
+/// (typically via a bottom sheet) and passes the string here so the
+/// branching lives in one place (WISH-0072).
+Future<PickedImage?> resolveImageSource(
+  BuildContext context,
+  String source,
+  ImageUploadService service,
+) async {
+  switch (source) {
+    case 'clipboard':
+      final pasted = await ImageUploadService.readImageFromClipboard();
+      if (pasted == null) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No image on clipboard')),
+          );
+        }
+        return null;
+      }
+      return PickedImage(bytes: pasted.bytes, fileName: pasted.fileName);
+    case 'gallery':
+    case 'camera':
+      final file = source == 'gallery'
+          ? await service.pickImage()
+          : await service.captureImage();
+      if (file == null) return null;
+      final bytes = await file.readAsBytes();
+      return PickedImage(
+        bytes: bytes,
+        fileName: file.name,
+        sourcePath: file.path,
+      );
+  }
+  return null;
+}
+
+/// Standard "Paste from clipboard" ListTile for image-source bottom
+/// sheets. Pops the parent route with the sentinel `'clipboard'` so
+/// callers can dispatch via [resolveImageSource] (WISH-0072).
+class PasteFromClipboardTile extends StatelessWidget {
+  const PasteFromClipboardTile({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: const Icon(Icons.content_paste),
+      title: const Text('Paste from clipboard'),
+      onTap: () => Navigator.pop(context, 'clipboard'),
+    );
   }
 }
 
@@ -124,10 +197,19 @@ class _ImageUploadPreviewDialogState extends State<_ImageUploadPreviewDialog> {
     final ext = widget.fileName.contains('.')
         ? widget.fileName.split('.').last
         : 'jpg';
-    final cropped = await ImageUploadService.cropImage(
-      _baseBytes,
-      fileExtension: ext,
-    );
+    Uint8List cropped;
+    if (ImageUploadService.isNativeCropperPlatform) {
+      cropped = await ImageUploadService.cropImage(
+        _baseBytes,
+        fileExtension: ext,
+      );
+    } else {
+      // Desktop / web — use the Flutter-rendered cropper page (WISH-0072).
+      // It cannot be shown inline on top of the dialog, so close the
+      // dialog's modal barrier by pushing a fullscreen route.
+      final result = await showFlutterCropperPage(context, _baseBytes);
+      cropped = result ?? _baseBytes;
+    }
     if (!mounted) return;
     final didCrop = cropped.length != _baseBytes.length;
     setState(() {
@@ -196,12 +278,11 @@ class _ImageUploadPreviewDialogState extends State<_ImageUploadPreviewDialog> {
             ),
             const SizedBox(height: 12),
 
-            if (!kIsWeb)
-              OutlinedButton.icon(
-                onPressed: _busy ? null : _cropImage,
-                icon: const Icon(Icons.crop),
-                label: Text(_wasCropped ? 'Crop again' : 'Crop'),
-              ),
+            OutlinedButton.icon(
+              onPressed: _busy ? null : _cropImage,
+              icon: const Icon(Icons.crop),
+              label: Text(_wasCropped ? 'Crop again' : 'Crop'),
+            ),
             const SizedBox(height: 12),
 
             Text('Quality', style: Theme.of(context).textTheme.labelMedium),

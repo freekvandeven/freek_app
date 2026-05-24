@@ -466,15 +466,34 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                   onPressed: () async {
                     try {
                       final service = ref.read(imageUploadServiceProvider);
-                      final file = await service.pickImage();
-                      if (file == null || !mounted) return;
-                      final bytes = await file.readAsBytes();
-                      if (!mounted) return;
+                      final source = await showModalBottomSheet<String>(
+                        context: context,
+                        builder: (sctx) => SafeArea(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ListTile(
+                                leading: const Icon(Icons.photo_library),
+                                title: const Text('Gallery'),
+                                onTap: () => Navigator.pop(sctx, 'gallery'),
+                              ),
+                              const PasteFromClipboardTile(),
+                            ],
+                          ),
+                        ),
+                      );
+                      if (source == null || !mounted) return;
+                      final picked = await resolveImageSource(
+                        context,
+                        source,
+                        service,
+                      );
+                      if (picked == null || !mounted) return;
                       final result = await showImageUploadPreviewDialog(
                         context: context,
-                        originalBytes: bytes,
-                        fileName: file.name,
-                        sourcePath: file.path,
+                        originalBytes: picked.bytes,
+                        fileName: picked.fileName,
+                        sourcePath: picked.sourcePath,
                       );
                       if (result == null) return;
                       await result.maybeRemoveSourceFromDevice();
@@ -548,6 +567,14 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.content_paste),
+              title: const Text('Paste from clipboard'),
+              onTap: () async {
+                Navigator.pop(ctx);
+                await _pasteImage();
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.link),
               title: const Text('Enter URL'),
               onTap: () {
@@ -577,6 +604,26 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     );
     if (result == null || !mounted) return;
     await result.maybeRemoveSourceFromDevice();
+
+    setState(() {
+      _pendingImages = [
+        ..._pendingImages,
+        (bytes: result.bytes, fileName: result.fileName),
+      ];
+    });
+  }
+
+  Future<void> _pasteImage() async {
+    final service = ref.read(imageUploadServiceProvider);
+    final picked = await resolveImageSource(context, 'clipboard', service);
+    if (picked == null || !mounted) return;
+
+    final result = await showImageUploadPreviewDialog(
+      context: context,
+      originalBytes: picked.bytes,
+      fileName: picked.fileName,
+    );
+    if (result == null || !mounted) return;
 
     setState(() {
       _pendingImages = [

@@ -1,15 +1,18 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart' as fp;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:photo_manager/photo_manager.dart';
+import 'package:super_clipboard/super_clipboard.dart';
 import 'package:uuid/uuid.dart';
 
 import '../features/auth/providers/auth_providers.dart';
@@ -89,16 +92,26 @@ class ImageUploadService {
     return Uint8List.fromList(img.encodeJpg(decoded, quality: quality));
   }
 
-  /// Launch the platform image-cropper UI on the given bytes and return the
-  /// cropped result. Returns the original bytes if the user cancels, or if
-  /// cropping isn't supported on this platform (web/desktop). Falls back to
-  /// the original bytes on any error so the upload flow can still proceed
-  /// (WISH-0070).
+  /// True on platforms where [cropImage] launches the native image_cropper
+  /// (Android/iOS). Desktop and web go through the Flutter-rendered
+  /// crop_your_image page wrapped at the dialog layer (WISH-0072).
+  static bool get isNativeCropperPlatform {
+    if (kIsWeb) return false;
+    return defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS;
+  }
+
+  /// Launch the native image-cropper UI on the given bytes and return the
+  /// cropped result. Returns the original bytes if the user cancels, or
+  /// if cropping isn't supported on this platform (web/desktop — those
+  /// route through the Flutter crop page instead). Falls back to the
+  /// original bytes on any error so the upload flow can still proceed
+  /// (WISH-0070, WISH-0072).
   static Future<Uint8List> cropImage(
     Uint8List bytes, {
     String fileExtension = 'jpg',
   }) async {
-    if (kIsWeb) return bytes;
+    if (!isNativeCropperPlatform) return bytes;
     try {
       // image_cropper needs a file path; write to a temp file under the
       // platform's tmp dir, run the cropper, read back the cropped bytes.
@@ -178,6 +191,57 @@ class ImageUploadService {
     } catch (e) {
       LogService.instance.warning('tryRemoveSourceAsset failed: $e');
       return false;
+    }
+  }
+
+  /// Read an image off the system clipboard (PNG / JPEG). Returns null
+  /// when the clipboard has no image (or no clipboard support on this
+  /// platform). Best-effort — never throws (WISH-0072).
+  static Future<({Uint8List bytes, String fileName})?>
+  readImageFromClipboard() async {
+    try {
+      final clipboard = SystemClipboard.instance;
+      if (clipboard == null) return null;
+      final reader = await clipboard.read();
+      // Prefer PNG since most browser/copy operations produce PNG.
+      for (final entry in [
+        (format: Formats.png, ext: 'png'),
+        (format: Formats.jpeg, ext: 'jpg'),
+      ]) {
+        if (reader.canProvide(entry.format)) {
+          final completer = _ClipboardCompleter();
+          reader.getFile(entry.format, (file) async {
+            try {
+              final stream = file.getStream();
+              final chunks = <List<int>>[];
+              await for (final chunk in stream) {
+                chunks.add(chunk);
+              }
+              final total = chunks.fold<int>(0, (n, c) => n + c.length);
+              final bytes = Uint8List(total);
+              var offset = 0;
+              for (final c in chunks) {
+                bytes.setRange(offset, offset + c.length, c);
+                offset += c.length;
+              }
+              completer.complete(bytes);
+            } catch (e) {
+              completer.completeError(e);
+            }
+          }, onError: completer.completeError);
+          final bytes = await completer.future;
+          if (bytes == null) return null;
+          return (
+            bytes: bytes,
+            fileName:
+                'clipboard_${DateTime.now().millisecondsSinceEpoch}.${entry.ext}',
+          );
+        }
+      }
+      return null;
+    } catch (e) {
+      LogService.instance.warning('readImageFromClipboard failed: $e');
+      return null;
     }
   }
 
@@ -347,6 +411,49 @@ class ImageUploadService {
       default:
         return 'application/octet-stream';
     }
+  }
+}
+
+/// Tiny single-shot completer used by [ImageUploadService.readImageFromClipboard]
+/// to bridge super_clipboard's callback-style file read into an async result.
+class _ClipboardCompleter {
+  Uint8List? _value;
+  Object? _error;
+  bool _done = false;
+  final List<void Function()> _listeners = [];
+
+  void complete(Uint8List? bytes) {
+    if (_done) return;
+    _done = true;
+    _value = bytes;
+    for (final cb in _listeners) {
+      cb();
+    }
+  }
+
+  void completeError(Object error) {
+    if (_done) return;
+    _done = true;
+    _error = error;
+    for (final cb in _listeners) {
+      cb();
+    }
+  }
+
+  Future<Uint8List?> get future {
+    if (_done) {
+      if (_error != null) return Future.error(_error!);
+      return Future.value(_value);
+    }
+    final completer = Completer<Uint8List?>();
+    _listeners.add(() {
+      if (_error != null) {
+        completer.completeError(_error!);
+      } else {
+        completer.complete(_value);
+      }
+    });
+    return completer.future;
   }
 }
 

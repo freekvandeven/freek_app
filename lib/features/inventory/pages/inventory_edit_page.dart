@@ -676,6 +676,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
               title: const Text('Camera'),
               onTap: () => Navigator.pop(ctx, 'camera'),
             ),
+            const PasteFromClipboardTile(),
           ],
         ),
       ),
@@ -683,19 +684,14 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
     if (source == null || !mounted) return;
 
     final uploader = ref.read(imageUploadServiceProvider);
-    final file = source == 'gallery'
-        ? await uploader.pickImage()
-        : await uploader.captureImage();
-    if (file == null || !mounted) return;
-
-    final bytes = await file.readAsBytes();
-    if (!mounted) return;
+    final picked = await resolveImageSource(context, source, uploader);
+    if (picked == null || !mounted) return;
 
     final result = await showImageUploadPreviewDialog(
       context: context,
-      originalBytes: bytes,
-      fileName: file.name,
-      sourcePath: file.path,
+      originalBytes: picked.bytes,
+      fileName: picked.fileName,
+      sourcePath: picked.sourcePath,
     );
     if (result == null || !mounted) return;
     await result.maybeRemoveSourceFromDevice();

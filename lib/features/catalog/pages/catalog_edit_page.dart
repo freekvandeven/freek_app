@@ -4,7 +4,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
@@ -78,22 +77,33 @@ class _CatalogEditPageState extends ConsumerState<CatalogEditPage> {
   bool get _isEditing => widget.itemId != null;
 
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final xFile = await picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1920,
-      maxHeight: 1920,
+    final source = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Gallery'),
+              onTap: () => Navigator.pop(ctx, 'gallery'),
+            ),
+            const PasteFromClipboardTile(),
+          ],
+        ),
+      ),
     );
-    if (xFile == null || !mounted) return;
+    if (source == null || !mounted) return;
 
-    final bytes = await xFile.readAsBytes();
-    if (!mounted) return;
+    final uploader = ref.read(imageUploadServiceProvider);
+    final picked = await resolveImageSource(context, source, uploader);
+    if (picked == null || !mounted) return;
 
     final result = await showImageUploadPreviewDialog(
       context: context,
-      originalBytes: bytes,
-      fileName: xFile.name,
-      sourcePath: xFile.path,
+      originalBytes: picked.bytes,
+      fileName: picked.fileName,
+      sourcePath: picked.sourcePath,
     );
     if (result == null || !mounted) return;
     await result.maybeRemoveSourceFromDevice();
