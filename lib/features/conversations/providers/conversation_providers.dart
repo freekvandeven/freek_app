@@ -57,8 +57,10 @@ class ConversationListNotifier extends AsyncNotifier<List<ConversationTopic>> {
 }
 
 final conversationPersonFilterProvider = StateProvider<String?>((_) => null);
+// Default to Open so the page lands on actionable topics, not the
+// noise of every resolved conversation ever (WISH-0071).
 final conversationStatusFilterProvider = StateProvider<TopicStatus?>(
-  (_) => null,
+  (_) => TopicStatus.open,
 );
 final conversationSortProvider = StateProvider<ConversationSort>(
   (_) => ConversationSort.priorityDesc,
