@@ -119,7 +119,11 @@ class CatalogDetailPage extends ConsumerWidget {
                 // Metadata
                 const Divider(),
                 Text(
-                  'Created ${DateFormat.yMMMd().format(item.createdAt)}',
+                  item.updatedAt.isAfter(
+                        item.createdAt.add(const Duration(minutes: 1)),
+                      )
+                      ? 'Updated ${DateFormat.yMMMd().format(item.updatedAt)} · created ${DateFormat.yMMMd().format(item.createdAt)}'
+                      : 'Created ${DateFormat.yMMMd().format(item.createdAt)}',
                   style: theme.textTheme.bodySmall,
                 ),
               ],

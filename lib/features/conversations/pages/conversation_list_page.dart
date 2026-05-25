@@ -203,7 +203,7 @@ class _TopicTile extends ConsumerWidget {
       ),
       subtitle: Text(
         '${topic.personOrGroup}'
-        ' · ${topic.createdAt.toIso8601String().substring(0, 10)}'
+        ' · ${topic.updatedAt.toIso8601String().substring(0, 10)}'
         '${topic.status == TopicStatus.resolved ? ' · Resolved' : ''}',
       ),
       trailing: Row(

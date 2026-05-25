@@ -97,10 +97,13 @@ final filteredConversationsProvider =
             filtered.sort(
               (a, b) => a.priority.index.compareTo(b.priority.index),
             );
+          // "Newest/oldest" follow the same logic as the subtitle date —
+          // last-updated rather than created (WISH-0073) so recently
+          // active topics float to the top.
           case ConversationSort.newest:
-            filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+            filtered.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
           case ConversationSort.oldest:
-            filtered.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+            filtered.sort((a, b) => a.updatedAt.compareTo(b.updatedAt));
         }
         return filtered;
       });

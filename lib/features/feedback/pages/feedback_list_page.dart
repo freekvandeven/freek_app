@@ -368,7 +368,7 @@ class _FeedbackTile extends ConsumerWidget {
       subtitle: Text(
         '${entry.referenceId != null ? '${entry.referenceId} · ' : ''}'
         '${entry.status.name[0].toUpperCase()}${entry.status.name.substring(1)}'
-        ' · ${entry.createdAt.toIso8601String().substring(0, 10)}'
+        ' · ${entry.updatedAt.toIso8601String().substring(0, 10)}'
         '${entry.isPrivate ? ' · Private' : ''}'
         '${entry.isManual ? ' · Manual' : ''}'
         '${entry.isWip ? ' · WIP' : ''}'
