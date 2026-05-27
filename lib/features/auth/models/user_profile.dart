@@ -12,6 +12,9 @@ class UserSettings {
   final bool syncToGoogleCalendar;
   // 'apiKey' (default) or 'oauth' — which Gemini auth mode to use
   final String geminiAuthMode;
+  // Immersive mode on Android — hides status + nav bars; swipe from
+  // edge reveals them temporarily (WISH-0074).
+  final bool fullscreenMode;
 
   const UserSettings({
     this.themeMode = 'system',
@@ -25,6 +28,7 @@ class UserSettings {
     this.autosaveIntervalMinutes = 0,
     this.syncToGoogleCalendar = true,
     this.geminiAuthMode = 'apiKey',
+    this.fullscreenMode = false,
   });
 
   UserSettings copyWith({
@@ -41,6 +45,7 @@ class UserSettings {
     int? autosaveIntervalMinutes,
     bool? syncToGoogleCalendar,
     String? geminiAuthMode,
+    bool? fullscreenMode,
   }) {
     return UserSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -57,6 +62,7 @@ class UserSettings {
           autosaveIntervalMinutes ?? this.autosaveIntervalMinutes,
       syncToGoogleCalendar: syncToGoogleCalendar ?? this.syncToGoogleCalendar,
       geminiAuthMode: geminiAuthMode ?? this.geminiAuthMode,
+      fullscreenMode: fullscreenMode ?? this.fullscreenMode,
     );
   }
 
@@ -72,6 +78,7 @@ class UserSettings {
     'autosaveIntervalMinutes': autosaveIntervalMinutes,
     'syncToGoogleCalendar': syncToGoogleCalendar,
     'geminiAuthMode': geminiAuthMode,
+    'fullscreenMode': fullscreenMode,
   };
 
   factory UserSettings.fromMap(Map<String, dynamic> map) {
@@ -91,6 +98,7 @@ class UserSettings {
       autosaveIntervalMinutes: map['autosaveIntervalMinutes'] as int? ?? 0,
       syncToGoogleCalendar: map['syncToGoogleCalendar'] as bool? ?? true,
       geminiAuthMode: map['geminiAuthMode'] as String? ?? 'apiKey',
+      fullscreenMode: map['fullscreenMode'] as bool? ?? false,
     );
   }
 }

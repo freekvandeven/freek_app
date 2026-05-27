@@ -12,6 +12,20 @@ void main() {
       expect(settings.customSeedColor, isNull);
       expect(settings.geminiModel, isNull);
       expect(settings.showImagePreviews, isTrue);
+      expect(settings.fullscreenMode, isFalse);
+    });
+
+    test('fullscreenMode roundtrips through toMap/fromMap', () {
+      const settings = UserSettings(fullscreenMode: true);
+      final restored = UserSettings.fromMap(settings.toMap());
+      expect(restored.fullscreenMode, isTrue);
+    });
+
+    test('fullscreenMode copyWith flips the flag', () {
+      const settings = UserSettings();
+      final updated = settings.copyWith(fullscreenMode: true);
+      expect(updated.fullscreenMode, isTrue);
+      expect(updated.themeMode, settings.themeMode);
     });
 
     test('toMap and fromMap round-trip', () {

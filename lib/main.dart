@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -138,6 +139,17 @@ class PersonalApp extends ConsumerWidget {
         final user = ref.watch(currentUserProvider);
         final biometricEnabled = user?.settings.biometricEnabled ?? false;
         final seedColor = ref.watch(customSeedColorProvider);
+
+        // Apply the user's fullscreen / immersive preference (WISH-0074).
+        // immersiveSticky hides status + nav bars and reveals them
+        // temporarily on edge swipe — exactly what the user asked for.
+        // Only Android honours this; iOS / web / desktop ignore it.
+        final fullscreen = user?.settings.fullscreenMode ?? false;
+        if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+          SystemChrome.setEnabledSystemUIMode(
+            fullscreen ? SystemUiMode.immersiveSticky : SystemUiMode.edgeToEdge,
+          );
+        }
 
         // Initialize push notifications when authenticated
         ref.watch(notificationInitProvider);

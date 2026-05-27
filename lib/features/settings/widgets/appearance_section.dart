@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -67,8 +69,31 @@ class AppearanceSection extends ConsumerWidget {
             ref.read(authServiceProvider).updateProfile(updated);
           },
         ),
+        if (_supportsFullscreenMode)
+          SwitchListTile(
+            secondary: const Icon(Icons.fullscreen),
+            title: const Text('Fullscreen mode'),
+            subtitle: const Text(
+              'Hide the status and navigation bars; swipe from an edge to reveal them temporarily',
+            ),
+            value: settings.fullscreenMode,
+            onChanged: (v) {
+              final updated = user.copyWith(
+                settings: settings.copyWith(fullscreenMode: v),
+              );
+              ref.read(authServiceProvider).updateProfile(updated);
+            },
+          ),
       ],
     );
+  }
+
+  // Immersive system-UI hiding only really lands on Android. iOS has no
+  // user-app equivalent; web/desktop don't have system bars at all in
+  // the sense the wish describes (WISH-0074).
+  static bool get _supportsFullscreenMode {
+    if (kIsWeb) return false;
+    return defaultTargetPlatform == TargetPlatform.android;
   }
 
   void _showThemePicker(BuildContext context, WidgetRef ref, String current) {
