@@ -127,9 +127,16 @@ class GeminiChatNotifier extends Notifier<List<ChatMessage>> {
       return;
     }
     final service = ref.read(geminiServiceProvider);
-    final response = await service.sendMessage(message);
-
-    state = [...state, ChatMessage(text: response, isUser: false)];
+    try {
+      final response = await service.sendMessage(message);
+      state = [...state, ChatMessage(text: response, isUser: false)];
+    } on GeminiScopeException catch (e) {
+      // OAuth token doesn't have a scope generativelanguage.googleapis.com
+      // accepts — the service auto-disconnected. Reflect that here and
+      // tell the user how to fix it (BUG-0036).
+      ref.read(geminiOAuthConnectedProvider.notifier).state = false;
+      state = [...state, ChatMessage(text: e.message, isUser: false)];
+    }
   }
 
   void clearChat() {

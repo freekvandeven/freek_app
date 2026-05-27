@@ -11,10 +11,27 @@ import 'gemini_oauth_service.dart';
 /// - [apiKey]: the user enters a Google AI Studio key in Settings; quota
 ///   counts against the project that owns the key. The request URL gets
 ///   a `?key=...` query parameter.
-/// - [oauth]: the user signs in with their Google account (broad
-///   cloud-platform scope); quota counts against their Google account.
-///   The request gets an `Authorization: Bearer <token>` header.
+/// - [oauth]: the user signs in with their Google account
+///   (`generative-language.retriever` scope, the one accepted by
+///   `generativelanguage.googleapis.com` — see BUG-0036). Quota counts
+///   against their Google account; the request gets an
+///   `Authorization: Bearer <token>` header.
 enum GeminiAuthMode { apiKey, oauth }
+
+/// Thrown when a Gemini OAuth call comes back with HTTP 403 +
+/// `ACCESS_TOKEN_SCOPE_INSUFFICIENT`. The cached token doesn't include a
+/// scope `generativelanguage.googleapis.com` will accept; the user has
+/// to disconnect + reconnect Gemini OAuth in Settings (BUG-0036).
+class GeminiScopeException implements Exception {
+  final String message;
+  const GeminiScopeException([
+    this.message =
+        'Gemini OAuth is missing the required scope. '
+        'Open Settings → AI, disconnect, then sign in again.',
+  ]);
+  @override
+  String toString() => message;
+}
 
 /// Thrown when a Gemini call fails due to API quota/rate limiting.
 /// Callers should surface a clear message and link the user to
@@ -182,6 +199,15 @@ class GeminiService {
         retryAfter: parseGeminiRetryAfter(response.body),
       );
     }
+    if (response.statusCode == 403 &&
+        response.body.contains('ACCESS_TOKEN_SCOPE_INSUFFICIENT')) {
+      LogService.instance.error(
+        'Gemini ${op ?? method}: OAuth scope insufficient — '
+        'auto-disconnecting so the user can re-authorize (BUG-0036)',
+      );
+      await _oauth?.markStale();
+      throw const GeminiScopeException();
+    }
     if (response.statusCode != 200) {
       LogService.instance.error(
         'Gemini ${op ?? method} failed (${response.statusCode}): ${response.body}',
@@ -304,6 +330,7 @@ class GeminiService {
     } catch (e) {
       _chatHistory.removeLast();
       if (e is GeminiRateLimitException) rethrow;
+      if (e is GeminiScopeException) rethrow;
       return 'Error: $e';
     }
   }

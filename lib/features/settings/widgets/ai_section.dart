@@ -75,7 +75,9 @@ class _GeminiAuthModeTile extends ConsumerWidget {
                   title: Text('Sign in with Google'),
                   subtitle: Text(
                     'No key to manage. Quota counts against your Google '
-                    'account. Requires granting the cloud-platform scope.',
+                    'account. Grants the '
+                    'generative-language.retriever scope (the one the '
+                    'Gemini API actually accepts for inference).',
                   ),
                 ),
               ],
