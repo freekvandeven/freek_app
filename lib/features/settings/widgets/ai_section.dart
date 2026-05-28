@@ -20,9 +20,10 @@ class AiSection extends ConsumerWidget {
       children: [
         const SettingsSectionHeader('AI'),
         const _GeminiAuthModeTile(),
-        if (user.settings.geminiAuthMode == 'oauth')
-          const _GeminiOAuthTile()
-        else
+        if (user.settings.geminiAuthMode == 'oauth') ...[
+          const _OAuthBillingWarning(),
+          const _GeminiOAuthTile(),
+        ] else
           const _GeminiApiKeyTile(),
         const _GeminiModelTile(),
       ],
@@ -43,8 +44,10 @@ class _GeminiAuthModeTile extends ConsumerWidget {
       title: const Text('Authentication mode'),
       subtitle: Text(
         mode == 'oauth'
-            ? 'Sign in with Google — uses your Google account quota'
-            : 'API key — uses the AI Studio key you configure below',
+            ? 'Sign in with Google — runs against the app developer’s '
+                  'Gemini project'
+            : 'API key — uses the AI Studio key you configure below '
+                  '(your own project)',
       ),
       onTap: () => _show(context, ref, mode),
     );
@@ -74,10 +77,10 @@ class _GeminiAuthModeTile extends ConsumerWidget {
                   value: 'oauth',
                   title: Text('Sign in with Google'),
                   subtitle: Text(
-                    'No key to manage. Quota counts against your Google '
-                    'account. Grants the '
-                    'generative-language.retriever scope (the one the '
-                    'Gemini API actually accepts for inference).',
+                    'No key to manage. Note: requests run against the '
+                    'app developer’s Gemini Cloud project, not yours — '
+                    'choose API key if you want your own quota / models. '
+                    'Grants the generative-language.retriever scope.',
                   ),
                 ),
               ],
@@ -97,6 +100,43 @@ class _GeminiAuthModeTile extends ConsumerWidget {
     );
     await ref.read(authServiceProvider).updateProfile(updated);
     if (ctx.mounted) Navigator.pop(ctx);
+  }
+}
+
+/// Inline notice shown above the OAuth sign-in tile so users can't
+/// miss that the OAuth path runs against the app developer's Gemini
+/// project, not their own (BUG-0036 follow-up).
+class _OAuthBillingWarning extends StatelessWidget {
+  const _OAuthBillingWarning();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline, color: colorScheme.primary, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Gemini requests on this path run against the app developer’s '
+              'Cloud project — not your own. Quota, billing, and the '
+              'available model list all come from there. Switch to API key '
+              'mode (above) if you want to use your own Google project.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
