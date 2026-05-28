@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
+import '../../../presentation/widgets/fullscreen_image_viewer.dart';
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
 import '../../../services/image_upload_service.dart';
 import '../../catalog/models/catalog_item.dart';
@@ -533,23 +534,36 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
                       final isExisting = index < _savedImageUrls.length;
                       return Stack(
                         children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: isExisting
-                                ? CachedNetworkImage(
-                                    imageUrl: _savedImageUrls[index],
-                                    width: 100,
-                                    height: 100,
-                                    fit: BoxFit.cover,
+                          GestureDetector(
+                            onTap: () => isExisting
+                                ? showFullscreenNetworkImage(
+                                    context,
+                                    _savedImageUrls[index],
                                   )
-                                : Image.memory(
+                                : showFullscreenMemoryImage(
+                                    context,
                                     _pendingImages[index -
                                             _savedImageUrls.length]
                                         .bytes,
-                                    width: 100,
-                                    height: 100,
-                                    fit: BoxFit.cover,
                                   ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: isExisting
+                                  ? CachedNetworkImage(
+                                      imageUrl: _savedImageUrls[index],
+                                      width: 100,
+                                      height: 100,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Image.memory(
+                                      _pendingImages[index -
+                                              _savedImageUrls.length]
+                                          .bytes,
+                                      width: 100,
+                                      height: 100,
+                                      fit: BoxFit.cover,
+                                    ),
+                            ),
                           ),
                           Positioned(
                             top: 2,

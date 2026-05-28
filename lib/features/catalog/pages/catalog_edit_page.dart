@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
+import '../../../presentation/widgets/fullscreen_image_viewer.dart';
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
 import '../../../services/image_upload_service.dart';
 import '../../settings/providers/currency_providers.dart';
@@ -270,13 +271,16 @@ class _CatalogEditPageState extends ConsumerState<CatalogEditPage> {
       allImages.add(
         Stack(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: CachedNetworkImage(
-                imageUrl: url,
-                width: 100,
-                height: 100,
-                fit: BoxFit.cover,
+            GestureDetector(
+              onTap: () => showFullscreenNetworkImage(context, url),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: CachedNetworkImage(
+                  imageUrl: url,
+                  width: 100,
+                  height: 100,
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
             Positioned(
@@ -308,13 +312,17 @@ class _CatalogEditPageState extends ConsumerState<CatalogEditPage> {
       allImages.add(
         Stack(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.memory(
-                _pendingImages[i].bytes,
-                width: 100,
-                height: 100,
-                fit: BoxFit.cover,
+            GestureDetector(
+              onTap: () =>
+                  showFullscreenMemoryImage(context, _pendingImages[i].bytes),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.memory(
+                  _pendingImages[i].bytes,
+                  width: 100,
+                  height: 100,
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
             Positioned(

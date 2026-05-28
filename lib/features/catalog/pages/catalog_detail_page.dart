@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:personal_app/presentation/widgets/fullscreen_image_viewer.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -49,13 +50,19 @@ class CatalogDetailPage extends ConsumerWidget {
                     height: 250,
                     child: PageView.builder(
                       itemCount: item.imageUrls.length,
-                      itemBuilder: (context, index) => ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: CachedNetworkImage(
-                          imageUrl: item.imageUrls[index],
-                          fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) => const Center(
-                            child: Icon(Icons.broken_image, size: 64),
+                      itemBuilder: (context, index) => GestureDetector(
+                        onTap: () => showFullscreenNetworkImage(
+                          context,
+                          item.imageUrls[index],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: CachedNetworkImage(
+                            imageUrl: item.imageUrls[index],
+                            fit: BoxFit.cover,
+                            errorWidget: (_, __, ___) => const Center(
+                              child: Icon(Icons.broken_image, size: 64),
+                            ),
                           ),
                         ),
                       ),

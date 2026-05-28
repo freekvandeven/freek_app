@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_app/presentation/widgets/fullscreen_image_viewer.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -167,14 +168,20 @@ class _RecipeDetailPageState extends ConsumerState<RecipeDetailPage> {
             SizedBox(
               height: 200,
               child: recipe.images.length == 1
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: CachedNetworkImage(
-                        imageUrl: recipe.images.first,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => const Center(
-                          child: Icon(Icons.broken_image, size: 48),
+                  ? GestureDetector(
+                      onTap: () => showFullscreenNetworkImage(
+                        context,
+                        recipe.images.first,
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: CachedNetworkImage(
+                          imageUrl: recipe.images.first,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorWidget: (_, __, ___) => const Center(
+                            child: Icon(Icons.broken_image, size: 48),
+                          ),
                         ),
                       ),
                     )
@@ -186,17 +193,23 @@ class _RecipeDetailPageState extends ConsumerState<RecipeDetailPage> {
                         final isPrimary = index == recipe.primaryImageIndex;
                         return Stack(
                           children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: CachedNetworkImage(
-                                imageUrl: recipe.images[index],
-                                width: 280,
-                                height: 200,
-                                fit: BoxFit.cover,
-                                errorWidget: (_, __, ___) => const SizedBox(
+                            GestureDetector(
+                              onTap: () => showFullscreenNetworkImage(
+                                context,
+                                recipe.images[index],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: CachedNetworkImage(
+                                  imageUrl: recipe.images[index],
                                   width: 280,
-                                  child: Center(
-                                    child: Icon(Icons.broken_image, size: 48),
+                                  height: 200,
+                                  fit: BoxFit.cover,
+                                  errorWidget: (_, __, ___) => const SizedBox(
+                                    width: 280,
+                                    child: Center(
+                                      child: Icon(Icons.broken_image, size: 48),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -386,14 +399,20 @@ class _RecipeDetailPageState extends ConsumerState<RecipeDetailPage> {
                 ),
                 if (entry.value.imageUrl != null) ...[
                   const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: CachedNetworkImage(
-                      imageUrl: entry.value.imageUrl!,
-                      height: 150,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                  GestureDetector(
+                    onTap: () => showFullscreenNetworkImage(
+                      context,
+                      entry.value.imageUrl!,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: CachedNetworkImage(
+                        imageUrl: entry.value.imageUrl!,
+                        height: 150,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                      ),
                     ),
                   ),
                 ],

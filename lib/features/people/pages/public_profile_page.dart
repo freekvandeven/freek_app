@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../presentation/widgets/fullscreen_image_viewer.dart';
 import '../../../presentation/widgets/quick_actions_title.dart';
 import '../../admin/providers/admin_providers.dart';
 
@@ -199,19 +200,26 @@ class _PublicProfilePageState extends ConsumerState<PublicProfilePage> {
             padding: const EdgeInsets.all(24),
             children: [
               Center(
-                child: CircleAvatar(
-                  radius: 56,
-                  backgroundColor: colorScheme.primaryContainer,
-                  backgroundImage: photoUrl != null
-                      ? CachedNetworkImageProvider(photoUrl)
-                      : null,
-                  child: photoUrl == null
-                      ? Text(
-                          _initials(displayName),
-                          style: Theme.of(context).textTheme.headlineMedium
-                              ?.copyWith(color: colorScheme.onPrimaryContainer),
-                        )
-                      : null,
+                child: GestureDetector(
+                  onTap: photoUrl == null
+                      ? null
+                      : () => showFullscreenNetworkImage(context, photoUrl),
+                  child: CircleAvatar(
+                    radius: 56,
+                    backgroundColor: colorScheme.primaryContainer,
+                    backgroundImage: photoUrl != null
+                        ? CachedNetworkImageProvider(photoUrl)
+                        : null,
+                    child: photoUrl == null
+                        ? Text(
+                            _initials(displayName),
+                            style: Theme.of(context).textTheme.headlineMedium
+                                ?.copyWith(
+                                  color: colorScheme.onPrimaryContainer,
+                                ),
+                          )
+                        : null,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),

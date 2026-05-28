@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_app/presentation/widgets/fullscreen_image_viewer.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -233,19 +234,35 @@ class _KnowledgeViewPageState extends ConsumerState<KnowledgeViewPage> {
       if (page.attachments.isNotEmpty) ...[
         Text('Attachments', style: Theme.of(context).textTheme.titleMedium),
         for (final att in page.attachments)
-          ListTile(
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.insert_drive_file_outlined),
-            title: Text(att.fileName),
-            subtitle: Text(
-              '${att.contentType} · ${formatBytes(att.sizeBytes)}',
-            ),
-            trailing: const Icon(Icons.open_in_new, size: 18),
-            onTap: () => launchUrl(
-              Uri.parse(att.url),
-              mode: LaunchMode.externalApplication,
-            ),
+          Builder(
+            builder: (context) {
+              final isImage = att.contentType.startsWith('image/');
+              return ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(
+                  isImage
+                      ? Icons.image_outlined
+                      : Icons.insert_drive_file_outlined,
+                ),
+                title: Text(att.fileName),
+                subtitle: Text(
+                  '${att.contentType} · ${formatBytes(att.sizeBytes)}',
+                ),
+                trailing: Icon(
+                  isImage ? Icons.zoom_out_map : Icons.open_in_new,
+                  size: 18,
+                ),
+                // Images open in the in-app fullscreen viewer (WISH-0075);
+                // other types still launch externally.
+                onTap: isImage
+                    ? () => showFullscreenNetworkImage(context, att.url)
+                    : () => launchUrl(
+                        Uri.parse(att.url),
+                        mode: LaunchMode.externalApplication,
+                      ),
+              );
+            },
           ),
         const SizedBox(height: 16),
       ],

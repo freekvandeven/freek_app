@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
+import '../../../presentation/widgets/fullscreen_image_viewer.dart';
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
 import '../../../services/image_upload_service.dart';
 import '../models/conversation_topic.dart';
@@ -309,18 +310,24 @@ class _ConversationEditPageState extends ConsumerState<ConversationEditPage> {
                   separatorBuilder: (_, __) => const SizedBox(width: 8),
                   itemBuilder: (context, index) => Stack(
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: CachedNetworkImage(
-                          imageUrl: _imageUrls[index],
-                          width: 120,
-                          height: 120,
-                          fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) => Container(
+                      GestureDetector(
+                        onTap: () => showFullscreenNetworkImage(
+                          context,
+                          _imageUrls[index],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: CachedNetworkImage(
+                            imageUrl: _imageUrls[index],
                             width: 120,
                             height: 120,
-                            color: Colors.grey[300],
-                            child: const Icon(Icons.broken_image),
+                            fit: BoxFit.cover,
+                            errorWidget: (_, __, ___) => Container(
+                              width: 120,
+                              height: 120,
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.broken_image),
+                            ),
                           ),
                         ),
                       ),
