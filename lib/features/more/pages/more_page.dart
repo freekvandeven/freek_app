@@ -69,6 +69,11 @@ class MorePage extends ConsumerWidget {
                 route: '/conversations',
               ),
               const _MenuItem(
+                icon: Icons.contacts_rounded,
+                label: 'Contacts',
+                route: '/contacts',
+              ),
+              const _MenuItem(
                 icon: Icons.link_rounded,
                 label: 'Connections',
                 route: '/connections',

@@ -15,6 +15,8 @@ import '../features/catalog/pages/catalog_edit_page.dart';
 import '../features/catalog/pages/catalog_list_page.dart';
 import '../features/changelog/pages/changelog_page.dart';
 import '../features/connections/pages/connections_page.dart';
+import '../features/contacts/pages/contact_edit_page.dart';
+import '../features/contacts/pages/contact_list_page.dart';
 import '../features/conversations/pages/conversation_edit_page.dart';
 import '../features/conversations/pages/conversation_list_page.dart';
 import '../features/dashboard/pages/dashboard_page.dart';
@@ -440,6 +442,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/files',
             builder: (context, state) => const FilesPage(),
+          ),
+          GoRoute(
+            path: '/contacts',
+            builder: (context, state) => const ContactListPage(),
+            routes: [
+              GoRoute(
+                path: 'new',
+                builder: (context, state) => const ContactEditPage(),
+              ),
+              GoRoute(
+                path: ':contactId',
+                builder: (context, state) => ContactEditPage(
+                  contactId: state.pathParameters['contactId'],
+                ),
+              ),
+            ],
           ),
           GoRoute(
             path: '/wip',

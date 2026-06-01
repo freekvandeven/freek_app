@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
+import '../../contacts/providers/contact_providers.dart';
 import '../models/conversation_topic.dart';
 import '../providers/conversation_providers.dart';
 
@@ -193,6 +194,13 @@ class _TopicTile extends ConsumerWidget {
       TopicPriority.low => Icons.keyboard_double_arrow_down,
     };
 
+    // Prefer the linked Contact's name when available; fall back to the
+    // legacy free-text label for conversations created before WISH-0076.
+    final linkedContact = topic.contactId == null
+        ? null
+        : ref.watch(contactByIdProvider(topic.contactId!));
+    final personLabel = linkedContact?.name ?? topic.personOrGroup;
+
     return ListTile(
       leading: Icon(priorityIcon, color: priorityColor),
       title: Text(
@@ -202,7 +210,7 @@ class _TopicTile extends ConsumerWidget {
             : null,
       ),
       subtitle: Text(
-        '${topic.personOrGroup}'
+        '$personLabel'
         ' · ${topic.updatedAt.toIso8601String().substring(0, 10)}'
         '${topic.status == TopicStatus.resolved ? ' · Resolved' : ''}',
       ),

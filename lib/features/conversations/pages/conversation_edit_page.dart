@@ -7,6 +7,8 @@ import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import '../../../presentation/widgets/fullscreen_image_viewer.dart';
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
 import '../../../services/image_upload_service.dart';
+import '../../contacts/providers/contact_providers.dart';
+import '../../contacts/widgets/contact_picker.dart';
 import '../models/conversation_topic.dart';
 import '../providers/conversation_providers.dart';
 
@@ -24,6 +26,7 @@ class _ConversationEditPageState extends ConsumerState<ConversationEditPage> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _personController = TextEditingController();
+  String? _contactId;
   TopicPriority _priority = TopicPriority.medium;
   TopicStatus _status = TopicStatus.open;
   List<String> _imageUrls = [];
@@ -51,6 +54,7 @@ class _ConversationEditPageState extends ConsumerState<ConversationEditPage> {
         _titleController.text = topic.title;
         _descriptionController.text = topic.description;
         _personController.text = topic.personOrGroup;
+        _contactId = topic.contactId;
         _priority = topic.priority;
         _status = topic.status;
         _imageUrls = List<String>.from(topic.imageUrls);
@@ -84,6 +88,7 @@ class _ConversationEditPageState extends ConsumerState<ConversationEditPage> {
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim(),
           personOrGroup: _personController.text.trim(),
+          contactId: () => _contactId,
           priority: _priority,
           status: _status,
           imageUrls: _imageUrls,
@@ -97,6 +102,7 @@ class _ConversationEditPageState extends ConsumerState<ConversationEditPage> {
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim(),
           personOrGroup: _personController.text.trim(),
+          contactId: _contactId,
           priority: _priority,
           imageUrls: _imageUrls,
         ),
@@ -173,7 +179,9 @@ class _ConversationEditPageState extends ConsumerState<ConversationEditPage> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.topicId != null;
-    final personsAsync = ref.watch(conversationPersonsProvider);
+    final linkedContact = _contactId == null
+        ? null
+        : ref.watch(contactByIdProvider(_contactId!));
 
     if (_isLoading) {
       return Scaffold(
@@ -208,35 +216,66 @@ class _ConversationEditPageState extends ConsumerState<ConversationEditPage> {
                   v == null || v.trim().isEmpty ? 'Required' : null,
             ),
             const SizedBox(height: 16),
-            Autocomplete<String>(
-              initialValue: TextEditingValue(text: _personController.text),
-              optionsBuilder: (textEditingValue) {
-                final persons = personsAsync.valueOrNull ?? [];
-                if (textEditingValue.text.isEmpty) return persons;
-                return persons.where(
-                  (p) => p.toLowerCase().contains(
-                    textEditingValue.text.toLowerCase(),
+            FormField<String>(
+              initialValue: _personController.text,
+              validator: (_) {
+                if (_personController.text.trim().isEmpty &&
+                    _contactId == null) {
+                  return 'Required';
+                }
+                return null;
+              },
+              builder: (state) {
+                final hasLink = linkedContact != null;
+                final displayName = hasLink
+                    ? linkedContact.name
+                    : _personController.text;
+                return InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: 'Person / Group',
+                    border: const OutlineInputBorder(),
+                    errorText: state.errorText,
+                    prefixIcon: Icon(
+                      hasLink
+                          ? (linkedContact.isGroup
+                                ? Icons.groups_rounded
+                                : Icons.person_rounded)
+                          : Icons.person_outline,
+                    ),
+                    suffixIcon: const Icon(Icons.arrow_drop_down),
+                  ),
+                  child: InkWell(
+                    onTap: () async {
+                      final result = await showContactPicker(context);
+                      if (result == null) return;
+                      setState(() {
+                        if (result.contact != null) {
+                          _contactId = result.contact!.id;
+                          _personController.text = result.contact!.name;
+                        } else if (result.freeText != null) {
+                          _contactId = null;
+                          _personController.text = result.freeText!;
+                        }
+                      });
+                      state.didChange(_personController.text);
+                    },
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            displayName.isEmpty
+                                ? 'Tap to choose a contact'
+                                : displayName,
+                            style: displayName.isEmpty
+                                ? TextStyle(color: Theme.of(context).hintColor)
+                                : null,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
-              onSelected: (value) => _personController.text = value,
-              fieldViewBuilder:
-                  (context, controller, focusNode, onFieldSubmitted) {
-                    // Sync with our own controller
-                    controller.addListener(() {
-                      _personController.text = controller.text;
-                    });
-                    return TextFormField(
-                      controller: controller,
-                      focusNode: focusNode,
-                      decoration: const InputDecoration(
-                        labelText: 'Person / Group',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (v) =>
-                          v == null || v.trim().isEmpty ? 'Required' : null,
-                    );
-                  },
             ),
             const SizedBox(height: 16),
             TextFormField(
