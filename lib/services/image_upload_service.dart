@@ -319,7 +319,11 @@ class ImageUploadService {
   /// Used for arbitrary attachments (PDFs, documents, archives, etc.) —
   /// distinct from [pickImage] which goes through the image gallery.
   Future<fp.PlatformFile?> pickAnyFile() async {
-    final result = await fp.FilePicker.platform.pickFiles(
+    // file_picker 11.x dropped the `.platform.` intermediate — the
+    // top-level static call is required now and is the version with
+    // proper web support (the old 8.x path silently did nothing on
+    // web, which is BUG-0039).
+    final result = await fp.FilePicker.pickFiles(
       withData: true,
       allowMultiple: false,
     );
