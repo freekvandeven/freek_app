@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
+import '../../../presentation/widgets/file_drop_target.dart';
 import '../../../presentation/widgets/fullscreen_image_viewer.dart';
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
 import '../../../services/image_upload_service.dart';
@@ -238,235 +239,278 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
         ),
         actions: [TextButton(onPressed: _save, child: const Text('Save'))],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            SegmentedButton<FeedbackType>(
-              segments: const [
-                ButtonSegment(
-                  value: FeedbackType.wish,
-                  label: Text('Wish'),
-                  icon: Icon(Icons.lightbulb),
-                ),
-                ButtonSegment(
-                  value: FeedbackType.bug,
-                  label: Text('Bug'),
-                  icon: Icon(Icons.bug_report),
-                ),
-                ButtonSegment(
-                  value: FeedbackType.improvement,
-                  label: Text('Improvement'),
-                  icon: Icon(Icons.tune),
-                ),
-              ],
-              selected: {_type},
-              onSelectionChanged: (selected) {
-                setState(() => _type = selected.first);
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: 'Title',
-                border: OutlineInputBorder(),
-              ),
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Required' : null,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description',
-                border: OutlineInputBorder(),
-                alignLabelWithHint: true,
-              ),
-              maxLines: 8,
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Required' : null,
-            ),
-            const SizedBox(height: 16),
-            SwitchListTile(
-              title: const Text('Work in Progress'),
-              subtitle: const Text('Description not yet complete'),
-              value: _isWip,
-              onChanged: (v) => setState(() => _isWip = v),
-            ),
-            SwitchListTile(
-              title: const Text('Private'),
-              subtitle: const Text('Only visible to you'),
-              value: _isPrivate,
-              onChanged: (v) => setState(() => _isPrivate = v),
-            ),
-            SwitchListTile(
-              title: const Text('Manual'),
-              subtitle: const Text(
-                'Manually handled — excluded from AI export',
-              ),
-              value: _isManual,
-              onChanged: (v) => setState(() => _isManual = v),
-            ),
-            const SizedBox(height: 8),
-            ListTile(
-              leading: const Icon(Icons.description),
-              title: const Text('Attached Logs'),
-              subtitle: Text(
-                _attachedLogs != null
-                    ? '${_attachedLogs!.split('\n').length} lines attached'
-                    : 'None',
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_attachedLogs != null)
-                    IconButton(
-                      icon: const Icon(Icons.visibility),
-                      tooltip: 'View logs',
-                      onPressed: () => _showAttachedLogs(),
-                    ),
-                  if (_attachedLogs != null)
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      tooltip: 'Remove logs',
-                      onPressed: () => setState(() => _attachedLogs = null),
-                    ),
-                ],
-              ),
-              onTap: () => _pickLogs(),
-            ),
-            const SizedBox(height: 8),
-            ListTile(
-              leading: const Icon(Icons.image),
-              title: const Text('Images'),
-              subtitle: Text(
-                _imageUrls.isEmpty
-                    ? 'None'
-                    : '${_imageUrls.length} image${_imageUrls.length == 1 ? '' : 's'} attached',
-              ),
-              trailing: _isUploading
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : IconButton(
-                      icon: const Icon(Icons.add_photo_alternate),
-                      tooltip: 'Add image',
-                      onPressed: _addImage,
-                    ),
-            ),
-            if (_imageUrls.isNotEmpty)
-              SizedBox(
-                height: 120,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: _imageUrls.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemBuilder: (context, index) => Stack(
-                    children: [
-                      GestureDetector(
-                        onTap: () => showFullscreenNetworkImage(
-                          context,
-                          _imageUrls[index],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: CachedNetworkImage(
-                            imageUrl: _imageUrls[index],
-                            width: 120,
-                            height: 120,
-                            fit: BoxFit.cover,
-                            errorWidget: (_, __, ___) => Container(
-                              width: 120,
-                              height: 120,
-                              color: Colors.grey[300],
-                              child: const Icon(Icons.broken_image),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        top: 4,
-                        right: 4,
-                        child: GestureDetector(
-                          onTap: () => _removeImage(index),
-                          child: Container(
-                            decoration: const BoxDecoration(
-                              color: Colors.black54,
-                              shape: BoxShape.circle,
-                            ),
-                            padding: const EdgeInsets.all(4),
-                            child: const Icon(
-                              Icons.close,
-                              size: 16,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+      body: FileDropTarget(
+        imagesOnly: true,
+        onFiles: _onDroppedImages,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              SegmentedButton<FeedbackType>(
+                segments: const [
+                  ButtonSegment(
+                    value: FeedbackType.wish,
+                    label: Text('Wish'),
+                    icon: Icon(Icons.lightbulb),
                   ),
-                ),
-              ),
-            if (isEditing) ...[
-              const SizedBox(height: 24),
-              const Text(
-                'Status',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              SegmentedButton<FeedbackStatus>(
-                segments: FeedbackStatus.values
-                    .map(
-                      (s) => ButtonSegment(
-                        value: s,
-                        label: Text(
-                          s.name[0].toUpperCase() + s.name.substring(1),
-                        ),
-                      ),
-                    )
-                    .toList(),
-                selected: {_status},
+                  ButtonSegment(
+                    value: FeedbackType.bug,
+                    label: Text('Bug'),
+                    icon: Icon(Icons.bug_report),
+                  ),
+                  ButtonSegment(
+                    value: FeedbackType.improvement,
+                    label: Text('Improvement'),
+                    icon: Icon(Icons.tune),
+                  ),
+                ],
+                selected: {_type},
                 onSelectionChanged: (selected) {
-                  setState(() => _status = selected.first);
+                  setState(() => _type = selected.first);
                 },
               ),
-            ],
-            if (_existing?.referenceId != null) ...[
               const SizedBox(height: 16),
-              Text(
-                'Reference: ${_existing!.referenceId}',
-                style: Theme.of(context).textTheme.bodySmall,
+              TextFormField(
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Title',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Required' : null,
               ),
-            ],
-            if (_existing?.aiSummary != null &&
-                _existing!.aiSummary!.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              const Text(
-                'AI Summary',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(),
+                  alignLabelWithHint: true,
+                ),
+                maxLines: 8,
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                title: const Text('Work in Progress'),
+                subtitle: const Text('Description not yet complete'),
+                value: _isWip,
+                onChanged: (v) => setState(() => _isWip = v),
+              ),
+              SwitchListTile(
+                title: const Text('Private'),
+                subtitle: const Text('Only visible to you'),
+                value: _isPrivate,
+                onChanged: (v) => setState(() => _isPrivate = v),
+              ),
+              SwitchListTile(
+                title: const Text('Manual'),
+                subtitle: const Text(
+                  'Manually handled — excluded from AI export',
+                ),
+                value: _isManual,
+                onChanged: (v) => setState(() => _isManual = v),
               ),
               const SizedBox(height: 8),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
+              ListTile(
+                leading: const Icon(Icons.description),
+                title: const Text('Attached Logs'),
+                subtitle: Text(
+                  _attachedLogs != null
+                      ? '${_attachedLogs!.split('\n').length} lines attached'
+                      : 'None',
                 ),
-                child: SelectableText(
-                  _existing!.aiSummary!,
-                  style: Theme.of(context).textTheme.bodyMedium,
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_attachedLogs != null)
+                      IconButton(
+                        icon: const Icon(Icons.visibility),
+                        tooltip: 'View logs',
+                        onPressed: () => _showAttachedLogs(),
+                      ),
+                    if (_attachedLogs != null)
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        tooltip: 'Remove logs',
+                        onPressed: () => setState(() => _attachedLogs = null),
+                      ),
+                  ],
                 ),
+                onTap: () => _pickLogs(),
               ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.image),
+                title: const Text('Images'),
+                subtitle: Text(
+                  _imageUrls.isEmpty
+                      ? 'None'
+                      : '${_imageUrls.length} image${_imageUrls.length == 1 ? '' : 's'} attached',
+                ),
+                trailing: _isUploading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : IconButton(
+                        icon: const Icon(Icons.add_photo_alternate),
+                        tooltip: 'Add image',
+                        onPressed: _addImage,
+                      ),
+              ),
+              if (_imageUrls.isNotEmpty)
+                SizedBox(
+                  height: 120,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _imageUrls.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) => Stack(
+                      children: [
+                        GestureDetector(
+                          onTap: () => showFullscreenNetworkImage(
+                            context,
+                            _imageUrls[index],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: CachedNetworkImage(
+                              imageUrl: _imageUrls[index],
+                              width: 120,
+                              height: 120,
+                              fit: BoxFit.cover,
+                              errorWidget: (_, __, ___) => Container(
+                                width: 120,
+                                height: 120,
+                                color: Colors.grey[300],
+                                child: const Icon(Icons.broken_image),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: GestureDetector(
+                            onTap: () => _removeImage(index),
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(4),
+                              child: const Icon(
+                                Icons.close,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              if (isEditing) ...[
+                const SizedBox(height: 24),
+                const Text(
+                  'Status',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                SegmentedButton<FeedbackStatus>(
+                  segments: FeedbackStatus.values
+                      .map(
+                        (s) => ButtonSegment(
+                          value: s,
+                          label: Text(
+                            s.name[0].toUpperCase() + s.name.substring(1),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  selected: {_status},
+                  onSelectionChanged: (selected) {
+                    setState(() => _status = selected.first);
+                  },
+                ),
+              ],
+              if (_existing?.referenceId != null) ...[
+                const SizedBox(height: 16),
+                Text(
+                  'Reference: ${_existing!.referenceId}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+              if (_existing?.aiSummary != null &&
+                  _existing!.aiSummary!.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                const Text(
+                  'AI Summary',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: SelectableText(
+                    _existing!.aiSummary!,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
+  }
+
+  Future<void> _onDroppedImages(List<DroppedFile> files) async {
+    final uploader = ref.read(imageUploadServiceProvider);
+    for (final dropped in files) {
+      if (!mounted) return;
+      final result = await showImageUploadPreviewDialog(
+        context: context,
+        originalBytes: dropped.bytes,
+        fileName: dropped.fileName,
+      );
+      if (result == null || !mounted) continue;
+      setState(() => _isUploading = true);
+      try {
+        final url = await uploader.uploadImageBytes(
+          result.bytes,
+          fileName: result.fileName,
+          folder: 'feedback',
+        );
+        if (mounted) setState(() => _imageUrls = [..._imageUrls, url]);
+      } on StorageLimitExceededException catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(e.toString())));
+        }
+        break;
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+        }
+      } finally {
+        if (mounted) setState(() => _isUploading = false);
+      }
+    }
   }
 }

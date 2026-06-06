@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../presentation/widgets/file_drop_target.dart';
 import '../../../presentation/widgets/quick_actions_title.dart';
 import '../../../presentation/widgets/responsive_center.dart';
 import '../../../services/image_upload_service.dart';
@@ -69,35 +70,85 @@ class FilesPage extends HookConsumerWidget {
               )
             : const Icon(Icons.upload_file),
       ),
-      body: ResponsiveCenter(
-        child: Column(
-          children: [
-            _Breadcrumb(crumbs: crumbs),
-            const Divider(height: 1),
-            Expanded(
-              child: entries.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Error: $e')),
-                data: (list) {
-                  if (list.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        'No files here yet.\nUse + to upload, or create a folder.',
-                        textAlign: TextAlign.center,
-                      ),
+      body: FileDropTarget(
+        onFiles: (files) =>
+            _uploadDroppedFiles(context, ref, currentDir, files),
+        child: ResponsiveCenter(
+          child: Column(
+            children: [
+              _Breadcrumb(crumbs: crumbs),
+              const Divider(height: 1),
+              Expanded(
+                child: entries.when(
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => Center(child: Text('Error: $e')),
+                  data: (list) {
+                    if (list.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          'No files here yet.\nUse + to upload, '
+                          'drag a file in, or create a folder.',
+                          textAlign: TextAlign.center,
+                        ),
+                      );
+                    }
+                    return ListView.builder(
+                      itemCount: list.length,
+                      itemBuilder: (_, i) => _EntryTile(entry: list[i]),
                     );
-                  }
-                  return ListView.builder(
-                    itemCount: list.length,
-                    itemBuilder: (_, i) => _EntryTile(entry: list[i]),
-                  );
-                },
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  Future<void> _uploadDroppedFiles(
+    BuildContext context,
+    WidgetRef ref,
+    String? parentId,
+    List<DroppedFile> files,
+  ) async {
+    final uploader = ref.read(imageUploadServiceProvider);
+    for (final dropped in files) {
+      try {
+        final upload = await uploader.uploadFileBytes(
+          dropped.bytes,
+          fileName: dropped.fileName,
+          contentType: dropped.mimeType,
+          folder: 'files',
+        );
+        await ref
+            .read(fileListProvider.notifier)
+            .addEntry(
+              FileEntry(
+                name: upload.fileName,
+                parentId: parentId,
+                isDirectory: false,
+                url: upload.url,
+                contentType: upload.contentType,
+                sizeBytes: upload.sizeBytes,
+              ),
+            );
+      } on StorageLimitExceededException catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(e.toString())));
+        }
+        break;
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+        }
+      }
+    }
   }
 
   Future<void> _promptNewFolder(
