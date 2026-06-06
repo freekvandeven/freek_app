@@ -15,6 +15,12 @@ class UserSettings {
   // Immersive mode on Android — hides status + nav bars; swipe from
   // edge reveals them temporarily (WISH-0074).
   final bool fullscreenMode;
+  // Override for Intl.defaultLocale so DateFormat / NumberFormat use a
+  // chosen regional style. `null` (the default) means "follow the
+  // device locale". `'en_GB'` flips dates to day/month/year; `'en_US'`
+  // forces month/day/year. Other ISO locales are honoured too
+  // (BUG-0040).
+  final String? dateFormatLocale;
 
   const UserSettings({
     this.themeMode = 'system',
@@ -29,6 +35,7 @@ class UserSettings {
     this.syncToGoogleCalendar = true,
     this.geminiAuthMode = 'apiKey',
     this.fullscreenMode = false,
+    this.dateFormatLocale,
   });
 
   UserSettings copyWith({
@@ -46,6 +53,8 @@ class UserSettings {
     bool? syncToGoogleCalendar,
     String? geminiAuthMode,
     bool? fullscreenMode,
+    String? dateFormatLocale,
+    bool clearDateFormatLocale = false,
   }) {
     return UserSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -63,6 +72,9 @@ class UserSettings {
       syncToGoogleCalendar: syncToGoogleCalendar ?? this.syncToGoogleCalendar,
       geminiAuthMode: geminiAuthMode ?? this.geminiAuthMode,
       fullscreenMode: fullscreenMode ?? this.fullscreenMode,
+      dateFormatLocale: clearDateFormatLocale
+          ? null
+          : (dateFormatLocale ?? this.dateFormatLocale),
     );
   }
 
@@ -79,6 +91,7 @@ class UserSettings {
     'syncToGoogleCalendar': syncToGoogleCalendar,
     'geminiAuthMode': geminiAuthMode,
     'fullscreenMode': fullscreenMode,
+    'dateFormatLocale': dateFormatLocale,
   };
 
   factory UserSettings.fromMap(Map<String, dynamic> map) {
@@ -99,6 +112,7 @@ class UserSettings {
       syncToGoogleCalendar: map['syncToGoogleCalendar'] as bool? ?? true,
       geminiAuthMode: map['geminiAuthMode'] as String? ?? 'apiKey',
       fullscreenMode: map['fullscreenMode'] as bool? ?? false,
+      dateFormatLocale: map['dateFormatLocale'] as String?,
     );
   }
 }

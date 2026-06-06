@@ -9,6 +9,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
 import 'package:personal_app/presentation/theme/app_theme.dart';
 import 'package:personal_app/routing/app_router.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -32,6 +34,10 @@ Future<void> main() async {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   await WakelockPlus.enable();
+  // Load all intl locale data so the user's Date Format preference can
+  // pick any locale (en_GB, nl_NL, de_DE, …) without a runtime error
+  // about uninitialised symbols (BUG-0040).
+  await initializeDateFormatting();
   LogService.instance.install();
   LogService.instance.info('App starting');
   await WidgetService.initialize();
@@ -150,6 +156,13 @@ class PersonalApp extends ConsumerWidget {
             fullscreen ? SystemUiMode.immersiveSticky : SystemUiMode.edgeToEdge,
           );
         }
+
+        // Apply the user's date-format preference (BUG-0040). Sets the
+        // global Intl default so every existing `DateFormat.yMMMd()` /
+        // `.yMMMM()` / etc. call picks the right regional style without
+        // having to plumb a locale through. `null` means follow the
+        // device default (Intl falls back to system locale).
+        Intl.defaultLocale = user?.settings.dateFormatLocale;
 
         // Initialize push notifications when authenticated
         ref.watch(notificationInitProvider);

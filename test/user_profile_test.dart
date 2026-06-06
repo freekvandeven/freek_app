@@ -28,6 +28,29 @@ void main() {
       expect(updated.themeMode, settings.themeMode);
     });
 
+    test('dateFormatLocale defaults to null (follow device)', () {
+      const settings = UserSettings();
+      expect(settings.dateFormatLocale, isNull);
+    });
+
+    test('dateFormatLocale roundtrips through toMap/fromMap', () {
+      const settings = UserSettings(dateFormatLocale: 'en_GB');
+      final restored = UserSettings.fromMap(settings.toMap());
+      expect(restored.dateFormatLocale, 'en_GB');
+    });
+
+    test('dateFormatLocale copyWith updates the value', () {
+      const settings = UserSettings();
+      final updated = settings.copyWith(dateFormatLocale: 'nl_NL');
+      expect(updated.dateFormatLocale, 'nl_NL');
+    });
+
+    test('dateFormatLocale copyWith clearDateFormatLocale resets to null', () {
+      const settings = UserSettings(dateFormatLocale: 'en_GB');
+      final updated = settings.copyWith(clearDateFormatLocale: true);
+      expect(updated.dateFormatLocale, isNull);
+    });
+
     test('toMap and fromMap round-trip', () {
       const settings = UserSettings(
         themeMode: 'dark',

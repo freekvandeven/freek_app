@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../auth/models/user_profile.dart';
 import '../../auth/providers/auth_providers.dart';
@@ -27,6 +28,13 @@ class PreferencesSection extends ConsumerWidget {
           ),
           onTap: () =>
               _showCurrencyPicker(context, ref, settings.defaultCurrency),
+        ),
+        ListTile(
+          leading: const Icon(Icons.calendar_today_outlined),
+          title: const Text('Date Format'),
+          subtitle: Text(_dateFormatSubtitle(settings.dateFormatLocale)),
+          onTap: () =>
+              _showDateFormatPicker(context, ref, settings.dateFormatLocale),
         ),
         SwitchListTile(
           secondary: const Icon(Icons.notifications),
@@ -136,6 +144,77 @@ class PreferencesSection extends ConsumerWidget {
           );
           ref.read(authServiceProvider).updateProfile(updated);
         },
+      ),
+    );
+  }
+
+  String _dateFormatSubtitle(String? locale) {
+    // Render a real example so the picker label matches what the user
+    // will see in lists / detail pages once they tap a choice (BUG-0040).
+    final example = DateTime(2026, 6, 9);
+    if (locale == null) {
+      return 'Device default · ${DateFormat.yMMMd().format(example)}';
+    }
+    final label = switch (locale) {
+      'en_GB' => 'Day / month / year (European)',
+      'en_US' => 'Month / day / year (US)',
+      'nl_NL' => 'Dutch',
+      'de_DE' => 'German',
+      'fr_FR' => 'French',
+      _ => locale,
+    };
+    return '$label · ${DateFormat.yMMMd(locale).format(example)}';
+  }
+
+  void _showDateFormatPicker(
+    BuildContext context,
+    WidgetRef ref,
+    String? current,
+  ) {
+    // Curated short list — the goal is "I want day/month/year" rather
+    // than full locale coverage. Power users with niche needs can ask
+    // for more entries.
+    const options = <(String? locale, String label)>[
+      (null, 'Device default'),
+      ('en_GB', 'Day / month / year (European)'),
+      ('en_US', 'Month / day / year (US)'),
+      ('nl_NL', 'Dutch'),
+      ('de_DE', 'German'),
+      ('fr_FR', 'French'),
+    ];
+    final example = DateTime(2026, 6, 9);
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Date Format'),
+        children: [
+          for (final option in options)
+            ListTile(
+              title: Text(option.$2),
+              subtitle: Text(
+                option.$1 == null
+                    ? DateFormat.yMMMd().format(example)
+                    : DateFormat.yMMMd(option.$1).format(example),
+              ),
+              trailing: current == option.$1 ? const Icon(Icons.check) : null,
+              onTap: () {
+                final user = ref.read(currentUserProvider)!;
+                final updated = option.$1 == null
+                    ? user.copyWith(
+                        settings: user.settings.copyWith(
+                          clearDateFormatLocale: true,
+                        ),
+                      )
+                    : user.copyWith(
+                        settings: user.settings.copyWith(
+                          dateFormatLocale: option.$1,
+                        ),
+                      );
+                ref.read(authServiceProvider).updateProfile(updated);
+                Navigator.pop(ctx);
+              },
+            ),
+        ],
       ),
     );
   }
