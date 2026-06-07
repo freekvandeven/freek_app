@@ -13,6 +13,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
 import '../../../services/image_upload_service.dart';
 import '../../../services/log_service.dart';
+import '../../../utils/decimal_input.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../catalog/models/catalog_item.dart';
 import '../../catalog/providers/catalog_providers.dart';
@@ -414,7 +415,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                   _ingredients.add(
                     Ingredient(
                       name: nameCtrl.text.trim(),
-                      quantity: double.tryParse(qtyCtrl.text),
+                      quantity: parseDecimal(qtyCtrl.text),
                       unit: unitCtrl.text.trim().isEmpty
                           ? null
                           : unitCtrl.text.trim(),

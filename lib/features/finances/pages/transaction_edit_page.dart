@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
+import '../../../utils/decimal_input.dart';
 import '../../settings/providers/currency_providers.dart';
 import '../models/finance_models.dart';
 import '../providers/finance_providers.dart';
@@ -86,7 +87,7 @@ class _TransactionEditPageState extends ConsumerState<TransactionEditPage> {
           : _descriptionController.text.trim(),
       amount: ref
           .read(currencyConverterProvider)
-          .toEur(double.parse(_amountController.text.trim())),
+          .toEur(parseDecimal(_amountController.text) ?? 0),
       type: _type,
       categoryId: _categoryId,
       date: _date,
@@ -180,7 +181,7 @@ class _TransactionEditPageState extends ConsumerState<TransactionEditPage> {
               ),
               validator: (v) {
                 if (v == null || v.trim().isEmpty) return 'Required';
-                if (double.tryParse(v.trim()) == null) return 'Invalid number';
+                if (parseDecimal(v) == null) return 'Invalid number';
                 return null;
               },
             ),

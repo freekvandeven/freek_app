@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
+import '../../../utils/decimal_input.dart';
 import '../../settings/providers/currency_providers.dart';
 import '../models/finance_models.dart';
 import '../providers/finance_providers.dart';
@@ -71,7 +72,7 @@ class _AssetEditPageState extends ConsumerState<AssetEditPage> {
       type: _type,
       currentValue: ref
           .read(currencyConverterProvider)
-          .toEur(double.parse(_valueController.text.trim())),
+          .toEur(parseDecimal(_valueController.text) ?? 0),
       currency: 'EUR',
       description: _descriptionController.text.trim().isEmpty
           ? null
@@ -160,7 +161,7 @@ class _AssetEditPageState extends ConsumerState<AssetEditPage> {
               ),
               validator: (v) {
                 if (v == null || v.trim().isEmpty) return 'Required';
-                if (double.tryParse(v.trim()) == null) return 'Invalid number';
+                if (parseDecimal(v) == null) return 'Invalid number';
                 return null;
               },
             ),

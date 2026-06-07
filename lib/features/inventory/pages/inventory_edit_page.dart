@@ -12,6 +12,7 @@ import 'package:personal_app/presentation/widgets/responsive_center.dart';
 import '../../../presentation/widgets/fullscreen_image_viewer.dart';
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
 import '../../../services/image_upload_service.dart';
+import '../../../utils/decimal_input.dart';
 import '../../catalog/models/catalog_item.dart';
 import '../../catalog/providers/catalog_providers.dart';
 import '../../gemini/providers/gemini_providers.dart';
@@ -143,7 +144,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
         purchasePrice: _priceController.text.trim().isNotEmpty
             ? ref
                   .read(currencyConverterProvider)
-                  .toEur(double.tryParse(_priceController.text.trim()) ?? 0)
+                  .toEur(parseDecimal(_priceController.text) ?? 0)
             : null,
         purchaseDate: _purchaseDate,
         expiryDate: _expiryDate,

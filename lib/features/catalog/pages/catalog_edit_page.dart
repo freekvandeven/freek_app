@@ -10,6 +10,7 @@ import 'package:personal_app/presentation/widgets/responsive_center.dart';
 import '../../../presentation/widgets/fullscreen_image_viewer.dart';
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
 import '../../../services/image_upload_service.dart';
+import '../../../utils/decimal_input.dart';
 import '../../settings/providers/currency_providers.dart';
 import '../models/catalog_item.dart';
 import '../providers/catalog_providers.dart';
@@ -142,7 +143,7 @@ class _CatalogEditPageState extends ConsumerState<CatalogEditPage> {
 
       final converter = ref.read(currencyConverterProvider);
       final price = _priceController.text.isNotEmpty
-          ? converter.toEur(double.tryParse(_priceController.text) ?? 0)
+          ? converter.toEur(parseDecimal(_priceController.text) ?? 0)
           : null;
 
       final item = CatalogItem(
