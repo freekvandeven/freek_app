@@ -39,6 +39,8 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
 
   DateTime? _purchaseDate;
   DateTime? _expiryDate;
+  // Null means "fill not tracked" (WISH-0078). 0–100 when set.
+  int? _fillPercent;
   List<String> _savedImageUrls = [];
   List<({Uint8List bytes, String fileName})> _pendingImages = [];
   final List<String> _removedImageUrls = [];
@@ -80,6 +82,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
         _expiryDate = item.expiryDate;
         _savedImageUrls = List.of(item.imageUrls);
         _catalogItemId = item.catalogItemId;
+        _fillPercent = item.fillPercent;
         _isLoading = false;
       });
       // Load linked catalog item
@@ -149,6 +152,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
             ? null
             : _barcodeController.text.trim(),
         catalogItemId: _catalogItemId,
+        fillPercent: _fillPercent,
       );
 
       final notifier = ref.read(inventoryListProvider.notifier);
@@ -452,6 +456,34 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
                 ],
               ),
               const SizedBox(height: 16),
+
+              // Fill % — optional indicator for half-empty bottles /
+              // bags / sauces without changing the integer quantity
+              // (WISH-0078). Off by default; turning the switch on
+              // reveals a slider that defaults to 100.
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Track fill percentage'),
+                subtitle: Text(
+                  _fillPercent == null
+                      ? 'Off — useful for half-empty bags, almost-empty sauces'
+                      : 'Currently $_fillPercent% full',
+                ),
+                value: _fillPercent != null,
+                onChanged: (on) {
+                  setState(() => _fillPercent = on ? 100 : null);
+                },
+              ),
+              if (_fillPercent != null)
+                Slider(
+                  value: _fillPercent!.toDouble(),
+                  min: 0,
+                  max: 100,
+                  divisions: 20,
+                  label: '$_fillPercent%',
+                  onChanged: (v) => setState(() => _fillPercent = v.round()),
+                ),
+              if (_fillPercent != null) const SizedBox(height: 16),
 
               ListTile(
                 contentPadding: EdgeInsets.zero,

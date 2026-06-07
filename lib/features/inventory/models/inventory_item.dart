@@ -14,6 +14,13 @@ class InventoryItem {
   final String? barcode;
   final String? catalogItemId;
   final Map<String, String> customFields;
+
+  /// Optional "how full is this" indicator (0–100) — useful for things
+  /// the user wants to flag as half-empty / almost-gone without
+  /// changing the integer [quantity] (WISH-0078). `null` means "not
+  /// tracked" and the UI hides the indicator entirely.
+  final int? fillPercent;
+
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -31,6 +38,7 @@ class InventoryItem {
     this.barcode,
     this.catalogItemId,
     this.customFields = const {},
+    this.fillPercent,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) : id = id ?? const Uuid().v4(),
@@ -50,6 +58,7 @@ class InventoryItem {
     String? barcode,
     String? catalogItemId,
     Map<String, String>? customFields,
+    int? fillPercent,
     bool clearDescription = false,
     bool clearCategory = false,
     bool clearLocation = false,
@@ -58,6 +67,7 @@ class InventoryItem {
     bool clearExpiryDate = false,
     bool clearBarcode = false,
     bool clearCatalogItemId = false,
+    bool clearFillPercent = false,
   }) {
     return InventoryItem(
       id: id,
@@ -79,6 +89,7 @@ class InventoryItem {
           ? null
           : (catalogItemId ?? this.catalogItemId),
       customFields: customFields ?? this.customFields,
+      fillPercent: clearFillPercent ? null : (fillPercent ?? this.fillPercent),
       createdAt: createdAt,
       updatedAt: DateTime.now(),
     );
@@ -98,6 +109,7 @@ class InventoryItem {
     'barcode': barcode,
     'catalogItemId': catalogItemId,
     'customFields': customFields,
+    'fillPercent': fillPercent,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
   };
@@ -133,6 +145,7 @@ class InventoryItem {
       customFields: map['customFields'] != null
           ? Map<String, String>.from(map['customFields'] as Map)
           : {},
+      fillPercent: (map['fillPercent'] as num?)?.toInt(),
       createdAt: DateTime.parse(map['createdAt'] as String),
       updatedAt: DateTime.parse(map['updatedAt'] as String),
     );

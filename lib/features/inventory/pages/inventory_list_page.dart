@@ -158,6 +158,8 @@ class InventoryListPage extends ConsumerWidget {
                               if (item.category != null) item.category!,
                               if (item.location != null) item.location!,
                               if (item.quantity > 1) 'Qty: ${item.quantity}',
+                              if (item.fillPercent != null)
+                                '${item.fillPercent}% full',
                               if (item.expiryDate != null)
                                 item.expiryDate!.isBefore(DateTime.now())
                                     ? 'EXPIRED'
