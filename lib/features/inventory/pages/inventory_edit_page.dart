@@ -11,6 +11,7 @@ import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
 import '../../../presentation/widgets/fullscreen_image_viewer.dart';
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
+import '../../../presentation/widgets/unsaved_changes_guard.dart';
 import '../../../services/image_upload_service.dart';
 import '../../../utils/decimal_input.dart';
 import '../../catalog/models/catalog_item.dart';
@@ -50,6 +51,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
   bool _isScanning = false;
   String? _catalogItemId;
   CatalogItem? _linkedCatalogItem;
+  String _initialSnapshot = '';
 
   @override
   void initState() {
@@ -58,8 +60,29 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
       _loadItem();
     } else {
       _isLoading = false;
+      _initialSnapshot = _snapshot();
     }
   }
+
+  /// Stable concatenation of the form fields used as a dirty-check
+  /// baseline for the unsaved-changes guard (WISH-0079).
+  String _snapshot() => [
+    _nameController.text,
+    _descriptionController.text,
+    _categoryController.text,
+    _locationController.text,
+    _quantityController.text,
+    _priceController.text,
+    _barcodeController.text,
+    _purchaseDate?.toIso8601String() ?? '',
+    _expiryDate?.toIso8601String() ?? '',
+    _fillPercent ?? '',
+    _savedImageUrls.join(','),
+    _pendingImages.length,
+    _catalogItemId ?? '',
+  ].join('|');
+
+  bool get _isDirty => _initialSnapshot != _snapshot();
 
   Future<void> _loadItem() async {
     final item = await ref
@@ -86,6 +109,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
         _fillPercent = item.fillPercent;
         _isLoading = false;
       });
+      _initialSnapshot = _snapshot();
       // Load linked catalog item
       if (item.catalogItemId != null) {
         final catalogItem = await ref
@@ -168,6 +192,9 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
         await uploader.deleteImage(url);
       }
 
+      // Mark form clean so the unsaved-changes guard lets the post-
+      // save pop through unprompted (WISH-0079).
+      _initialSnapshot = _snapshot();
       if (mounted) context.pop();
     } catch (e) {
       if (mounted) {
@@ -302,357 +329,365 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: QuickActionsTitle(
-          child: Text(isEditing ? 'Edit Item' : 'New Item'),
-        ),
-        actions: [
-          if (isEditing)
+    return UnsavedChangesGuard(
+      isDirty: _isDirty,
+      child: Scaffold(
+        appBar: AppBar(
+          title: QuickActionsTitle(
+            child: Text(isEditing ? 'Edit Item' : 'New Item'),
+          ),
+          actions: [
+            if (isEditing)
+              IconButton(
+                icon: const Icon(Icons.delete_outline),
+                tooltip: 'Delete item',
+                onPressed: _isUploading ? null : _confirmDelete,
+              ),
             IconButton(
-              icon: const Icon(Icons.delete_outline),
-              tooltip: 'Delete item',
-              onPressed: _isUploading ? null : _confirmDelete,
+              icon: _isScanning
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.document_scanner),
+              tooltip: 'Scan with AI',
+              onPressed: _isScanning ? null : _scanWithAi,
             ),
-          IconButton(
-            icon: _isScanning
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.document_scanner),
-            tooltip: 'Scan with AI',
-            onPressed: _isScanning ? null : _scanWithAi,
-          ),
-          TextButton(
-            onPressed: _isUploading ? null : _save,
-            child: _isUploading
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Save'),
-          ),
-        ],
-      ),
-      body: ResponsiveCenter(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
-                  border: OutlineInputBorder(),
+            TextButton(
+              onPressed: _isUploading ? null : _save,
+              child: _isUploading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Save'),
+            ),
+          ],
+        ),
+        body: ResponsiveCenter(
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                TextFormField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Name',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? 'Required' : null,
                 ),
-                validator: (v) =>
-                    v == null || v.trim().isEmpty ? 'Required' : null,
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(),
+                TextFormField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
                 ),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // Catalog item link
-              _buildCatalogLinkSection(),
-              const SizedBox(height: 16),
+                // Catalog item link
+                _buildCatalogLinkSection(),
+                const SizedBox(height: 16),
 
-              // Category autocomplete
-              Autocomplete<String>(
-                initialValue: TextEditingValue(text: _categoryController.text),
-                optionsBuilder: (textEditingValue) {
-                  if (textEditingValue.text.isEmpty) return categories;
-                  return categories.where(
-                    (c) => c.toLowerCase().contains(
-                      textEditingValue.text.toLowerCase(),
-                    ),
-                  );
-                },
-                fieldViewBuilder:
-                    (context, controller, focusNode, onSubmitted) {
-                      controller.addListener(
-                        () => _categoryController.text = controller.text,
-                      );
-                      return TextFormField(
-                        controller: controller,
-                        focusNode: focusNode,
+                // Category autocomplete
+                Autocomplete<String>(
+                  initialValue: TextEditingValue(
+                    text: _categoryController.text,
+                  ),
+                  optionsBuilder: (textEditingValue) {
+                    if (textEditingValue.text.isEmpty) return categories;
+                    return categories.where(
+                      (c) => c.toLowerCase().contains(
+                        textEditingValue.text.toLowerCase(),
+                      ),
+                    );
+                  },
+                  fieldViewBuilder:
+                      (context, controller, focusNode, onSubmitted) {
+                        controller.addListener(
+                          () => _categoryController.text = controller.text,
+                        );
+                        return TextFormField(
+                          controller: controller,
+                          focusNode: focusNode,
+                          decoration: const InputDecoration(
+                            labelText: 'Category',
+                            border: OutlineInputBorder(),
+                          ),
+                        );
+                      },
+                  onSelected: (v) => _categoryController.text = v,
+                ),
+                const SizedBox(height: 16),
+
+                // Location autocomplete
+                Autocomplete<String>(
+                  initialValue: TextEditingValue(
+                    text: _locationController.text,
+                  ),
+                  optionsBuilder: (textEditingValue) {
+                    if (textEditingValue.text.isEmpty) return locations;
+                    return locations.where(
+                      (l) => l.toLowerCase().contains(
+                        textEditingValue.text.toLowerCase(),
+                      ),
+                    );
+                  },
+                  fieldViewBuilder:
+                      (context, controller, focusNode, onSubmitted) {
+                        controller.addListener(
+                          () => _locationController.text = controller.text,
+                        );
+                        return TextFormField(
+                          controller: controller,
+                          focusNode: focusNode,
+                          decoration: const InputDecoration(
+                            labelText: 'Location',
+                            border: OutlineInputBorder(),
+                            hintText: 'e.g. Kitchen, Garage, Office',
+                          ),
+                        );
+                      },
+                  onSelected: (v) => _locationController.text = v,
+                ),
+                const SizedBox(height: 16),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _quantityController,
                         decoration: const InputDecoration(
-                          labelText: 'Category',
+                          labelText: 'Quantity',
                           border: OutlineInputBorder(),
                         ),
-                      );
-                    },
-                onSelected: (v) => _categoryController.text = v,
-              ),
-              const SizedBox(height: 16),
-
-              // Location autocomplete
-              Autocomplete<String>(
-                initialValue: TextEditingValue(text: _locationController.text),
-                optionsBuilder: (textEditingValue) {
-                  if (textEditingValue.text.isEmpty) return locations;
-                  return locations.where(
-                    (l) => l.toLowerCase().contains(
-                      textEditingValue.text.toLowerCase(),
+                        keyboardType: TextInputType.number,
+                      ),
                     ),
-                  );
-                },
-                fieldViewBuilder:
-                    (context, controller, focusNode, onSubmitted) {
-                      controller.addListener(
-                        () => _locationController.text = controller.text,
-                      );
-                      return TextFormField(
-                        controller: controller,
-                        focusNode: focusNode,
-                        decoration: const InputDecoration(
-                          labelText: 'Location',
-                          border: OutlineInputBorder(),
-                          hintText: 'e.g. Kitchen, Garage, Office',
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _priceController,
+                        decoration: InputDecoration(
+                          labelText: 'Price',
+                          border: const OutlineInputBorder(),
+                          prefixText:
+                              '${ref.watch(currencyConverterProvider).symbol} ',
                         ),
-                      );
-                    },
-                onSelected: (v) => _locationController.text = v,
-              ),
-              const SizedBox(height: 16),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _quantityController,
-                      decoration: const InputDecoration(
-                        labelText: 'Quantity',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.number,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _priceController,
-                      decoration: InputDecoration(
-                        labelText: 'Price',
-                        border: const OutlineInputBorder(),
-                        prefixText:
-                            '${ref.watch(currencyConverterProvider).symbol} ',
-                      ),
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Fill % — optional indicator for half-empty bottles /
-              // bags / sauces without changing the integer quantity
-              // (WISH-0078). Off by default; turning the switch on
-              // reveals a slider that defaults to 100.
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Track fill percentage'),
-                subtitle: Text(
-                  _fillPercent == null
-                      ? 'Off — useful for half-empty bags, almost-empty sauces'
-                      : 'Currently $_fillPercent% full',
-                ),
-                value: _fillPercent != null,
-                onChanged: (on) {
-                  setState(() => _fillPercent = on ? 100 : null);
-                },
-              ),
-              if (_fillPercent != null)
-                Slider(
-                  value: _fillPercent!.toDouble(),
-                  min: 0,
-                  max: 100,
-                  divisions: 20,
-                  label: '$_fillPercent%',
-                  onChanged: (v) => setState(() => _fillPercent = v.round()),
-                ),
-              if (_fillPercent != null) const SizedBox(height: 16),
-
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.calendar_today),
-                title: Text(
-                  _purchaseDate != null
-                      ? DateFormat.yMMMd().format(_purchaseDate!)
-                      : 'No purchase date',
-                ),
-                subtitle: const Text('Purchase Date'),
-                trailing: _purchaseDate != null
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () => setState(() => _purchaseDate = null),
-                      )
-                    : null,
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _purchaseDate ?? DateTime.now(),
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime.now(),
-                  );
-                  if (picked != null) {
-                    setState(() => _purchaseDate = picked);
-                  }
-                },
-              ),
-              const SizedBox(height: 8),
-
-              // Expiry date
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.event_busy),
-                title: Text(
-                  _expiryDate != null
-                      ? DateFormat.yMMMd().format(_expiryDate!)
-                      : 'No expiry date',
-                ),
-                subtitle:
-                    _expiryDate != null && _expiryDate!.isBefore(DateTime.now())
-                    ? Text(
-                        'Expired',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
                         ),
-                      )
-                    : const Text('Expiry Date'),
-                trailing: _expiryDate != null
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () => setState(() => _expiryDate = null),
-                      )
-                    : null,
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _expiryDate ?? DateTime.now(),
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                  );
-                  if (picked != null) {
-                    setState(() => _expiryDate = picked);
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
 
-              // Images
-              Text('Images', style: Theme.of(context).textTheme.labelLarge),
-              const SizedBox(height: 8),
-              if (_savedImageUrls.isNotEmpty || _pendingImages.isNotEmpty)
-                SizedBox(
-                  height: 100,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _savedImageUrls.length + _pendingImages.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemBuilder: (context, index) {
-                      final isExisting = index < _savedImageUrls.length;
-                      return Stack(
-                        children: [
-                          GestureDetector(
-                            onTap: () => isExisting
-                                ? showFullscreenNetworkImage(
-                                    context,
-                                    _savedImageUrls[index],
-                                  )
-                                : showFullscreenMemoryImage(
-                                    context,
-                                    _pendingImages[index -
-                                            _savedImageUrls.length]
-                                        .bytes,
-                                  ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: isExisting
-                                  ? CachedNetworkImage(
-                                      imageUrl: _savedImageUrls[index],
-                                      width: 100,
-                                      height: 100,
-                                      fit: BoxFit.cover,
+                // Fill % — optional indicator for half-empty bottles /
+                // bags / sauces without changing the integer quantity
+                // (WISH-0078). Off by default; turning the switch on
+                // reveals a slider that defaults to 100.
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Track fill percentage'),
+                  subtitle: Text(
+                    _fillPercent == null
+                        ? 'Off — useful for half-empty bags, almost-empty sauces'
+                        : 'Currently $_fillPercent% full',
+                  ),
+                  value: _fillPercent != null,
+                  onChanged: (on) {
+                    setState(() => _fillPercent = on ? 100 : null);
+                  },
+                ),
+                if (_fillPercent != null)
+                  Slider(
+                    value: _fillPercent!.toDouble(),
+                    min: 0,
+                    max: 100,
+                    divisions: 20,
+                    label: '$_fillPercent%',
+                    onChanged: (v) => setState(() => _fillPercent = v.round()),
+                  ),
+                if (_fillPercent != null) const SizedBox(height: 16),
+
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.calendar_today),
+                  title: Text(
+                    _purchaseDate != null
+                        ? DateFormat.yMMMd().format(_purchaseDate!)
+                        : 'No purchase date',
+                  ),
+                  subtitle: const Text('Purchase Date'),
+                  trailing: _purchaseDate != null
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () => setState(() => _purchaseDate = null),
+                        )
+                      : null,
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _purchaseDate ?? DateTime.now(),
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime.now(),
+                    );
+                    if (picked != null) {
+                      setState(() => _purchaseDate = picked);
+                    }
+                  },
+                ),
+                const SizedBox(height: 8),
+
+                // Expiry date
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.event_busy),
+                  title: Text(
+                    _expiryDate != null
+                        ? DateFormat.yMMMd().format(_expiryDate!)
+                        : 'No expiry date',
+                  ),
+                  subtitle:
+                      _expiryDate != null &&
+                          _expiryDate!.isBefore(DateTime.now())
+                      ? Text(
+                          'Expired',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        )
+                      : const Text('Expiry Date'),
+                  trailing: _expiryDate != null
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () => setState(() => _expiryDate = null),
+                        )
+                      : null,
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _expiryDate ?? DateTime.now(),
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null) {
+                      setState(() => _expiryDate = picked);
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Images
+                Text('Images', style: Theme.of(context).textTheme.labelLarge),
+                const SizedBox(height: 8),
+                if (_savedImageUrls.isNotEmpty || _pendingImages.isNotEmpty)
+                  SizedBox(
+                    height: 100,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _savedImageUrls.length + _pendingImages.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (context, index) {
+                        final isExisting = index < _savedImageUrls.length;
+                        return Stack(
+                          children: [
+                            GestureDetector(
+                              onTap: () => isExisting
+                                  ? showFullscreenNetworkImage(
+                                      context,
+                                      _savedImageUrls[index],
                                     )
-                                  : Image.memory(
+                                  : showFullscreenMemoryImage(
+                                      context,
                                       _pendingImages[index -
                                               _savedImageUrls.length]
                                           .bytes,
-                                      width: 100,
-                                      height: 100,
-                                      fit: BoxFit.cover,
                                     ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: isExisting
+                                    ? CachedNetworkImage(
+                                        imageUrl: _savedImageUrls[index],
+                                        width: 100,
+                                        height: 100,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : Image.memory(
+                                        _pendingImages[index -
+                                                _savedImageUrls.length]
+                                            .bytes,
+                                        width: 100,
+                                        height: 100,
+                                        fit: BoxFit.cover,
+                                      ),
+                              ),
                             ),
-                          ),
-                          Positioned(
-                            top: 2,
-                            right: 2,
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  if (index < _savedImageUrls.length) {
-                                    _removedImageUrls.add(
-                                      _savedImageUrls[index],
-                                    );
-                                    _savedImageUrls = List.of(_savedImageUrls)
-                                      ..removeAt(index);
-                                  } else {
-                                    final pendingIndex =
-                                        index - _savedImageUrls.length;
-                                    _pendingImages = List.of(_pendingImages)
-                                      ..removeAt(pendingIndex);
-                                  }
-                                });
-                              },
-                              child: Container(
-                                decoration: const BoxDecoration(
-                                  color: Colors.black54,
-                                  shape: BoxShape.circle,
-                                ),
-                                padding: const EdgeInsets.all(4),
-                                child: const Icon(
-                                  Icons.close,
-                                  size: 16,
-                                  color: Colors.white,
+                            Positioned(
+                              top: 2,
+                              right: 2,
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    if (index < _savedImageUrls.length) {
+                                      _removedImageUrls.add(
+                                        _savedImageUrls[index],
+                                      );
+                                      _savedImageUrls = List.of(_savedImageUrls)
+                                        ..removeAt(index);
+                                    } else {
+                                      final pendingIndex =
+                                          index - _savedImageUrls.length;
+                                      _pendingImages = List.of(_pendingImages)
+                                        ..removeAt(pendingIndex);
+                                    }
+                                  });
+                                },
+                                child: Container(
+                                  decoration: const BoxDecoration(
+                                    color: Colors.black54,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  padding: const EdgeInsets.all(4),
+                                  child: const Icon(
+                                    Icons.close,
+                                    size: 16,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
-                      );
-                    },
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _addImage,
+                  icon: const Icon(Icons.add_photo_alternate),
+                  label: const Text('Add image'),
+                ),
+                const SizedBox(height: 16),
+
+                TextFormField(
+                  controller: _barcodeController,
+                  decoration: const InputDecoration(
+                    labelText: 'Barcode / Serial Number',
+                    border: OutlineInputBorder(),
                   ),
                 ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: _addImage,
-                icon: const Icon(Icons.add_photo_alternate),
-                label: const Text('Add image'),
-              ),
-              const SizedBox(height: 16),
-
-              TextFormField(
-                controller: _barcodeController,
-                decoration: const InputDecoration(
-                  labelText: 'Barcode / Serial Number',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

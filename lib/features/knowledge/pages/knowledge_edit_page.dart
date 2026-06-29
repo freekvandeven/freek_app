@@ -9,6 +9,7 @@ import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../presentation/widgets/file_drop_target.dart';
+import '../../../presentation/widgets/unsaved_changes_guard.dart';
 import '../../../services/image_upload_service.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../gemini/providers/gemini_providers.dart';
@@ -64,8 +65,19 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
     } else {
       _parentId = widget.initialParentId;
       _isLoading = false;
+      // Capture the empty-form snapshot so any typing flips the
+      // unsaved-changes guard on (WISH-0079).
+      _lastSavedSnapshot = _autosaveSnapshot();
       _setupAutosaveTimer();
     }
+  }
+
+  /// True when the form has unsaved edits vs. the most recently saved
+  /// snapshot — drives the unsaved-changes confirmation on back nav
+  /// (WISH-0079).
+  bool get _isDirty {
+    if (_lastSavedSnapshot == null) return false;
+    return _autosaveSnapshot() != _lastSavedSnapshot;
   }
 
   Future<void> _loadPage() async {
@@ -224,6 +236,9 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
       await uploader.deleteFile(url);
     }
 
+    // Mark the form as clean so the unsaved-changes guard lets the
+    // post-save pop through unprompted (WISH-0079).
+    _lastSavedSnapshot = _autosaveSnapshot();
     if (mounted) context.pop();
   }
 
@@ -397,245 +412,250 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
     final canShowPreview = width >= _previewBreakpoint;
     final showPreview = _showPreview && canShowPreview;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: QuickActionsTitle(
-          child: Text(isEditing ? 'Edit Page' : 'New Page'),
-        ),
-        actions: [
-          if (canShowPreview)
-            IconButton(
-              isSelected: _showPreview,
-              icon: const Icon(Icons.preview_outlined),
-              selectedIcon: const Icon(Icons.preview),
-              tooltip: _showPreview ? 'Hide preview' : 'Show preview',
-              onPressed: () => setState(() => _showPreview = !_showPreview),
-            ),
-          IconButton(
-            icon: const Icon(Icons.auto_awesome_outlined),
-            tooltip: 'AI Assist',
-            onPressed: _showAiAssist,
+    return UnsavedChangesGuard(
+      isDirty: _isDirty,
+      child: Scaffold(
+        appBar: AppBar(
+          title: QuickActionsTitle(
+            child: Text(isEditing ? 'Edit Page' : 'New Page'),
           ),
-          TextButton(onPressed: _save, child: const Text('Save')),
-        ],
-      ),
-      body: FileDropTarget(
-        onFiles: _attachDroppedFiles,
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Title',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (v) =>
-                    v == null || v.trim().isEmpty ? 'Required' : null,
+          actions: [
+            if (canShowPreview)
+              IconButton(
+                isSelected: _showPreview,
+                icon: const Icon(Icons.preview_outlined),
+                selectedIcon: const Icon(Icons.preview),
+                tooltip: _showPreview ? 'Hide preview' : 'Show preview',
+                onPressed: () => setState(() => _showPreview = !_showPreview),
               ),
-              const SizedBox(height: 16),
-
-              // Parent page selector
-              DropdownButtonFormField<String?>(
-                initialValue: _parentId,
-                decoration: const InputDecoration(
-                  labelText: 'Parent Page',
-                  border: OutlineInputBorder(),
-                ),
-                items: [
-                  const DropdownMenuItem(
-                    value: null,
-                    child: Text('None (root level)'),
-                  ),
-                  for (final p in parentOptions)
-                    DropdownMenuItem(value: p.id, child: Text(p.title)),
-                ],
-                onChanged: (v) => setState(() => _parentId = v),
-              ),
-              const SizedBox(height: 16),
-
-              // Tags
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _tagController,
-                      decoration: const InputDecoration(
-                        labelText: 'Add tag',
-                        border: OutlineInputBorder(),
-                      ),
-                      onSubmitted: (_) => _addTag(),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton.filled(
-                    onPressed: _addTag,
-                    icon: const Icon(Icons.add),
-                  ),
-                ],
-              ),
-              if (_tags.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 6,
-                  children: _tags
-                      .map(
-                        (tag) => Chip(
-                          label: Text(tag),
-                          onDeleted: () {
-                            setState(() => _tags.remove(tag));
-                          },
-                        ),
-                      )
-                      .toList(),
-                ),
-              ],
-              const SizedBox(height: 16),
-
-              SwitchListTile(
-                title: const Text('Work in Progress'),
-                subtitle: const Text('Mark this page as WIP'),
-                value: _isWip,
-                onChanged: (v) => setState(() => _isWip = v),
-                contentPadding: EdgeInsets.zero,
-              ),
-              const SizedBox(height: 8),
-
-              // Attachments
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Attachments',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  TextButton.icon(
-                    onPressed: _isUploadingAttachment
-                        ? null
-                        : _pickAndUploadAttachment,
-                    icon: _isUploadingAttachment
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.attach_file, size: 18),
-                    label: const Text('Add'),
-                  ),
-                ],
-              ),
-              if (_savedAttachments.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Text(
-                    'No attachments. Any file type — counts toward your '
-                    'storage quota.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                )
-              else
-                ..._savedAttachments.asMap().entries.map(
-                  (entry) => ListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.insert_drive_file_outlined),
-                    title: Text(
-                      entry.value.fileName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    subtitle: Text(
-                      '${entry.value.contentType} · '
-                      '${formatBytes(entry.value.sizeBytes)}',
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.open_in_new, size: 18),
-                          tooltip: 'Open',
-                          onPressed: () =>
-                              launchUrl(Uri.parse(entry.value.url)),
-                        ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.remove_circle_outline,
-                            size: 20,
-                          ),
-                          tooltip: 'Remove',
-                          onPressed: () => _removeAttachment(entry.key),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 16),
-
-              // Content area — single column or side-by-side preview
-              if (showPreview)
-                SizedBox(
-                  height: 600,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          children: [
-                            _MarkdownToolbar(
-                              controller: _contentController,
-                              focusNode: _contentFocusNode,
-                            ),
-                            const SizedBox(height: 4),
-                            Expanded(
-                              child: TextFormField(
-                                controller: _contentController,
-                                focusNode: _contentFocusNode,
-                                decoration: const InputDecoration(
-                                  labelText: 'Content (Markdown)',
-                                  border: OutlineInputBorder(),
-                                  alignLabelWithHint: true,
-                                ),
-                                expands: true,
-                                maxLines: null,
-                                minLines: null,
-                                validator: (v) => v == null || v.trim().isEmpty
-                                    ? 'Required'
-                                    : null,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(child: _previewPanel(context)),
-                    ],
-                  ),
-                )
-              else ...[
-                _MarkdownToolbar(
-                  controller: _contentController,
-                  focusNode: _contentFocusNode,
-                ),
-                const SizedBox(height: 4),
+            IconButton(
+              icon: const Icon(Icons.auto_awesome_outlined),
+              tooltip: 'AI Assist',
+              onPressed: _showAiAssist,
+            ),
+            TextButton(onPressed: _save, child: const Text('Save')),
+          ],
+        ),
+        body: FileDropTarget(
+          onFiles: _attachDroppedFiles,
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
                 TextFormField(
-                  controller: _contentController,
-                  focusNode: _contentFocusNode,
+                  controller: _titleController,
                   decoration: const InputDecoration(
-                    labelText: 'Content (Markdown)',
+                    labelText: 'Title',
                     border: OutlineInputBorder(),
-                    alignLabelWithHint: true,
-                    hintText: '# Heading\n\nWrite your content in Markdown...',
                   ),
-                  maxLines: 20,
                   validator: (v) =>
                       v == null || v.trim().isEmpty ? 'Required' : null,
                 ),
+                const SizedBox(height: 16),
+
+                // Parent page selector
+                DropdownButtonFormField<String?>(
+                  initialValue: _parentId,
+                  decoration: const InputDecoration(
+                    labelText: 'Parent Page',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: [
+                    const DropdownMenuItem(
+                      value: null,
+                      child: Text('None (root level)'),
+                    ),
+                    for (final p in parentOptions)
+                      DropdownMenuItem(value: p.id, child: Text(p.title)),
+                  ],
+                  onChanged: (v) => setState(() => _parentId = v),
+                ),
+                const SizedBox(height: 16),
+
+                // Tags
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _tagController,
+                        decoration: const InputDecoration(
+                          labelText: 'Add tag',
+                          border: OutlineInputBorder(),
+                        ),
+                        onSubmitted: (_) => _addTag(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton.filled(
+                      onPressed: _addTag,
+                      icon: const Icon(Icons.add),
+                    ),
+                  ],
+                ),
+                if (_tags.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    children: _tags
+                        .map(
+                          (tag) => Chip(
+                            label: Text(tag),
+                            onDeleted: () {
+                              setState(() => _tags.remove(tag));
+                            },
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ],
+                const SizedBox(height: 16),
+
+                SwitchListTile(
+                  title: const Text('Work in Progress'),
+                  subtitle: const Text('Mark this page as WIP'),
+                  value: _isWip,
+                  onChanged: (v) => setState(() => _isWip = v),
+                  contentPadding: EdgeInsets.zero,
+                ),
+                const SizedBox(height: 8),
+
+                // Attachments
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Attachments',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    TextButton.icon(
+                      onPressed: _isUploadingAttachment
+                          ? null
+                          : _pickAndUploadAttachment,
+                      icon: _isUploadingAttachment
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.attach_file, size: 18),
+                      label: const Text('Add'),
+                    ),
+                  ],
+                ),
+                if (_savedAttachments.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Text(
+                      'No attachments. Any file type — counts toward your '
+                      'storage quota.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  )
+                else
+                  ..._savedAttachments.asMap().entries.map(
+                    (entry) => ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.insert_drive_file_outlined),
+                      title: Text(
+                        entry.value.fileName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(
+                        '${entry.value.contentType} · '
+                        '${formatBytes(entry.value.sizeBytes)}',
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.open_in_new, size: 18),
+                            tooltip: 'Open',
+                            onPressed: () =>
+                                launchUrl(Uri.parse(entry.value.url)),
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.remove_circle_outline,
+                              size: 20,
+                            ),
+                            tooltip: 'Remove',
+                            onPressed: () => _removeAttachment(entry.key),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 16),
+
+                // Content area — single column or side-by-side preview
+                if (showPreview)
+                  SizedBox(
+                    height: 600,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            children: [
+                              _MarkdownToolbar(
+                                controller: _contentController,
+                                focusNode: _contentFocusNode,
+                              ),
+                              const SizedBox(height: 4),
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _contentController,
+                                  focusNode: _contentFocusNode,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Content (Markdown)',
+                                    border: OutlineInputBorder(),
+                                    alignLabelWithHint: true,
+                                  ),
+                                  expands: true,
+                                  maxLines: null,
+                                  minLines: null,
+                                  validator: (v) =>
+                                      v == null || v.trim().isEmpty
+                                      ? 'Required'
+                                      : null,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(child: _previewPanel(context)),
+                      ],
+                    ),
+                  )
+                else ...[
+                  _MarkdownToolbar(
+                    controller: _contentController,
+                    focusNode: _contentFocusNode,
+                  ),
+                  const SizedBox(height: 4),
+                  TextFormField(
+                    controller: _contentController,
+                    focusNode: _contentFocusNode,
+                    decoration: const InputDecoration(
+                      labelText: 'Content (Markdown)',
+                      border: OutlineInputBorder(),
+                      alignLabelWithHint: true,
+                      hintText:
+                          '# Heading\n\nWrite your content in Markdown...',
+                    ),
+                    maxLines: 20,
+                    validator: (v) =>
+                        v == null || v.trim().isEmpty ? 'Required' : null,
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

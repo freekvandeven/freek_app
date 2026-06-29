@@ -6,6 +6,7 @@ import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
 import '../../../presentation/widgets/fullscreen_image_viewer.dart';
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
+import '../../../presentation/widgets/unsaved_changes_guard.dart';
 import '../../../services/image_upload_service.dart';
 import '../../contacts/providers/contact_providers.dart';
 import '../../contacts/widgets/contact_picker.dart';
@@ -33,6 +34,7 @@ class _ConversationEditPageState extends ConsumerState<ConversationEditPage> {
   bool _isLoading = true;
   bool _isUploading = false;
   ConversationTopic? _existing;
+  String _initialSnapshot = '';
 
   @override
   void initState() {
@@ -41,8 +43,23 @@ class _ConversationEditPageState extends ConsumerState<ConversationEditPage> {
       _loadTopic();
     } else {
       _isLoading = false;
+      _initialSnapshot = _snapshot();
     }
   }
+
+  /// Stable concatenation of the form fields used as a dirty-check
+  /// baseline for the unsaved-changes guard (WISH-0079).
+  String _snapshot() => [
+    _titleController.text,
+    _descriptionController.text,
+    _personController.text,
+    _contactId ?? '',
+    _priority.name,
+    _status.name,
+    _imageUrls.join(','),
+  ].join('|');
+
+  bool get _isDirty => _initialSnapshot != _snapshot();
 
   Future<void> _loadTopic() async {
     final topic = await ref
@@ -60,6 +77,7 @@ class _ConversationEditPageState extends ConsumerState<ConversationEditPage> {
         _imageUrls = List<String>.from(topic.imageUrls);
         _isLoading = false;
       });
+      _initialSnapshot = _snapshot();
     } else {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -109,6 +127,9 @@ class _ConversationEditPageState extends ConsumerState<ConversationEditPage> {
       );
     }
 
+    // Mark form clean so the unsaved-changes guard lets the post-save
+    // pop through unprompted (WISH-0079).
+    _initialSnapshot = _snapshot();
     if (mounted) context.pop();
   }
 
@@ -194,227 +215,232 @@ class _ConversationEditPageState extends ConsumerState<ConversationEditPage> {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: QuickActionsTitle(
-          child: Text(isEditing ? 'Edit Topic' : 'New Topic'),
+    return UnsavedChangesGuard(
+      isDirty: _isDirty,
+      child: Scaffold(
+        appBar: AppBar(
+          title: QuickActionsTitle(
+            child: Text(isEditing ? 'Edit Topic' : 'New Topic'),
+          ),
+          actions: [TextButton(onPressed: _save, child: const Text('Save'))],
         ),
-        actions: [TextButton(onPressed: _save, child: const Text('Save'))],
-      ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            TextFormField(
-              controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: 'Title',
-                border: OutlineInputBorder(),
+        body: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              TextFormField(
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Title',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Required' : null,
               ),
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Required' : null,
-            ),
-            const SizedBox(height: 16),
-            FormField<String>(
-              initialValue: _personController.text,
-              validator: (_) {
-                if (_personController.text.trim().isEmpty &&
-                    _contactId == null) {
-                  return 'Required';
-                }
-                return null;
-              },
-              builder: (state) {
-                final hasLink = linkedContact != null;
-                final displayName = hasLink
-                    ? linkedContact.name
-                    : _personController.text;
-                return InputDecorator(
-                  decoration: InputDecoration(
-                    labelText: 'Person / Group',
-                    border: const OutlineInputBorder(),
-                    errorText: state.errorText,
-                    prefixIcon: Icon(
-                      hasLink
-                          ? (linkedContact.isGroup
-                                ? Icons.groups_rounded
-                                : Icons.person_rounded)
-                          : Icons.person_outline,
+              const SizedBox(height: 16),
+              FormField<String>(
+                initialValue: _personController.text,
+                validator: (_) {
+                  if (_personController.text.trim().isEmpty &&
+                      _contactId == null) {
+                    return 'Required';
+                  }
+                  return null;
+                },
+                builder: (state) {
+                  final hasLink = linkedContact != null;
+                  final displayName = hasLink
+                      ? linkedContact.name
+                      : _personController.text;
+                  return InputDecorator(
+                    decoration: InputDecoration(
+                      labelText: 'Person / Group',
+                      border: const OutlineInputBorder(),
+                      errorText: state.errorText,
+                      prefixIcon: Icon(
+                        hasLink
+                            ? (linkedContact.isGroup
+                                  ? Icons.groups_rounded
+                                  : Icons.person_rounded)
+                            : Icons.person_outline,
+                      ),
+                      suffixIcon: const Icon(Icons.arrow_drop_down),
                     ),
-                    suffixIcon: const Icon(Icons.arrow_drop_down),
+                    child: InkWell(
+                      onTap: () async {
+                        final result = await showContactPicker(context);
+                        if (result == null) return;
+                        setState(() {
+                          if (result.contact != null) {
+                            _contactId = result.contact!.id;
+                            _personController.text = result.contact!.name;
+                          } else if (result.freeText != null) {
+                            _contactId = null;
+                            _personController.text = result.freeText!;
+                          }
+                        });
+                        state.didChange(_personController.text);
+                      },
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              displayName.isEmpty
+                                  ? 'Tap to choose a contact'
+                                  : displayName,
+                              style: displayName.isEmpty
+                                  ? TextStyle(
+                                      color: Theme.of(context).hintColor,
+                                    )
+                                  : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(),
+                  alignLabelWithHint: true,
+                ),
+                maxLines: 6,
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Priority',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              SegmentedButton<TopicPriority>(
+                segments: const [
+                  ButtonSegment(
+                    value: TopicPriority.low,
+                    label: Text('Low'),
+                    icon: Icon(Icons.keyboard_double_arrow_down),
                   ),
-                  child: InkWell(
-                    onTap: () async {
-                      final result = await showContactPicker(context);
-                      if (result == null) return;
-                      setState(() {
-                        if (result.contact != null) {
-                          _contactId = result.contact!.id;
-                          _personController.text = result.contact!.name;
-                        } else if (result.freeText != null) {
-                          _contactId = null;
-                          _personController.text = result.freeText!;
-                        }
-                      });
-                      state.didChange(_personController.text);
-                    },
-                    child: Row(
+                  ButtonSegment(
+                    value: TopicPriority.medium,
+                    label: Text('Medium'),
+                    icon: Icon(Icons.remove),
+                  ),
+                  ButtonSegment(
+                    value: TopicPriority.high,
+                    label: Text('High'),
+                    icon: Icon(Icons.keyboard_double_arrow_up),
+                  ),
+                ],
+                selected: {_priority},
+                onSelectionChanged: (selected) {
+                  setState(() => _priority = selected.first);
+                },
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.image),
+                title: const Text('Images'),
+                subtitle: Text(
+                  _imageUrls.isEmpty
+                      ? 'None'
+                      : '${_imageUrls.length} image${_imageUrls.length == 1 ? '' : 's'}',
+                ),
+                trailing: _isUploading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : IconButton(
+                        icon: const Icon(Icons.add_photo_alternate),
+                        tooltip: 'Add image',
+                        onPressed: _addImage,
+                      ),
+              ),
+              if (_imageUrls.isNotEmpty)
+                SizedBox(
+                  height: 120,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _imageUrls.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) => Stack(
                       children: [
-                        Expanded(
-                          child: Text(
-                            displayName.isEmpty
-                                ? 'Tap to choose a contact'
-                                : displayName,
-                            style: displayName.isEmpty
-                                ? TextStyle(color: Theme.of(context).hintColor)
-                                : null,
+                        GestureDetector(
+                          onTap: () => showFullscreenNetworkImage(
+                            context,
+                            _imageUrls[index],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: CachedNetworkImage(
+                              imageUrl: _imageUrls[index],
+                              width: 120,
+                              height: 120,
+                              fit: BoxFit.cover,
+                              errorWidget: (_, __, ___) => Container(
+                                width: 120,
+                                height: 120,
+                                color: Colors.grey[300],
+                                child: const Icon(Icons.broken_image),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: GestureDetector(
+                            onTap: () => _removeImage(index),
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(4),
+                              child: const Icon(
+                                Icons.close,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description',
-                border: OutlineInputBorder(),
-                alignLabelWithHint: true,
-              ),
-              maxLines: 6,
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Required' : null,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Priority',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            SegmentedButton<TopicPriority>(
-              segments: const [
-                ButtonSegment(
-                  value: TopicPriority.low,
-                  label: Text('Low'),
-                  icon: Icon(Icons.keyboard_double_arrow_down),
                 ),
-                ButtonSegment(
-                  value: TopicPriority.medium,
-                  label: Text('Medium'),
-                  icon: Icon(Icons.remove),
+              if (isEditing) ...[
+                const SizedBox(height: 24),
+                const Text(
+                  'Status',
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-                ButtonSegment(
-                  value: TopicPriority.high,
-                  label: Text('High'),
-                  icon: Icon(Icons.keyboard_double_arrow_up),
+                const SizedBox(height: 8),
+                SegmentedButton<TopicStatus>(
+                  segments: const [
+                    ButtonSegment(value: TopicStatus.open, label: Text('Open')),
+                    ButtonSegment(
+                      value: TopicStatus.resolved,
+                      label: Text('Resolved'),
+                    ),
+                  ],
+                  selected: {_status},
+                  onSelectionChanged: (selected) {
+                    setState(() => _status = selected.first);
+                  },
                 ),
               ],
-              selected: {_priority},
-              onSelectionChanged: (selected) {
-                setState(() => _priority = selected.first);
-              },
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(Icons.image),
-              title: const Text('Images'),
-              subtitle: Text(
-                _imageUrls.isEmpty
-                    ? 'None'
-                    : '${_imageUrls.length} image${_imageUrls.length == 1 ? '' : 's'}',
-              ),
-              trailing: _isUploading
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : IconButton(
-                      icon: const Icon(Icons.add_photo_alternate),
-                      tooltip: 'Add image',
-                      onPressed: _addImage,
-                    ),
-            ),
-            if (_imageUrls.isNotEmpty)
-              SizedBox(
-                height: 120,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: _imageUrls.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemBuilder: (context, index) => Stack(
-                    children: [
-                      GestureDetector(
-                        onTap: () => showFullscreenNetworkImage(
-                          context,
-                          _imageUrls[index],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: CachedNetworkImage(
-                            imageUrl: _imageUrls[index],
-                            width: 120,
-                            height: 120,
-                            fit: BoxFit.cover,
-                            errorWidget: (_, __, ___) => Container(
-                              width: 120,
-                              height: 120,
-                              color: Colors.grey[300],
-                              child: const Icon(Icons.broken_image),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        top: 4,
-                        right: 4,
-                        child: GestureDetector(
-                          onTap: () => _removeImage(index),
-                          child: Container(
-                            decoration: const BoxDecoration(
-                              color: Colors.black54,
-                              shape: BoxShape.circle,
-                            ),
-                            padding: const EdgeInsets.all(4),
-                            child: const Icon(
-                              Icons.close,
-                              size: 16,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            if (isEditing) ...[
-              const SizedBox(height: 24),
-              const Text(
-                'Status',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              SegmentedButton<TopicStatus>(
-                segments: const [
-                  ButtonSegment(value: TopicStatus.open, label: Text('Open')),
-                  ButtonSegment(
-                    value: TopicStatus.resolved,
-                    label: Text('Resolved'),
-                  ),
-                ],
-                selected: {_status},
-                onSelectionChanged: (selected) {
-                  setState(() => _status = selected.first);
-                },
-              ),
             ],
-          ],
+          ),
         ),
       ),
     );

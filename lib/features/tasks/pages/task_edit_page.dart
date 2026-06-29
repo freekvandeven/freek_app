@@ -10,6 +10,7 @@ import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
 import '../../../presentation/widgets/fullscreen_image_viewer.dart';
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
+import '../../../presentation/widgets/unsaved_changes_guard.dart';
 import '../../../services/image_upload_service.dart';
 import '../models/task.dart';
 import '../providers/task_providers.dart';
@@ -41,6 +42,10 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
   DateTime? _repeatEndDate;
   String? _parentTaskId;
   bool _isEditing = false;
+  // Captured after load (or on initState for new tasks) so we can
+  // compare against the current form state and prompt the user before
+  // a back-nav discards unsaved edits (WISH-0079).
+  String _initialSnapshot = '';
 
   @override
   void initState() {
@@ -48,8 +53,32 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
     if (widget.taskId != null) {
       _isEditing = true;
       _loadTask();
+    } else {
+      _initialSnapshot = _snapshot();
     }
   }
+
+  /// Stable concatenation of the form fields used as a dirty-check
+  /// baseline. Pure function of current state (WISH-0079).
+  String _snapshot() => [
+    _titleController.text,
+    _descriptionController.text,
+    _categoryController.text,
+    _priority.name,
+    _dueDate?.toIso8601String() ?? '',
+    _hasDueTime,
+    _dueTime?.hour,
+    _dueTime?.minute,
+    _savedImageUrls.join(','),
+    _pendingImages.length,
+    _isRepeatable,
+    _repeatType.name,
+    _repeatInterval,
+    _repeatEndDate?.toIso8601String() ?? '',
+    _parentTaskId ?? '',
+  ].join('|');
+
+  bool get _isDirty => _initialSnapshot != _snapshot();
 
   Future<void> _loadTask() async {
     final service = ref.read(taskServiceProvider);
@@ -75,6 +104,7 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
         _repeatEndDate = task.repeatEndDate;
         _parentTaskId = task.parentTaskId;
       });
+      _initialSnapshot = _snapshot();
     }
   }
 
@@ -179,6 +209,9 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
         await uploader.deleteImage(url);
       }
 
+      // Mark form clean so the unsaved-changes guard lets the post-
+      // save pop through unprompted (WISH-0079).
+      _initialSnapshot = _snapshot();
       if (mounted) context.pop();
     } catch (e) {
       if (mounted) {
@@ -195,352 +228,361 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
   Widget build(BuildContext context) {
     final categories = ref.watch(taskCategoriesProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: QuickActionsTitle(
-          child: Text(_isEditing ? 'Edit Task' : 'New Task'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: _isUploading ? null : _save,
-            child: _isUploading
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Save'),
+    return UnsavedChangesGuard(
+      isDirty: _isDirty,
+      child: Scaffold(
+        appBar: AppBar(
+          title: QuickActionsTitle(
+            child: Text(_isEditing ? 'Edit Task' : 'New Task'),
           ),
-        ],
-      ),
-      body: ResponsiveCenter(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              TextFormField(
-                controller: _titleController,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(labelText: 'Title'),
-                validator: (v) =>
-                    v == null || v.trim().isEmpty ? 'Title is required' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _descriptionController,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(labelText: 'Description'),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 16),
-
-              // Priority
-              Text('Priority', style: Theme.of(context).textTheme.labelLarge),
-              const SizedBox(height: 8),
-              SegmentedButton<TaskPriority>(
-                segments: const [
-                  ButtonSegment(value: TaskPriority.low, label: Text('Low')),
-                  ButtonSegment(
-                    value: TaskPriority.medium,
-                    label: Text('Medium'),
-                  ),
-                  ButtonSegment(value: TaskPriority.high, label: Text('High')),
-                ],
-                selected: {_priority},
-                onSelectionChanged: (s) => setState(() => _priority = s.first),
-              ),
-              const SizedBox(height: 16),
-
-              // Due date
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.calendar_today),
-                title: Text(
-                  _dueDate != null
-                      ? DateFormat.yMMMd().format(_dueDate!)
-                      : 'No due date',
+          actions: [
+            TextButton(
+              onPressed: _isUploading ? null : _save,
+              child: _isUploading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Save'),
+            ),
+          ],
+        ),
+        body: ResponsiveCenter(
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                TextFormField(
+                  controller: _titleController,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(labelText: 'Title'),
+                  validator: (v) => v == null || v.trim().isEmpty
+                      ? 'Title is required'
+                      : null,
                 ),
-                trailing: _dueDate != null
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () => setState(() {
-                          _dueDate = null;
-                          _hasDueTime = false;
-                          _dueTime = null;
-                        }),
-                      )
-                    : null,
-                onTap: () => _pickDate(
-                  current: _dueDate,
-                  onPicked: (d) => setState(() => _dueDate = d),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _descriptionController,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(labelText: 'Description'),
+                  maxLines: 3,
                 ),
-              ),
+                const SizedBox(height: 16),
 
-              // Due time (only when due date is set)
-              if (_dueDate != null) ...[
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Set time'),
-                  value: _hasDueTime,
-                  onChanged: (v) => setState(() {
-                    _hasDueTime = v;
-                    if (v && _dueTime == null) {
-                      _dueTime = TimeOfDay(
-                        hour: DateTime.now().hour,
-                        minute: 0,
-                      );
-                    }
-                  }),
-                ),
-                if (_hasDueTime)
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.access_time),
-                    title: Text(
-                      _dueTime != null
-                          ? _dueTime!.format(context)
-                          : 'No time set',
-                    ),
-                    onTap: () async {
-                      final picked = await showTimePicker(
-                        context: context,
-                        initialTime: _dueTime ?? TimeOfDay.now(),
-                      );
-                      if (picked != null) {
-                        setState(() => _dueTime = picked);
-                      }
-                    },
-                  ),
-              ],
-              const SizedBox(height: 8),
-
-              // Category
-              Autocomplete<String>(
-                optionsBuilder: (value) {
-                  if (value.text.isEmpty) return categories;
-                  return categories.where(
-                    (c) => c.toLowerCase().contains(value.text.toLowerCase()),
-                  );
-                },
-                fieldViewBuilder: (context, controller, focusNode, onSubmit) {
-                  if (controller.text.isEmpty &&
-                      _categoryController.text.isNotEmpty) {
-                    controller.text = _categoryController.text;
-                  }
-                  return TextFormField(
-                    controller: controller,
-                    focusNode: focusNode,
-                    decoration: const InputDecoration(
-                      labelText: 'Category',
-                      prefixIcon: Icon(Icons.label_outline),
-                    ),
-                    onChanged: (v) => _categoryController.text = v,
-                  );
-                },
-                onSelected: (value) => _categoryController.text = value,
-              ),
-              const SizedBox(height: 16),
-
-              // Parent task (subtasks limited to one nesting level — only
-              // root tasks (no parent) are eligible parents, a task cannot
-              // be its own parent, and completed tasks are filtered out
-              // so the list stays focused on actionable parents
-              // (BUG-0044).
-              Consumer(
-                builder: (context, ref, _) {
-                  final all =
-                      ref.watch(taskListProvider).valueOrNull ?? const [];
-                  final candidates =
-                      all
-                          .where(
-                            (t) =>
-                                t.id != widget.taskId &&
-                                t.parentTaskId == null &&
-                                !t.isCompleted,
-                          )
-                          .toList()
-                        ..sort(
-                          (a, b) => a.title.toLowerCase().compareTo(
-                            b.title.toLowerCase(),
-                          ),
-                        );
-                  // If the current parent isn't in the candidates (e.g. it
-                  // was deleted), null it out to avoid a dropdown error.
-                  final parentValue =
-                      candidates.any((t) => t.id == _parentTaskId)
-                      ? _parentTaskId
-                      : null;
-                  return DropdownButtonFormField<String?>(
-                    initialValue: parentValue,
-                    decoration: const InputDecoration(
-                      labelText: 'Parent task',
-                      prefixIcon: Icon(Icons.account_tree_outlined),
-                    ),
-                    items: [
-                      const DropdownMenuItem(
-                        value: null,
-                        child: Text('None (root task)'),
-                      ),
-                      for (final t in candidates)
-                        DropdownMenuItem(value: t.id, child: Text(t.title)),
-                    ],
-                    onChanged: (v) => setState(() => _parentTaskId = v),
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Attachments
-              Text(
-                'Attachments',
-                style: Theme.of(context).textTheme.labelLarge,
-              ),
-              const SizedBox(height: 8),
-              if (_savedImageUrls.isNotEmpty || _pendingImages.isNotEmpty)
-                SizedBox(
-                  height: 100,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _savedImageUrls.length + _pendingImages.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemBuilder: (context, index) {
-                      final isExisting = index < _savedImageUrls.length;
-                      return Stack(
-                        children: [
-                          GestureDetector(
-                            onTap: () => isExisting
-                                ? showFullscreenNetworkImage(
-                                    context,
-                                    _savedImageUrls[index],
-                                  )
-                                : showFullscreenMemoryImage(
-                                    context,
-                                    _pendingImages[index -
-                                            _savedImageUrls.length]
-                                        .bytes,
-                                  ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: isExisting
-                                  ? CachedNetworkImage(
-                                      imageUrl: _savedImageUrls[index],
-                                      width: 100,
-                                      height: 100,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : Image.memory(
-                                      _pendingImages[index -
-                                              _savedImageUrls.length]
-                                          .bytes,
-                                      width: 100,
-                                      height: 100,
-                                      fit: BoxFit.cover,
-                                    ),
-                            ),
-                          ),
-                          Positioned(
-                            top: 2,
-                            right: 2,
-                            child: GestureDetector(
-                              onTap: () => _removeAttachment(index),
-                              child: Container(
-                                decoration: const BoxDecoration(
-                                  color: Colors.black54,
-                                  shape: BoxShape.circle,
-                                ),
-                                padding: const EdgeInsets.all(4),
-                                child: const Icon(
-                                  Icons.close,
-                                  size: 16,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: _addAttachment,
-                icon: const Icon(Icons.add_photo_alternate),
-                label: const Text('Add image'),
-              ),
-              const SizedBox(height: 16),
-
-              // Repeatable
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Repeatable'),
-                subtitle: const Text('Task repeats on a schedule'),
-                value: _isRepeatable,
-                onChanged: (v) => setState(() => _isRepeatable = v),
-              ),
-              if (_isRepeatable) ...[
+                // Priority
+                Text('Priority', style: Theme.of(context).textTheme.labelLarge),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Text('Every '),
-                    SizedBox(
-                      width: 60,
-                      child: TextFormField(
-                        initialValue: _repeatInterval.toString(),
-                        keyboardType: TextInputType.number,
-                        textAlign: TextAlign.center,
-                        decoration: const InputDecoration(
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 8,
-                          ),
-                        ),
-                        onChanged: (v) =>
-                            _repeatInterval = int.tryParse(v) ?? 1,
-                      ),
+                SegmentedButton<TaskPriority>(
+                  segments: const [
+                    ButtonSegment(value: TaskPriority.low, label: Text('Low')),
+                    ButtonSegment(
+                      value: TaskPriority.medium,
+                      label: Text('Medium'),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: DropdownButtonFormField<RepeatType>(
-                        initialValue: _repeatType,
-                        items: RepeatType.values
-                            .map(
-                              (t) => DropdownMenuItem(
-                                value: t,
-                                child: Text(t.name),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (v) =>
-                            setState(() => _repeatType = v ?? RepeatType.daily),
-                      ),
+                    ButtonSegment(
+                      value: TaskPriority.high,
+                      label: Text('High'),
                     ),
                   ],
+                  selected: {_priority},
+                  onSelectionChanged: (s) =>
+                      setState(() => _priority = s.first),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
+
+                // Due date
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.event_repeat),
+                  leading: const Icon(Icons.calendar_today),
                   title: Text(
-                    _repeatEndDate != null
-                        ? 'Ends ${DateFormat.yMMMd().format(_repeatEndDate!)}'
-                        : 'No end date',
+                    _dueDate != null
+                        ? DateFormat.yMMMd().format(_dueDate!)
+                        : 'No due date',
                   ),
-                  trailing: _repeatEndDate != null
+                  trailing: _dueDate != null
                       ? IconButton(
                           icon: const Icon(Icons.clear),
-                          onPressed: () =>
-                              setState(() => _repeatEndDate = null),
+                          onPressed: () => setState(() {
+                            _dueDate = null;
+                            _hasDueTime = false;
+                            _dueTime = null;
+                          }),
                         )
                       : null,
                   onTap: () => _pickDate(
-                    current: _repeatEndDate,
-                    onPicked: (d) => setState(() => _repeatEndDate = d),
+                    current: _dueDate,
+                    onPicked: (d) => setState(() => _dueDate = d),
                   ),
                 ),
+
+                // Due time (only when due date is set)
+                if (_dueDate != null) ...[
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Set time'),
+                    value: _hasDueTime,
+                    onChanged: (v) => setState(() {
+                      _hasDueTime = v;
+                      if (v && _dueTime == null) {
+                        _dueTime = TimeOfDay(
+                          hour: DateTime.now().hour,
+                          minute: 0,
+                        );
+                      }
+                    }),
+                  ),
+                  if (_hasDueTime)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.access_time),
+                      title: Text(
+                        _dueTime != null
+                            ? _dueTime!.format(context)
+                            : 'No time set',
+                      ),
+                      onTap: () async {
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: _dueTime ?? TimeOfDay.now(),
+                        );
+                        if (picked != null) {
+                          setState(() => _dueTime = picked);
+                        }
+                      },
+                    ),
+                ],
+                const SizedBox(height: 8),
+
+                // Category
+                Autocomplete<String>(
+                  optionsBuilder: (value) {
+                    if (value.text.isEmpty) return categories;
+                    return categories.where(
+                      (c) => c.toLowerCase().contains(value.text.toLowerCase()),
+                    );
+                  },
+                  fieldViewBuilder: (context, controller, focusNode, onSubmit) {
+                    if (controller.text.isEmpty &&
+                        _categoryController.text.isNotEmpty) {
+                      controller.text = _categoryController.text;
+                    }
+                    return TextFormField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      decoration: const InputDecoration(
+                        labelText: 'Category',
+                        prefixIcon: Icon(Icons.label_outline),
+                      ),
+                      onChanged: (v) => _categoryController.text = v,
+                    );
+                  },
+                  onSelected: (value) => _categoryController.text = value,
+                ),
+                const SizedBox(height: 16),
+
+                // Parent task (subtasks limited to one nesting level — only
+                // root tasks (no parent) are eligible parents, a task cannot
+                // be its own parent, and completed tasks are filtered out
+                // so the list stays focused on actionable parents
+                // (BUG-0044).
+                Consumer(
+                  builder: (context, ref, _) {
+                    final all =
+                        ref.watch(taskListProvider).valueOrNull ?? const [];
+                    final candidates =
+                        all
+                            .where(
+                              (t) =>
+                                  t.id != widget.taskId &&
+                                  t.parentTaskId == null &&
+                                  !t.isCompleted,
+                            )
+                            .toList()
+                          ..sort(
+                            (a, b) => a.title.toLowerCase().compareTo(
+                              b.title.toLowerCase(),
+                            ),
+                          );
+                    // If the current parent isn't in the candidates (e.g. it
+                    // was deleted), null it out to avoid a dropdown error.
+                    final parentValue =
+                        candidates.any((t) => t.id == _parentTaskId)
+                        ? _parentTaskId
+                        : null;
+                    return DropdownButtonFormField<String?>(
+                      initialValue: parentValue,
+                      decoration: const InputDecoration(
+                        labelText: 'Parent task',
+                        prefixIcon: Icon(Icons.account_tree_outlined),
+                      ),
+                      items: [
+                        const DropdownMenuItem(
+                          value: null,
+                          child: Text('None (root task)'),
+                        ),
+                        for (final t in candidates)
+                          DropdownMenuItem(value: t.id, child: Text(t.title)),
+                      ],
+                      onChanged: (v) => setState(() => _parentTaskId = v),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Attachments
+                Text(
+                  'Attachments',
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+                const SizedBox(height: 8),
+                if (_savedImageUrls.isNotEmpty || _pendingImages.isNotEmpty)
+                  SizedBox(
+                    height: 100,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _savedImageUrls.length + _pendingImages.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (context, index) {
+                        final isExisting = index < _savedImageUrls.length;
+                        return Stack(
+                          children: [
+                            GestureDetector(
+                              onTap: () => isExisting
+                                  ? showFullscreenNetworkImage(
+                                      context,
+                                      _savedImageUrls[index],
+                                    )
+                                  : showFullscreenMemoryImage(
+                                      context,
+                                      _pendingImages[index -
+                                              _savedImageUrls.length]
+                                          .bytes,
+                                    ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: isExisting
+                                    ? CachedNetworkImage(
+                                        imageUrl: _savedImageUrls[index],
+                                        width: 100,
+                                        height: 100,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : Image.memory(
+                                        _pendingImages[index -
+                                                _savedImageUrls.length]
+                                            .bytes,
+                                        width: 100,
+                                        height: 100,
+                                        fit: BoxFit.cover,
+                                      ),
+                              ),
+                            ),
+                            Positioned(
+                              top: 2,
+                              right: 2,
+                              child: GestureDetector(
+                                onTap: () => _removeAttachment(index),
+                                child: Container(
+                                  decoration: const BoxDecoration(
+                                    color: Colors.black54,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  padding: const EdgeInsets.all(4),
+                                  child: const Icon(
+                                    Icons.close,
+                                    size: 16,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _addAttachment,
+                  icon: const Icon(Icons.add_photo_alternate),
+                  label: const Text('Add image'),
+                ),
+                const SizedBox(height: 16),
+
+                // Repeatable
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Repeatable'),
+                  subtitle: const Text('Task repeats on a schedule'),
+                  value: _isRepeatable,
+                  onChanged: (v) => setState(() => _isRepeatable = v),
+                ),
+                if (_isRepeatable) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Text('Every '),
+                      SizedBox(
+                        width: 60,
+                        child: TextFormField(
+                          initialValue: _repeatInterval.toString(),
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.center,
+                          decoration: const InputDecoration(
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 8,
+                            ),
+                          ),
+                          onChanged: (v) =>
+                              _repeatInterval = int.tryParse(v) ?? 1,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: DropdownButtonFormField<RepeatType>(
+                          initialValue: _repeatType,
+                          items: RepeatType.values
+                              .map(
+                                (t) => DropdownMenuItem(
+                                  value: t,
+                                  child: Text(t.name),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (v) => setState(
+                            () => _repeatType = v ?? RepeatType.daily,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.event_repeat),
+                    title: Text(
+                      _repeatEndDate != null
+                          ? 'Ends ${DateFormat.yMMMd().format(_repeatEndDate!)}'
+                          : 'No end date',
+                    ),
+                    trailing: _repeatEndDate != null
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () =>
+                                setState(() => _repeatEndDate = null),
+                          )
+                        : null,
+                    onTap: () => _pickDate(
+                      current: _repeatEndDate,
+                      onPicked: (d) => setState(() => _repeatEndDate = d),
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

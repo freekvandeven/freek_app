@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
 import '../../../presentation/widgets/star_rating.dart';
+import '../../../presentation/widgets/unsaved_changes_guard.dart';
 import '../../../services/image_upload_service.dart';
 import '../../../services/log_service.dart';
 import '../../../utils/decimal_input.dart';
@@ -68,7 +69,18 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     if (widget.recipeId != null) {
       _isEditing = true;
       _loadRecipe();
+    } else {
+      // Capture the empty-form snapshot so any typing flips the
+      // unsaved-changes guard on (WISH-0079).
+      _lastSavedSnapshot = _autosaveSnapshot();
     }
+  }
+
+  /// True when the form has unsaved edits — drives the unsaved-changes
+  /// confirmation on back nav (WISH-0079).
+  bool get _isDirty {
+    if (_lastSavedSnapshot == null) return false;
+    return _autosaveSnapshot() != _lastSavedSnapshot;
   }
 
   Future<void> _loadRecipe() async {
@@ -212,6 +224,9 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
       await _uploadPendingImages();
       await _persistRecipe();
       await _deleteRemovedImages();
+      // Mark form clean so the unsaved-changes guard lets the post-
+      // save pop through unprompted (WISH-0079).
+      _lastSavedSnapshot = _autosaveSnapshot();
       if (mounted) context.pop();
     } catch (e) {
       if (mounted) {
@@ -1032,302 +1047,311 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: QuickActionsTitle(
-          child: Text(_isEditing ? 'Edit Recipe' : 'New Recipe'),
-        ),
-        actions: [
-          if (!_isEditing)
-            IconButton(
-              icon: const Icon(Icons.auto_awesome),
-              tooltip: 'Create with AI',
-              onPressed: _isUploading ? null : _createWithAi,
-            ),
-          if (_isEditing)
-            IconButton(
-              icon: const Icon(Icons.auto_fix_high),
-              tooltip: 'Edit with AI',
-              onPressed: _isUploading ? null : _editWithAi,
-            ),
-          TextButton(
-            onPressed: _isUploading ? null : _save,
-            child: _isUploading
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Save'),
+    return UnsavedChangesGuard(
+      isDirty: _isDirty,
+      child: Scaffold(
+        appBar: AppBar(
+          title: QuickActionsTitle(
+            child: Text(_isEditing ? 'Edit Recipe' : 'New Recipe'),
           ),
-        ],
-      ),
-      body: ResponsiveCenter(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              TextFormField(
-                controller: _titleController,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(labelText: 'Title'),
-                validator: (v) =>
-                    v == null || v.trim().isEmpty ? 'Title is required' : null,
+          actions: [
+            if (!_isEditing)
+              IconButton(
+                icon: const Icon(Icons.auto_awesome),
+                tooltip: 'Create with AI',
+                onPressed: _isUploading ? null : _createWithAi,
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _descriptionController,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(labelText: 'Description'),
-                maxLines: 2,
+            if (_isEditing)
+              IconButton(
+                icon: const Icon(Icons.auto_fix_high),
+                tooltip: 'Edit with AI',
+                onPressed: _isUploading ? null : _editWithAi,
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _servingsController,
-                      decoration: const InputDecoration(labelText: 'Servings'),
-                      keyboardType: TextInputType.number,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _prepTimeController,
-                      decoration: const InputDecoration(
-                        labelText: 'Prep (min)',
-                      ),
-                      keyboardType: TextInputType.number,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _cookTimeController,
-                      decoration: const InputDecoration(
-                        labelText: 'Cook (min)',
-                      ),
-                      keyboardType: TextInputType.number,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Tags
-              Row(
-                children: [
-                  Expanded(
-                    child: Autocomplete<String>(
-                      optionsBuilder: (textEditingValue) {
-                        final input = textEditingValue.text
-                            .toLowerCase()
-                            .trim();
-                        if (input.isEmpty) {
-                          return const Iterable<String>.empty();
-                        }
-                        final available =
-                            ref.read(availableTagsProvider).valueOrNull ?? [];
-                        return available.where(
-                          (t) => t.contains(input) && !_tags.contains(t),
-                        );
-                      },
-                      onSelected: (tag) {
-                        if (!_tags.contains(tag)) {
-                          setState(() => _tags.add(tag));
-                          ref.read(availableTagsProvider.notifier).addTag(tag);
-                        }
-                        _autocompleteTagController?.clear();
-                      },
-                      fieldViewBuilder:
-                          (context, controller, focusNode, onFieldSubmitted) {
-                            _autocompleteTagController = controller;
-                            return TextField(
-                              controller: controller,
-                              focusNode: focusNode,
-                              decoration: const InputDecoration(
-                                labelText: 'Add tag',
-                              ),
-                              onSubmitted: (_) => _addTag(),
-                            );
-                          },
-                    ),
-                  ),
-                  IconButton(icon: const Icon(Icons.add), onPressed: _addTag),
-                ],
-              ),
-              if (_tags.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Wrap(
-                    spacing: 6,
-                    children: _tags
-                        .map(
-                          (t) => Chip(
-                            label: Text(t),
-                            onDeleted: () => setState(() => _tags.remove(t)),
-                          ),
-                        )
-                        .toList(),
-                  ),
+            TextButton(
+              onPressed: _isUploading ? null : _save,
+              child: _isUploading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Save'),
+            ),
+          ],
+        ),
+        body: ResponsiveCenter(
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                TextFormField(
+                  controller: _titleController,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(labelText: 'Title'),
+                  validator: (v) => v == null || v.trim().isEmpty
+                      ? 'Title is required'
+                      : null,
                 ),
-              const SizedBox(height: 16),
-
-              _RecipeIngredientsSection(
-                ingredients: _ingredients,
-                onAdd: _addIngredient,
-                onRemove: (i) => setState(() => _ingredients.removeAt(i)),
-              ),
-              const SizedBox(height: 16),
-
-              _RecipeInstructionsSection(
-                instructions: _instructions,
-                onAdd: _addInstruction,
-                onRemove: (i) => setState(() => _instructions.removeAt(i)),
-                onReorder: (int oldIdx, int newIdx) {
-                  // onReorderItem (Flutter >=3.41) already adjusts the
-                  // target index for the removed source item, so we
-                  // don't need the old `if (newIdx > oldIdx) newIdx--`
-                  // dance here.
-                  setState(() {
-                    final item = _instructions.removeAt(oldIdx);
-                    _instructions.insert(newIdx, item);
-                  });
-                },
-              ),
-              const SizedBox(height: 16),
-
-              _RecipeImagesSection(
-                savedImageUrls: _savedImageUrls,
-                pendingImages: _pendingImages,
-                primaryImageIndex: _primaryImageIndex,
-                onAdd: _addImage,
-                onSetPrimary: (int i) => setState(() => _primaryImageIndex = i),
-                onRemove: (int i) {
-                  setState(() {
-                    final totalCount =
-                        _savedImageUrls.length + _pendingImages.length;
-                    if (i < _savedImageUrls.length) {
-                      _removedImageUrls.add(_savedImageUrls[i]);
-                      _savedImageUrls.removeAt(i);
-                    } else {
-                      _pendingImages.removeAt(i - _savedImageUrls.length);
-                    }
-                    final newTotal = totalCount - 1;
-                    if (_primaryImageIndex >= newTotal) {
-                      _primaryImageIndex = newTotal <= 0 ? 0 : newTotal - 1;
-                    }
-                  });
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Video Links
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Videos',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  TextButton.icon(
-                    onPressed: _addVideoLink,
-                    icon: const Icon(Icons.video_library, size: 18),
-                    label: const Text('Add'),
-                  ),
-                ],
-              ),
-              ..._videoLinks.asMap().entries.map((entry) {
-                final info = VideoLinkParser.parse(entry.value);
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                  leading: Icon(
-                    info.platform == VideoPlatform.youtube
-                        ? Icons.play_circle_fill
-                        : Icons.ondemand_video,
-                    color: info.platform == VideoPlatform.youtube
-                        ? Colors.red
-                        : null,
-                  ),
-                  title: Text(
-                    VideoLinkParser.platformLabel(info.platform),
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  subtitle: Text(
-                    entry.value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11, color: Colors.grey),
-                  ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.remove_circle_outline, size: 20),
-                    onPressed: () =>
-                        setState(() => _videoLinks.removeAt(entry.key)),
-                  ),
-                );
-              }),
-
-              const SizedBox(height: 16),
-
-              // Sub-recipes (components)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Components',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  TextButton.icon(
-                    onPressed: _addSubRecipe,
-                    icon: const Icon(Icons.link, size: 18),
-                    label: const Text('Add'),
-                  ),
-                ],
-              ),
-              if (_subRecipeIds.isNotEmpty) ..._buildSubRecipeTiles(),
-              const SizedBox(height: 16),
-
-              TextFormField(
-                controller: _sourceController,
-                decoration: const InputDecoration(labelText: 'Source'),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _notesController,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(labelText: 'Notes'),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Row(
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _descriptionController,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(labelText: 'Description'),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 12),
+                Row(
                   children: [
-                    Text(
-                      'Rating',
-                      style: Theme.of(context).textTheme.titleSmall,
+                    Expanded(
+                      child: TextFormField(
+                        controller: _servingsController,
+                        decoration: const InputDecoration(
+                          labelText: 'Servings',
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
                     ),
-                    const Spacer(),
-                    StarRating(
-                      value: _rating,
-                      onChanged: (v) => setState(() => _rating = v),
-                      size: 28,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _prepTimeController,
+                        decoration: const InputDecoration(
+                          labelText: 'Prep (min)',
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _cookTimeController,
+                        decoration: const InputDecoration(
+                          labelText: 'Cook (min)',
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 8),
-              SwitchListTile(
-                title: const Text('Work in Progress'),
-                subtitle: const Text('Mark this recipe as WIP'),
-                value: _isWip,
-                onChanged: (v) => setState(() => _isWip = v),
-                contentPadding: EdgeInsets.zero,
-              ),
-            ],
+                const SizedBox(height: 16),
+
+                // Tags
+                Row(
+                  children: [
+                    Expanded(
+                      child: Autocomplete<String>(
+                        optionsBuilder: (textEditingValue) {
+                          final input = textEditingValue.text
+                              .toLowerCase()
+                              .trim();
+                          if (input.isEmpty) {
+                            return const Iterable<String>.empty();
+                          }
+                          final available =
+                              ref.read(availableTagsProvider).valueOrNull ?? [];
+                          return available.where(
+                            (t) => t.contains(input) && !_tags.contains(t),
+                          );
+                        },
+                        onSelected: (tag) {
+                          if (!_tags.contains(tag)) {
+                            setState(() => _tags.add(tag));
+                            ref
+                                .read(availableTagsProvider.notifier)
+                                .addTag(tag);
+                          }
+                          _autocompleteTagController?.clear();
+                        },
+                        fieldViewBuilder:
+                            (context, controller, focusNode, onFieldSubmitted) {
+                              _autocompleteTagController = controller;
+                              return TextField(
+                                controller: controller,
+                                focusNode: focusNode,
+                                decoration: const InputDecoration(
+                                  labelText: 'Add tag',
+                                ),
+                                onSubmitted: (_) => _addTag(),
+                              );
+                            },
+                      ),
+                    ),
+                    IconButton(icon: const Icon(Icons.add), onPressed: _addTag),
+                  ],
+                ),
+                if (_tags.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Wrap(
+                      spacing: 6,
+                      children: _tags
+                          .map(
+                            (t) => Chip(
+                              label: Text(t),
+                              onDeleted: () => setState(() => _tags.remove(t)),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ),
+                const SizedBox(height: 16),
+
+                _RecipeIngredientsSection(
+                  ingredients: _ingredients,
+                  onAdd: _addIngredient,
+                  onRemove: (i) => setState(() => _ingredients.removeAt(i)),
+                ),
+                const SizedBox(height: 16),
+
+                _RecipeInstructionsSection(
+                  instructions: _instructions,
+                  onAdd: _addInstruction,
+                  onRemove: (i) => setState(() => _instructions.removeAt(i)),
+                  onReorder: (int oldIdx, int newIdx) {
+                    // onReorderItem (Flutter >=3.41) already adjusts the
+                    // target index for the removed source item, so we
+                    // don't need the old `if (newIdx > oldIdx) newIdx--`
+                    // dance here.
+                    setState(() {
+                      final item = _instructions.removeAt(oldIdx);
+                      _instructions.insert(newIdx, item);
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                _RecipeImagesSection(
+                  savedImageUrls: _savedImageUrls,
+                  pendingImages: _pendingImages,
+                  primaryImageIndex: _primaryImageIndex,
+                  onAdd: _addImage,
+                  onSetPrimary: (int i) =>
+                      setState(() => _primaryImageIndex = i),
+                  onRemove: (int i) {
+                    setState(() {
+                      final totalCount =
+                          _savedImageUrls.length + _pendingImages.length;
+                      if (i < _savedImageUrls.length) {
+                        _removedImageUrls.add(_savedImageUrls[i]);
+                        _savedImageUrls.removeAt(i);
+                      } else {
+                        _pendingImages.removeAt(i - _savedImageUrls.length);
+                      }
+                      final newTotal = totalCount - 1;
+                      if (_primaryImageIndex >= newTotal) {
+                        _primaryImageIndex = newTotal <= 0 ? 0 : newTotal - 1;
+                      }
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Video Links
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Videos',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    TextButton.icon(
+                      onPressed: _addVideoLink,
+                      icon: const Icon(Icons.video_library, size: 18),
+                      label: const Text('Add'),
+                    ),
+                  ],
+                ),
+                ..._videoLinks.asMap().entries.map((entry) {
+                  final info = VideoLinkParser.parse(entry.value);
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    leading: Icon(
+                      info.platform == VideoPlatform.youtube
+                          ? Icons.play_circle_fill
+                          : Icons.ondemand_video,
+                      color: info.platform == VideoPlatform.youtube
+                          ? Colors.red
+                          : null,
+                    ),
+                    title: Text(
+                      VideoLinkParser.platformLabel(info.platform),
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    subtitle: Text(
+                      entry.value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.remove_circle_outline, size: 20),
+                      onPressed: () =>
+                          setState(() => _videoLinks.removeAt(entry.key)),
+                    ),
+                  );
+                }),
+
+                const SizedBox(height: 16),
+
+                // Sub-recipes (components)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Components',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    TextButton.icon(
+                      onPressed: _addSubRecipe,
+                      icon: const Icon(Icons.link, size: 18),
+                      label: const Text('Add'),
+                    ),
+                  ],
+                ),
+                if (_subRecipeIds.isNotEmpty) ..._buildSubRecipeTiles(),
+                const SizedBox(height: 16),
+
+                TextFormField(
+                  controller: _sourceController,
+                  decoration: const InputDecoration(labelText: 'Source'),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _notesController,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(labelText: 'Notes'),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: [
+                      Text(
+                        'Rating',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const Spacer(),
+                      StarRating(
+                        value: _rating,
+                        onChanged: (v) => setState(() => _rating = v),
+                        size: 28,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SwitchListTile(
+                  title: const Text('Work in Progress'),
+                  subtitle: const Text('Mark this recipe as WIP'),
+                  value: _isWip,
+                  onChanged: (v) => setState(() => _isWip = v),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ],
+            ),
           ),
         ),
       ),
