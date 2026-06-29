@@ -182,5 +182,27 @@ void main() {
       final updated = recipe.copyWith(clearDescription: true);
       expect(updated.description, isNull);
     });
+
+    test('rating defaults to null (WISH-0080)', () {
+      final recipe = Recipe(title: 'Unrated');
+      expect(recipe.rating, isNull);
+    });
+
+    test('rating roundtrips through toMap/fromMap including half-stars', () {
+      final recipe = Recipe(title: 'r', rating: 4.5);
+      final copy = Recipe.fromMap(recipe.toMap());
+      expect(copy.rating, 4.5);
+    });
+
+    test('fromMap tolerates legacy records without rating', () {
+      final legacy = Recipe(title: 'legacy').toMap()..remove('rating');
+      expect(Recipe.fromMap(legacy).rating, isNull);
+    });
+
+    test('copyWith updates rating; clearRating resets to null', () {
+      final recipe = Recipe(title: 'r', rating: 3);
+      expect(recipe.copyWith(rating: 5).rating, 5);
+      expect(recipe.copyWith(clearRating: true).rating, isNull);
+    });
   });
 }

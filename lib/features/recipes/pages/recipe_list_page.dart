@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
+import 'package:personal_app/presentation/widgets/star_rating.dart';
 import 'package:personal_app/presentation/widgets/wip_badge.dart';
 
 import '../../auth/providers/auth_providers.dart';
@@ -215,6 +216,14 @@ class _RecipeCard extends ConsumerWidget {
                                 ?.copyWith(color: colorScheme.onSurfaceVariant),
                           ),
                         ],
+                      ),
+                    ],
+                    if (recipe.rating != null) ...[
+                      const SizedBox(height: 4),
+                      StarRating(
+                        value: recipe.rating,
+                        size: 14,
+                        showNumeric: false,
                       ),
                     ],
                   ],

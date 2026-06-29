@@ -9,6 +9,7 @@ import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
 import '../../../presentation/widgets/fullscreen_image_viewer.dart';
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
+import '../../../presentation/widgets/star_rating.dart';
 import '../../../services/image_upload_service.dart';
 import '../../../utils/decimal_input.dart';
 import '../../settings/providers/currency_providers.dart';
@@ -35,6 +36,7 @@ class _CatalogEditPageState extends ConsumerState<CatalogEditPage> {
   final List<String> _removedImageUrls = [];
   bool _isUploading = false;
   bool _isLoading = true;
+  double? _rating;
 
   @override
   void initState() {
@@ -60,6 +62,7 @@ class _CatalogEditPageState extends ConsumerState<CatalogEditPage> {
             : '';
         _linkController.text = item.link ?? '';
         _savedImageUrls = List.of(item.imageUrls);
+        _rating = item.rating;
         _isLoading = false;
       });
     } else {
@@ -157,6 +160,7 @@ class _CatalogEditPageState extends ConsumerState<CatalogEditPage> {
             ? _linkController.text.trim()
             : null,
         imageUrls: _savedImageUrls,
+        rating: _rating,
       );
 
       final notifier = ref.read(catalogListProvider.notifier);
@@ -232,6 +236,19 @@ class _CatalogEditPageState extends ConsumerState<CatalogEditPage> {
                   prefixIcon: Icon(Icons.link),
                 ),
                 keyboardType: TextInputType.url,
+              ),
+              const SizedBox(height: 16),
+
+              Row(
+                children: [
+                  Text('Rating', style: Theme.of(context).textTheme.titleSmall),
+                  const Spacer(),
+                  StarRating(
+                    value: _rating,
+                    onChanged: (v) => setState(() => _rating = v),
+                    size: 28,
+                  ),
+                ],
               ),
               const SizedBox(height: 24),
 

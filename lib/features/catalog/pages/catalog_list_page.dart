@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
+import 'package:personal_app/presentation/widgets/star_rating.dart';
 
 import '../../settings/providers/currency_providers.dart';
 import '../providers/catalog_providers.dart';
@@ -126,16 +127,28 @@ class CatalogListPage extends ConsumerWidget {
                                   ),
                                 ),
                           title: Text(item.title),
-                          subtitle: Text(
-                            [
-                              if (item.description != null &&
-                                  item.description!.isNotEmpty)
-                                item.description!,
-                              if (item.price != null)
-                                converter.format(item.price!),
-                            ].join(' \u2022 '),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                [
+                                  if (item.description != null &&
+                                      item.description!.isNotEmpty)
+                                    item.description!,
+                                  if (item.price != null)
+                                    converter.format(item.price!),
+                                ].join(' \u2022 '),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (item.rating != null)
+                                StarRating(
+                                  value: item.rating,
+                                  size: 14,
+                                  showNumeric: false,
+                                ),
+                            ],
                           ),
                           trailing: item.price != null
                               ? Text(

@@ -11,6 +11,7 @@ import 'package:personal_app/presentation/widgets/responsive_center.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
+import '../../../presentation/widgets/star_rating.dart';
 import '../../../services/image_upload_service.dart';
 import '../../../services/log_service.dart';
 import '../../../utils/decimal_input.dart';
@@ -55,6 +56,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
   bool _isEditing = false;
   bool _isUploading = false;
   bool _isWip = false;
+  double? _rating;
   Recipe? _existingRecipe;
   Timer? _autosaveTimer;
   DateTime? _lastAutosaveAt;
@@ -90,6 +92,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
         _videoLinks = List.from(recipe.videoLinks);
         _subRecipeIds = List.from(recipe.subRecipeIds);
         _isWip = recipe.isWip;
+        _rating = recipe.rating;
       });
       _lastSavedSnapshot = _autosaveSnapshot();
     }
@@ -297,6 +300,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
       isWip: _isWip,
       source: source.isEmpty ? null : source,
       notes: notes.isEmpty ? null : notes,
+      rating: _rating,
     );
   }
 
@@ -324,6 +328,8 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
       clearSource: source.isEmpty,
       notes: notes.isEmpty ? null : notes,
       clearNotes: notes.isEmpty,
+      rating: _rating,
+      clearRating: _rating == null,
     );
   }
 
@@ -1294,6 +1300,24 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                 textCapitalization: TextCapitalization.sentences,
                 decoration: const InputDecoration(labelText: 'Notes'),
                 maxLines: 3,
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Text(
+                      'Rating',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const Spacer(),
+                    StarRating(
+                      value: _rating,
+                      onChanged: (v) => setState(() => _rating = v),
+                      size: 28,
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 8),
               SwitchListTile(

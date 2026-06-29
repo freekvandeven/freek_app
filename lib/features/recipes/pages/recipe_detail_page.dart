@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/fullscreen_image_viewer.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
+import 'package:personal_app/presentation/widgets/star_rating.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
@@ -242,6 +243,11 @@ class _RecipeDetailPageState extends ConsumerState<RecipeDetailPage> {
                     ),
             ),
             const SizedBox(height: 16),
+          ],
+
+          if (recipe.rating != null) ...[
+            StarRating(value: recipe.rating, size: 22),
+            const SizedBox(height: 12),
           ],
 
           if (recipe.tags.isNotEmpty) ...[

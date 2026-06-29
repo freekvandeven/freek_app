@@ -69,6 +69,11 @@ class Recipe {
   final bool isWip;
   final String? source;
   final String? notes;
+
+  /// Optional user rating, 0.0 – 5.0 in 0.5 increments (WISH-0080).
+  /// `null` means "no rating yet".
+  final double? rating;
+
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -90,6 +95,7 @@ class Recipe {
     this.isWip = false,
     this.source,
     this.notes,
+    this.rating,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) : id = id ?? const Uuid().v4(),
@@ -118,9 +124,11 @@ class Recipe {
     bool? isWip,
     String? source,
     String? notes,
+    double? rating,
     bool clearDescription = false,
     bool clearSource = false,
     bool clearNotes = false,
+    bool clearRating = false,
   }) {
     return Recipe(
       id: id,
@@ -140,6 +148,7 @@ class Recipe {
       isWip: isWip ?? this.isWip,
       source: clearSource ? null : (source ?? this.source),
       notes: clearNotes ? null : (notes ?? this.notes),
+      rating: clearRating ? null : (rating ?? this.rating),
       createdAt: createdAt,
       updatedAt: DateTime.now(),
     );
@@ -168,6 +177,7 @@ class Recipe {
     'isWip': isWip,
     'source': source,
     'notes': notes,
+    'rating': rating,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
   };
@@ -212,6 +222,7 @@ class Recipe {
       isWip: map['isWip'] as bool? ?? false,
       source: map['source'] as String?,
       notes: map['notes'] as String?,
+      rating: (map['rating'] as num?)?.toDouble(),
       createdAt: DateTime.parse(map['createdAt'] as String),
       updatedAt: DateTime.parse(map['updatedAt'] as String),
     );

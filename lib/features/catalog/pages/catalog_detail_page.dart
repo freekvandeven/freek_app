@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:personal_app/presentation/widgets/fullscreen_image_viewer.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
+import 'package:personal_app/presentation/widgets/star_rating.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../settings/providers/currency_providers.dart';
@@ -88,6 +89,11 @@ class CatalogDetailPage extends ConsumerWidget {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+                  const SizedBox(height: 12),
+                ],
+
+                if (item.rating != null) ...[
+                  StarRating(value: item.rating, size: 22),
                   const SizedBox(height: 12),
                 ],
 
