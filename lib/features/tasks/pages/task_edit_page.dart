@@ -343,8 +343,10 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
               const SizedBox(height: 16),
 
               // Parent task (subtasks limited to one nesting level — only
-              // root tasks (no parent) are eligible parents, and a task
-              // cannot be its own parent).
+              // root tasks (no parent) are eligible parents, a task cannot
+              // be its own parent, and completed tasks are filtered out
+              // so the list stays focused on actionable parents
+              // (BUG-0044).
               Consumer(
                 builder: (context, ref, _) {
                   final all =
@@ -353,7 +355,9 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
                       all
                           .where(
                             (t) =>
-                                t.id != widget.taskId && t.parentTaskId == null,
+                                t.id != widget.taskId &&
+                                t.parentTaskId == null &&
+                                !t.isCompleted,
                           )
                           .toList()
                         ..sort(

@@ -1181,8 +1181,11 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                 onAdd: _addInstruction,
                 onRemove: (i) => setState(() => _instructions.removeAt(i)),
                 onReorder: (int oldIdx, int newIdx) {
+                  // onReorderItem (Flutter >=3.41) already adjusts the
+                  // target index for the removed source item, so we
+                  // don't need the old `if (newIdx > oldIdx) newIdx--`
+                  // dance here.
                   setState(() {
-                    if (newIdx > oldIdx) newIdx--;
                     final item = _instructions.removeAt(oldIdx);
                     _instructions.insert(newIdx, item);
                   });
@@ -1677,7 +1680,7 @@ class _RecipeInstructionsSection extends StatelessWidget {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: instructions.length,
-          onReorder: onReorder,
+          onReorderItem: onReorder,
           itemBuilder: (context, index) => ListTile(
             key: ValueKey(index),
             contentPadding: EdgeInsets.zero,
