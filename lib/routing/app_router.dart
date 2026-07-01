@@ -123,7 +123,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     routes: [
                       GoRoute(
                         path: 'new',
-                        builder: (context, state) => const TaskEditPage(),
+                        builder: (context, state) => TaskEditPage(
+                          initialParentTaskId:
+                              state.uri.queryParameters['parent'],
+                        ),
                       ),
                       GoRoute(
                         path: ':taskId',

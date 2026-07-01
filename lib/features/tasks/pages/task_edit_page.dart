@@ -17,7 +17,14 @@ import '../providers/task_providers.dart';
 
 class TaskEditPage extends ConsumerStatefulWidget {
   final String? taskId;
-  const TaskEditPage({super.key, this.taskId});
+
+  /// When the page opens for a new task, pre-select this task as the
+  /// parent. Used by the "Create subtask" button on an existing task
+  /// so the user doesn't have to hunt for the parent in the dropdown
+  /// (WISH-0081).
+  final String? initialParentTaskId;
+
+  const TaskEditPage({super.key, this.taskId, this.initialParentTaskId});
 
   @override
   ConsumerState<TaskEditPage> createState() => _TaskEditPageState();
@@ -54,6 +61,9 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
       _isEditing = true;
       _loadTask();
     } else {
+      // Pre-select the parent when arriving via the "Create subtask"
+      // shortcut on an existing task (WISH-0081).
+      _parentTaskId = widget.initialParentTaskId;
       _initialSnapshot = _snapshot();
     }
   }
@@ -236,6 +246,16 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
             child: Text(_isEditing ? 'Edit Task' : 'New Task'),
           ),
           actions: [
+            // Only root tasks can be parents (one nesting level), so
+            // the shortcut is hidden on subtasks (WISH-0081).
+            if (_isEditing && _parentTaskId == null)
+              IconButton(
+                icon: const Icon(Icons.subdirectory_arrow_right_rounded),
+                tooltip: 'Create subtask',
+                onPressed: _isUploading
+                    ? null
+                    : () => context.push('/tasks/new?parent=${widget.taskId!}'),
+              ),
             TextButton(
               onPressed: _isUploading ? null : _save,
               child: _isUploading
