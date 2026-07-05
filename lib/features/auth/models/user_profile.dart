@@ -21,6 +21,10 @@ class UserSettings {
   // forces month/day/year. Other ISO locales are honoured too
   // (BUG-0040).
   final String? dateFormatLocale;
+  // Pre-filled location for new inventory items — saves picking the
+  // same kitchen/storage room over and over. `null` = no default
+  // (WISH-0084).
+  final String? defaultInventoryLocation;
 
   const UserSettings({
     this.themeMode = 'system',
@@ -36,6 +40,7 @@ class UserSettings {
     this.geminiAuthMode = 'apiKey',
     this.fullscreenMode = false,
     this.dateFormatLocale,
+    this.defaultInventoryLocation,
   });
 
   UserSettings copyWith({
@@ -55,6 +60,8 @@ class UserSettings {
     bool? fullscreenMode,
     String? dateFormatLocale,
     bool clearDateFormatLocale = false,
+    String? defaultInventoryLocation,
+    bool clearDefaultInventoryLocation = false,
   }) {
     return UserSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -75,6 +82,9 @@ class UserSettings {
       dateFormatLocale: clearDateFormatLocale
           ? null
           : (dateFormatLocale ?? this.dateFormatLocale),
+      defaultInventoryLocation: clearDefaultInventoryLocation
+          ? null
+          : (defaultInventoryLocation ?? this.defaultInventoryLocation),
     );
   }
 
@@ -92,6 +102,7 @@ class UserSettings {
     'geminiAuthMode': geminiAuthMode,
     'fullscreenMode': fullscreenMode,
     'dateFormatLocale': dateFormatLocale,
+    'defaultInventoryLocation': defaultInventoryLocation,
   };
 
   factory UserSettings.fromMap(Map<String, dynamic> map) {
@@ -113,6 +124,7 @@ class UserSettings {
       geminiAuthMode: map['geminiAuthMode'] as String? ?? 'apiKey',
       fullscreenMode: map['fullscreenMode'] as bool? ?? false,
       dateFormatLocale: map['dateFormatLocale'] as String?,
+      defaultInventoryLocation: map['defaultInventoryLocation'] as String?,
     );
   }
 }

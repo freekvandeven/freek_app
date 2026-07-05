@@ -9,6 +9,7 @@ import 'package:personal_app/presentation/widgets/responsive_center.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../settings/providers/currency_providers.dart';
 import '../providers/inventory_providers.dart';
+import '../widgets/default_location_dialog.dart';
 import '../widgets/transfer_quantity_dialog.dart';
 
 class InventoryListPage extends ConsumerWidget {
@@ -28,6 +29,11 @@ class InventoryListPage extends ConsumerWidget {
       appBar: AppBar(
         title: const QuickActionsTitle(child: Text('Inventory')),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.place_outlined),
+            tooltip: 'Default location',
+            onPressed: () => showDefaultLocationDialog(context, ref),
+          ),
           IconButton(
             icon: const Icon(Icons.swap_horiz_rounded),
             tooltip: 'Transfer quantity',

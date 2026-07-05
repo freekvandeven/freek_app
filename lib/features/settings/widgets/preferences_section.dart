@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../auth/models/user_profile.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../auth/services/biometric_service.dart';
+import '../../inventory/widgets/default_location_dialog.dart';
 import 'currency_picker_dialog.dart';
 import 'section_header.dart';
 
@@ -35,6 +36,12 @@ class PreferencesSection extends ConsumerWidget {
           subtitle: Text(_dateFormatSubtitle(settings.dateFormatLocale)),
           onTap: () =>
               _showDateFormatPicker(context, ref, settings.dateFormatLocale),
+        ),
+        ListTile(
+          leading: const Icon(Icons.place_outlined),
+          title: const Text('Default Inventory Location'),
+          subtitle: Text(settings.defaultInventoryLocation ?? 'Not set'),
+          onTap: () => showDefaultLocationDialog(context, ref),
         ),
         SwitchListTile(
           secondary: const Icon(Icons.notifications),

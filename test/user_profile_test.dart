@@ -51,6 +51,33 @@ void main() {
       expect(updated.dateFormatLocale, isNull);
     });
 
+    test('defaultInventoryLocation defaults to null (WISH-0084)', () {
+      const settings = UserSettings();
+      expect(settings.defaultInventoryLocation, isNull);
+    });
+
+    test('defaultInventoryLocation roundtrips through toMap/fromMap', () {
+      const settings = UserSettings(defaultInventoryLocation: 'Kitchen');
+      final restored = UserSettings.fromMap(settings.toMap());
+      expect(restored.defaultInventoryLocation, 'Kitchen');
+    });
+
+    test('defaultInventoryLocation copyWith updates and clears', () {
+      const settings = UserSettings(defaultInventoryLocation: 'Kitchen');
+      expect(
+        settings
+            .copyWith(defaultInventoryLocation: 'Storage')
+            .defaultInventoryLocation,
+        'Storage',
+      );
+      expect(
+        settings
+            .copyWith(clearDefaultInventoryLocation: true)
+            .defaultInventoryLocation,
+        isNull,
+      );
+    });
+
     test('toMap and fromMap round-trip', () {
       const settings = UserSettings(
         themeMode: 'dark',

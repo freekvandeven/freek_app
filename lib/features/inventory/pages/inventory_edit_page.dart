@@ -14,6 +14,7 @@ import '../../../presentation/widgets/image_upload_preview_dialog.dart';
 import '../../../presentation/widgets/unsaved_changes_guard.dart';
 import '../../../services/image_upload_service.dart';
 import '../../../utils/decimal_input.dart';
+import '../../auth/providers/auth_providers.dart';
 import '../../catalog/models/catalog_item.dart';
 import '../../catalog/providers/catalog_providers.dart';
 import '../../gemini/providers/gemini_providers.dart';
@@ -61,6 +62,12 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
     if (widget.itemId != null) {
       _loadItem();
     } else {
+      // Pre-fill the user's default location for new items so they
+      // don't have to pick the same room every time (WISH-0084). Done
+      // before the snapshot so an untouched form still counts as clean.
+      _locationController.text =
+          ref.read(currentUserProvider)?.settings.defaultInventoryLocation ??
+          '';
       _isLoading = false;
       _initialSnapshot = _snapshot();
     }
