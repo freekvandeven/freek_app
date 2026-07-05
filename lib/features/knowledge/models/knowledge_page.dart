@@ -45,6 +45,12 @@ class KnowledgePage {
   final int sortOrder;
   final bool isWip;
   final List<KnowledgeAttachment> attachments;
+
+  /// Raw nicknames string — extra search words separated by space,
+  /// comma or period. Only shown on the edit page, never in lists
+  /// (WISH-0082).
+  final String? searchAliases;
+
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -57,6 +63,7 @@ class KnowledgePage {
     this.sortOrder = 0,
     this.isWip = false,
     this.attachments = const [],
+    this.searchAliases,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) : id = id ?? const Uuid().v4(),
@@ -71,6 +78,7 @@ class KnowledgePage {
     int? sortOrder,
     bool? isWip,
     List<KnowledgeAttachment>? attachments,
+    String? Function()? searchAliases,
     DateTime? updatedAt,
   }) {
     return KnowledgePage(
@@ -82,6 +90,9 @@ class KnowledgePage {
       sortOrder: sortOrder ?? this.sortOrder,
       isWip: isWip ?? this.isWip,
       attachments: attachments ?? this.attachments,
+      searchAliases: searchAliases != null
+          ? searchAliases()
+          : this.searchAliases,
       createdAt: createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
     );
@@ -96,6 +107,7 @@ class KnowledgePage {
     'sortOrder': sortOrder,
     'isWip': isWip,
     'attachments': attachments.map((a) => a.toMap()).toList(),
+    'searchAliases': searchAliases,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
   };
@@ -113,6 +125,7 @@ class KnowledgePage {
             ?.map((e) => KnowledgeAttachment.fromMap(e as Map<String, dynamic>))
             .toList() ??
         const [],
+    searchAliases: map['searchAliases'] as String?,
     createdAt: DateTime.parse(map['createdAt'] as String),
     updatedAt: DateTime.parse(map['updatedAt'] as String),
   );

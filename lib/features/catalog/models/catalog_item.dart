@@ -14,6 +14,11 @@ class CatalogItem {
   /// stars in the UI rather than stored as a separate field.
   final double? rating;
 
+  /// Raw nicknames string — extra search words separated by space,
+  /// comma or period. Only shown on the edit page, never in lists
+  /// (WISH-0082).
+  final String? searchAliases;
+
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -25,6 +30,7 @@ class CatalogItem {
     this.link,
     this.imageUrls = const [],
     this.rating,
+    this.searchAliases,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) : id = id ?? const Uuid().v4(),
@@ -38,10 +44,12 @@ class CatalogItem {
     String? link,
     List<String>? imageUrls,
     double? rating,
+    String? searchAliases,
     bool clearDescription = false,
     bool clearPrice = false,
     bool clearLink = false,
     bool clearRating = false,
+    bool clearSearchAliases = false,
   }) {
     return CatalogItem(
       id: id,
@@ -51,6 +59,9 @@ class CatalogItem {
       link: clearLink ? null : (link ?? this.link),
       imageUrls: imageUrls ?? this.imageUrls,
       rating: clearRating ? null : (rating ?? this.rating),
+      searchAliases: clearSearchAliases
+          ? null
+          : (searchAliases ?? this.searchAliases),
       createdAt: createdAt,
       updatedAt: DateTime.now(),
     );
@@ -64,6 +75,7 @@ class CatalogItem {
     'link': link,
     'imageUrls': imageUrls,
     'rating': rating,
+    'searchAliases': searchAliases,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
   };
@@ -84,6 +96,7 @@ class CatalogItem {
       link: map['link'] as String?,
       imageUrls: urls,
       rating: (map['rating'] as num?)?.toDouble(),
+      searchAliases: map['searchAliases'] as String?,
       createdAt: DateTime.parse(map['createdAt'] as String),
       updatedAt: DateTime.parse(map['updatedAt'] as String),
     );

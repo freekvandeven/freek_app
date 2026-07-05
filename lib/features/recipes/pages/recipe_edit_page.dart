@@ -44,6 +44,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
   final _sourceController = TextEditingController();
   final _notesController = TextEditingController();
   final _tagController = TextEditingController();
+  final _searchAliasesController = TextEditingController();
   TextEditingController? _autocompleteTagController;
   List<Ingredient> _ingredients = [];
   List<RecipeInstruction> _instructions = [];
@@ -105,6 +106,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
         _subRecipeIds = List.from(recipe.subRecipeIds);
         _isWip = recipe.isWip;
         _rating = recipe.rating;
+        _searchAliasesController.text = recipe.searchAliases ?? '';
       });
       _lastSavedSnapshot = _autosaveSnapshot();
     }
@@ -139,6 +141,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     videoLinks: _videoLinks,
     subRecipeIds: _subRecipeIds,
     isWip: _isWip,
+    searchAliases: _searchAliasesController.text,
   );
 
   Future<void> _autosave() async {
@@ -163,6 +166,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     final description = _descriptionController.text.trim();
     final source = _sourceController.text.trim();
     final notes = _notesController.text.trim();
+    final aliases = _searchAliasesController.text.trim();
 
     try {
       final updated = _existingRecipe!.copyWith(
@@ -184,6 +188,8 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
         clearSource: source.isEmpty,
         notes: notes.isEmpty ? null : notes,
         clearNotes: notes.isEmpty,
+        searchAliases: aliases.isEmpty ? null : aliases,
+        clearSearchAliases: aliases.isEmpty,
       );
       await ref.read(recipeListProvider.notifier).updateRecipe(updated);
       _lastAutosaveAt = DateTime.now();
@@ -212,6 +218,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     _sourceController.dispose();
     _notesController.dispose();
     _tagController.dispose();
+    _searchAliasesController.dispose();
     super.dispose();
   }
 
@@ -299,6 +306,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     final description = _descriptionController.text.trim();
     final source = _sourceController.text.trim();
     final notes = _notesController.text.trim();
+    final aliases = _searchAliasesController.text.trim();
     return Recipe(
       title: _titleController.text.trim(),
       description: description.isEmpty ? null : description,
@@ -316,6 +324,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
       source: source.isEmpty ? null : source,
       notes: notes.isEmpty ? null : notes,
       rating: _rating,
+      searchAliases: aliases.isEmpty ? null : aliases,
     );
   }
 
@@ -324,6 +333,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     final description = _descriptionController.text.trim();
     final source = _sourceController.text.trim();
     final notes = _notesController.text.trim();
+    final aliases = _searchAliasesController.text.trim();
     return existing.copyWith(
       title: _titleController.text.trim(),
       description: description.isEmpty ? null : description,
@@ -345,6 +355,8 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
       clearNotes: notes.isEmpty,
       rating: _rating,
       clearRating: _rating == null,
+      searchAliases: aliases.isEmpty ? null : aliases,
+      clearSearchAliases: aliases.isEmpty,
     );
   }
 
@@ -1323,6 +1335,17 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                   textCapitalization: TextCapitalization.sentences,
                   decoration: const InputDecoration(labelText: 'Notes'),
                   maxLines: 3,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _searchAliasesController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nicknames',
+                    helperText:
+                        'Extra search words, separated by space, comma or '
+                        'period. Not shown in lists.',
+                    helperMaxLines: 2,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Padding(

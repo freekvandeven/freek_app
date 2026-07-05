@@ -38,6 +38,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
   final _quantityController = TextEditingController(text: '1');
   final _priceController = TextEditingController();
   final _barcodeController = TextEditingController();
+  final _searchAliasesController = TextEditingController();
 
   DateTime? _purchaseDate;
   DateTime? _expiryDate;
@@ -74,6 +75,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
     _quantityController.text,
     _priceController.text,
     _barcodeController.text,
+    _searchAliasesController.text,
     _purchaseDate?.toIso8601String() ?? '',
     _expiryDate?.toIso8601String() ?? '',
     _fillPercent ?? '',
@@ -102,6 +104,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
                   .toStringAsFixed(2)
             : '';
         _barcodeController.text = item.barcode ?? '';
+        _searchAliasesController.text = item.searchAliases ?? '';
         _purchaseDate = item.purchaseDate;
         _expiryDate = item.expiryDate;
         _savedImageUrls = List.of(item.imageUrls);
@@ -133,6 +136,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
     _quantityController.dispose();
     _priceController.dispose();
     _barcodeController.dispose();
+    _searchAliasesController.dispose();
     super.dispose();
   }
 
@@ -178,6 +182,9 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
             : _barcodeController.text.trim(),
         catalogItemId: _catalogItemId,
         fillPercent: _fillPercent,
+        searchAliases: _searchAliasesController.text.trim().isEmpty
+            ? null
+            : _searchAliasesController.text.trim(),
       );
 
       final notifier = ref.read(inventoryListProvider.notifier);
@@ -684,6 +691,20 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
                   decoration: const InputDecoration(
                     labelText: 'Barcode / Serial Number',
                     border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                TextFormField(
+                  controller: _searchAliasesController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nicknames',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.sell_outlined),
+                    helperText:
+                        'Extra search words, separated by space, comma or '
+                        'period. Not shown in lists.',
+                    helperMaxLines: 2,
                   ),
                 ),
               ],

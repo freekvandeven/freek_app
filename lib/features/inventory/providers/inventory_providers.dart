@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../config/app_config.dart';
 import '../../../services/image_upload_service.dart';
 import '../../../services/log_service.dart';
+import '../../../utils/search_aliases.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../models/inventory_item.dart';
 import '../services/firestore_inventory_service.dart';
@@ -74,7 +75,8 @@ final filteredInventoryProvider = Provider<AsyncValue<List<InventoryItem>>>((
             (i) =>
                 i.name.toLowerCase().contains(search) ||
                 (i.description?.toLowerCase().contains(search) ?? false) ||
-                (i.barcode?.toLowerCase().contains(search) ?? false),
+                (i.barcode?.toLowerCase().contains(search) ?? false) ||
+                matchesSearchAliases(i.searchAliases, search),
           )
           .toList();
     }

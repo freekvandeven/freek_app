@@ -32,6 +32,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
   final _tagController = TextEditingController();
+  final _searchAliasesController = TextEditingController();
   final _contentFocusNode = FocusNode();
 
   List<String> _tags = [];
@@ -93,6 +94,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
         _parentId = page.parentId;
         _isWip = page.isWip;
         _savedAttachments = List.of(page.attachments);
+        _searchAliasesController.text = page.searchAliases ?? '';
         _isLoading = false;
       });
       _lastSavedSnapshot = _autosaveSnapshot();
@@ -121,6 +123,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
     parentId: _parentId,
     isWip: _isWip,
     attachments: _savedAttachments,
+    searchAliases: _searchAliasesController.text,
   );
 
   Future<void> _autosave() async {
@@ -142,6 +145,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
     if (snapshot == _lastSavedSnapshot) return;
 
     final notifier = ref.read(knowledgeListProvider.notifier);
+    final aliases = _searchAliasesController.text.trim();
     try {
       if (_existing != null) {
         await notifier.updatePage(
@@ -152,6 +156,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
             parentId: () => _parentId,
             isWip: _isWip,
             attachments: _savedAttachments,
+            searchAliases: () => aliases.isEmpty ? null : aliases,
           ),
         );
       } else {
@@ -162,6 +167,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
           parentId: _parentId,
           isWip: _isWip,
           attachments: _savedAttachments,
+          searchAliases: aliases.isEmpty ? null : aliases,
         );
         await notifier.addPage(page);
         if (mounted) setState(() => _existing = page);
@@ -187,6 +193,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
     _titleController.dispose();
     _contentController.dispose();
     _tagController.dispose();
+    _searchAliasesController.dispose();
     _contentFocusNode.dispose();
     super.dispose();
   }
@@ -205,6 +212,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
     if (!_formKey.currentState!.validate()) return;
 
     final notifier = ref.read(knowledgeListProvider.notifier);
+    final aliases = _searchAliasesController.text.trim();
     if (_existing != null) {
       await notifier.updatePage(
         _existing!.copyWith(
@@ -214,6 +222,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
           parentId: () => _parentId,
           isWip: _isWip,
           attachments: _savedAttachments,
+          searchAliases: () => aliases.isEmpty ? null : aliases,
         ),
       );
     } else {
@@ -225,6 +234,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
           parentId: _parentId,
           isWip: _isWip,
           attachments: _savedAttachments,
+          searchAliases: aliases.isEmpty ? null : aliases,
         ),
       );
     }
@@ -509,6 +519,20 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
                         .toList(),
                   ),
                 ],
+                const SizedBox(height: 16),
+
+                TextFormField(
+                  controller: _searchAliasesController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nicknames',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.sell_outlined),
+                    helperText:
+                        'Extra search words, separated by space, comma or '
+                        'period. Not shown in lists.',
+                    helperMaxLines: 2,
+                  ),
+                ),
                 const SizedBox(height: 16),
 
                 SwitchListTile(

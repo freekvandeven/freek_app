@@ -74,6 +74,11 @@ class Recipe {
   /// `null` means "no rating yet".
   final double? rating;
 
+  /// Raw nicknames string — extra search words separated by space,
+  /// comma or period. Only shown on the edit page, never in lists
+  /// (WISH-0082).
+  final String? searchAliases;
+
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -96,6 +101,7 @@ class Recipe {
     this.source,
     this.notes,
     this.rating,
+    this.searchAliases,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) : id = id ?? const Uuid().v4(),
@@ -125,10 +131,12 @@ class Recipe {
     String? source,
     String? notes,
     double? rating,
+    String? searchAliases,
     bool clearDescription = false,
     bool clearSource = false,
     bool clearNotes = false,
     bool clearRating = false,
+    bool clearSearchAliases = false,
   }) {
     return Recipe(
       id: id,
@@ -149,6 +157,9 @@ class Recipe {
       source: clearSource ? null : (source ?? this.source),
       notes: clearNotes ? null : (notes ?? this.notes),
       rating: clearRating ? null : (rating ?? this.rating),
+      searchAliases: clearSearchAliases
+          ? null
+          : (searchAliases ?? this.searchAliases),
       createdAt: createdAt,
       updatedAt: DateTime.now(),
     );
@@ -178,6 +189,7 @@ class Recipe {
     'source': source,
     'notes': notes,
     'rating': rating,
+    'searchAliases': searchAliases,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
   };
@@ -223,6 +235,7 @@ class Recipe {
       source: map['source'] as String?,
       notes: map['notes'] as String?,
       rating: (map['rating'] as num?)?.toDouble(),
+      searchAliases: map['searchAliases'] as String?,
       createdAt: DateTime.parse(map['createdAt'] as String),
       updatedAt: DateTime.parse(map['updatedAt'] as String),
     );

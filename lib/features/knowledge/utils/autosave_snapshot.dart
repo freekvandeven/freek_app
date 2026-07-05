@@ -14,6 +14,7 @@ String knowledgeAutosaveSnapshot({
   required String? parentId,
   required bool isWip,
   List<KnowledgeAttachment> attachments = const [],
+  String searchAliases = '',
 }) {
   return [
     title.trim(),
@@ -22,5 +23,6 @@ String knowledgeAutosaveSnapshot({
     parentId ?? '',
     isWip ? '1' : '0',
     attachments.map((a) => a.url).join(','),
+    searchAliases.trim(),
   ].join('||');
 }

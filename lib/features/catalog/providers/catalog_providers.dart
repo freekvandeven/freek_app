@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../config/app_config.dart';
 import '../../../services/image_upload_service.dart';
 import '../../../services/log_service.dart';
+import '../../../utils/search_aliases.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../models/catalog_item.dart';
 import '../services/catalog_service.dart';
@@ -65,7 +66,8 @@ final filteredCatalogProvider = Provider<AsyncValue<List<CatalogItem>>>((ref) {
         .where(
           (i) =>
               i.title.toLowerCase().contains(search) ||
-              (i.description?.toLowerCase().contains(search) ?? false),
+              (i.description?.toLowerCase().contains(search) ?? false) ||
+              matchesSearchAliases(i.searchAliases, search),
         )
         .toList();
   });

@@ -30,6 +30,7 @@ class _CatalogEditPageState extends ConsumerState<CatalogEditPage> {
   final _descriptionController = TextEditingController();
   final _priceController = TextEditingController();
   final _linkController = TextEditingController();
+  final _searchAliasesController = TextEditingController();
 
   List<String> _savedImageUrls = [];
   List<({Uint8List bytes, String fileName})> _pendingImages = [];
@@ -61,6 +62,7 @@ class _CatalogEditPageState extends ConsumerState<CatalogEditPage> {
                   .toStringAsFixed(2)
             : '';
         _linkController.text = item.link ?? '';
+        _searchAliasesController.text = item.searchAliases ?? '';
         _savedImageUrls = List.of(item.imageUrls);
         _rating = item.rating;
         _isLoading = false;
@@ -76,6 +78,7 @@ class _CatalogEditPageState extends ConsumerState<CatalogEditPage> {
     _descriptionController.dispose();
     _priceController.dispose();
     _linkController.dispose();
+    _searchAliasesController.dispose();
     super.dispose();
   }
 
@@ -161,6 +164,9 @@ class _CatalogEditPageState extends ConsumerState<CatalogEditPage> {
             : null,
         imageUrls: _savedImageUrls,
         rating: _rating,
+        searchAliases: _searchAliasesController.text.trim().isEmpty
+            ? null
+            : _searchAliasesController.text.trim(),
       );
 
       final notifier = ref.read(catalogListProvider.notifier);
@@ -236,6 +242,19 @@ class _CatalogEditPageState extends ConsumerState<CatalogEditPage> {
                   prefixIcon: Icon(Icons.link),
                 ),
                 keyboardType: TextInputType.url,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _searchAliasesController,
+                decoration: const InputDecoration(
+                  labelText: 'Nicknames',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.sell_outlined),
+                  helperText:
+                      'Extra search words, separated by space, comma or '
+                      'period. Not shown in lists.',
+                  helperMaxLines: 2,
+                ),
               ),
               const SizedBox(height: 16),
 

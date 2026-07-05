@@ -21,6 +21,11 @@ class InventoryItem {
   /// tracked" and the UI hides the indicator entirely.
   final int? fillPercent;
 
+  /// Raw nicknames string — extra search words separated by space,
+  /// comma or period. Only shown on the edit page, never in lists
+  /// (WISH-0082).
+  final String? searchAliases;
+
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -39,6 +44,7 @@ class InventoryItem {
     this.catalogItemId,
     this.customFields = const {},
     this.fillPercent,
+    this.searchAliases,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) : id = id ?? const Uuid().v4(),
@@ -59,6 +65,7 @@ class InventoryItem {
     String? catalogItemId,
     Map<String, String>? customFields,
     int? fillPercent,
+    String? searchAliases,
     bool clearDescription = false,
     bool clearCategory = false,
     bool clearLocation = false,
@@ -68,6 +75,7 @@ class InventoryItem {
     bool clearBarcode = false,
     bool clearCatalogItemId = false,
     bool clearFillPercent = false,
+    bool clearSearchAliases = false,
   }) {
     return InventoryItem(
       id: id,
@@ -90,6 +98,9 @@ class InventoryItem {
           : (catalogItemId ?? this.catalogItemId),
       customFields: customFields ?? this.customFields,
       fillPercent: clearFillPercent ? null : (fillPercent ?? this.fillPercent),
+      searchAliases: clearSearchAliases
+          ? null
+          : (searchAliases ?? this.searchAliases),
       createdAt: createdAt,
       updatedAt: DateTime.now(),
     );
@@ -110,6 +121,7 @@ class InventoryItem {
     'catalogItemId': catalogItemId,
     'customFields': customFields,
     'fillPercent': fillPercent,
+    'searchAliases': searchAliases,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
   };
@@ -146,6 +158,7 @@ class InventoryItem {
           ? Map<String, String>.from(map['customFields'] as Map)
           : {},
       fillPercent: (map['fillPercent'] as num?)?.toInt(),
+      searchAliases: map['searchAliases'] as String?,
       createdAt: DateTime.parse(map['createdAt'] as String),
       updatedAt: DateTime.parse(map['updatedAt'] as String),
     );

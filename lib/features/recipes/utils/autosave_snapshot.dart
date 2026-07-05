@@ -23,6 +23,7 @@ String recipeAutosaveSnapshot({
   required List<String> videoLinks,
   required List<String> subRecipeIds,
   required bool isWip,
+  String searchAliases = '',
 }) {
   return [
     title.trim(),
@@ -42,5 +43,6 @@ String recipeAutosaveSnapshot({
     videoLinks.join(','),
     subRecipeIds.join(','),
     isWip ? '1' : '0',
+    searchAliases.trim(),
   ].join('||');
 }

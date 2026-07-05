@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../config/app_config.dart';
 import '../../../services/image_upload_service.dart';
 import '../../../services/log_service.dart';
+import '../../../utils/search_aliases.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../models/recipe.dart';
 import '../services/firestore_recipe_service.dart';
@@ -85,7 +86,11 @@ final filteredRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
     var filtered = recipes.toList();
     if (search.isNotEmpty) {
       filtered = filtered
-          .where((r) => r.title.toLowerCase().contains(search))
+          .where(
+            (r) =>
+                r.title.toLowerCase().contains(search) ||
+                matchesSearchAliases(r.searchAliases, search),
+          )
           .toList();
     }
     if (tag != null) {

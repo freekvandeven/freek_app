@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/app_config.dart';
 import '../../../services/image_upload_service.dart';
+import '../../../utils/search_aliases.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../models/knowledge_page.dart';
 import '../services/firestore_knowledge_service.dart';
@@ -87,7 +88,8 @@ final filteredKnowledgeProvider = Provider<AsyncValue<List<KnowledgePage>>>((
     if (search.isNotEmpty) {
       filtered = filtered.where((p) {
         return p.title.toLowerCase().contains(search) ||
-            p.tags.any((t) => t.toLowerCase().contains(search));
+            p.tags.any((t) => t.toLowerCase().contains(search)) ||
+            matchesSearchAliases(p.searchAliases, search);
       }).toList();
     }
     if (wipOnly) {
