@@ -8,6 +8,7 @@ import '../../auth/providers/auth_providers.dart';
 import '../models/inventory_item.dart';
 import '../services/firestore_inventory_service.dart';
 import '../services/inventory_service.dart';
+import '../utils/quantity_transfer.dart';
 
 final inventoryServiceProvider = Provider<InventoryService>((ref) {
   if (AppConfig.useFirebase) {
@@ -46,6 +47,40 @@ class InventoryListNotifier extends AsyncNotifier<List<InventoryItem>> {
     }
     await ref.read(inventoryServiceProvider).deleteItem(id);
     LogService.instance.info('Inventory item deleted: $id');
+    ref.invalidateSelf();
+  }
+
+  /// Move [amount] units of quantity from one item to another
+  /// (WISH-0083). A negative [amount] reverses the direction. Throws
+  /// [ArgumentError] with a user-readable message when the transfer
+  /// would push either quantity below zero (also pre-checked by the
+  /// dialog; this is the authoritative re-check against fresh data).
+  Future<void> transferQuantity({
+    required String fromId,
+    required String toId,
+    required int amount,
+  }) async {
+    if (fromId == toId) {
+      throw ArgumentError('Cannot transfer an item to itself');
+    }
+    final service = ref.read(inventoryServiceProvider);
+    final from = await service.getItem(fromId);
+    final to = await service.getItem(toId);
+    if (from == null || to == null) {
+      throw ArgumentError('One of the items no longer exists');
+    }
+    final outcome = applyTransfer(
+      fromQuantity: from.quantity,
+      toQuantity: to.quantity,
+      amount: amount,
+    );
+    await service.updateItem(from.copyWith(quantity: outcome.fromNewQuantity));
+    await service.updateItem(to.copyWith(quantity: outcome.toNewQuantity));
+    LogService.instance.info(
+      'Inventory transfer: $amount from "${from.name}" to "${to.name}" '
+      '(${from.quantity}→${outcome.fromNewQuantity}, '
+      '${to.quantity}→${outcome.toNewQuantity})',
+    );
     ref.invalidateSelf();
   }
 }

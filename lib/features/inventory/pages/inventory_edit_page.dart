@@ -20,6 +20,7 @@ import '../../gemini/providers/gemini_providers.dart';
 import '../../settings/providers/currency_providers.dart';
 import '../models/inventory_item.dart';
 import '../providers/inventory_providers.dart';
+import '../widgets/transfer_quantity_dialog.dart';
 
 class InventoryEditPage extends ConsumerStatefulWidget {
   final String? itemId;
@@ -214,6 +215,26 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
     }
   }
 
+  Future<void> _openTransferDialog() async {
+    final wasDirty = _isDirty;
+    final transferred = await showTransferQuantityDialog(
+      context,
+      fixedFromItemId: widget.itemId!,
+    );
+    if (transferred != true || !mounted) return;
+    // The transfer changed this item's quantity in Firestore — sync the
+    // form field so a later Save doesn't write the stale value back.
+    final fresh = await ref
+        .read(inventoryServiceProvider)
+        .getItem(widget.itemId!);
+    if (fresh == null || !mounted) return;
+    setState(() => _quantityController.text = fresh.quantity.toString());
+    // Keep the discard-changes guard honest: a clean form stays clean
+    // (the quantity change is already persisted), a dirty form stays
+    // dirty.
+    if (!wasDirty) _initialSnapshot = _snapshot();
+  }
+
   void _confirmDelete() {
     showDialog<void>(
       context: context,
@@ -344,6 +365,12 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
             child: Text(isEditing ? 'Edit Item' : 'New Item'),
           ),
           actions: [
+            if (isEditing)
+              IconButton(
+                icon: const Icon(Icons.swap_horiz_rounded),
+                tooltip: 'Transfer quantity',
+                onPressed: _isUploading ? null : _openTransferDialog,
+              ),
             if (isEditing)
               IconButton(
                 icon: const Icon(Icons.delete_outline),
