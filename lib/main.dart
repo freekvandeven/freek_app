@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
@@ -163,6 +164,11 @@ class PersonalApp extends ConsumerWidget {
         // having to plumb a locale through. `null` means follow the
         // device default (Intl falls back to system locale).
         Intl.defaultLocale = user?.settings.dateFormatLocale;
+        // The Material date picker's manual text input doesn't read
+        // Intl.defaultLocale — it parses via MaterialLocalizations,
+        // which follow MaterialApp.locale. Feed the same setting there
+        // so typed dates match the chosen format too (BUG-0045).
+        final appLocale = _localeFromTag(user?.settings.dateFormatLocale);
 
         // Initialize push notifications when authenticated
         ref.watch(notificationInitProvider);
@@ -211,6 +217,24 @@ class PersonalApp extends ConsumerWidget {
             theme: AppTheme.lightTheme(seedColor),
             darkTheme: AppTheme.darkTheme(seedColor),
             themeMode: ref.watch(themeModeProvider),
+            // null = follow the device locale (Flutter resolves against
+            // supportedLocales); non-null pins the Material widgets —
+            // including date picker text parsing — to the user's chosen
+            // date format (BUG-0045).
+            locale: appLocale,
+            supportedLocales: const [
+              Locale('en'),
+              Locale('en', 'GB'),
+              Locale('en', 'US'),
+              Locale('nl', 'NL'),
+              Locale('de', 'DE'),
+              Locale('fr', 'FR'),
+            ],
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
             routerConfig: router,
             builder: (context, child) => LockScreen(
               enabled: biometricEnabled,
@@ -222,4 +246,13 @@ class PersonalApp extends ConsumerWidget {
       },
     );
   }
+}
+
+/// Parses a stored locale tag like `en_GB` / `nl_NL` into a [Locale].
+/// Returns null for null input so MaterialApp falls back to the device
+/// locale (BUG-0045).
+Locale? _localeFromTag(String? tag) {
+  if (tag == null || tag.isEmpty) return null;
+  final parts = tag.split('_');
+  return parts.length >= 2 ? Locale(parts[0], parts[1]) : Locale(parts[0]);
 }
