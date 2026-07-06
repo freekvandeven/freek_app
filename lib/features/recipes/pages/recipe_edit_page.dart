@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -26,6 +25,11 @@ import '../models/recipe.dart';
 import '../providers/recipe_providers.dart';
 import '../utils/autosave_snapshot.dart';
 import '../utils/video_link_parser.dart';
+import '../widgets/recipe_catalog_picker_sheet.dart';
+import '../widgets/recipe_images_section.dart';
+import '../widgets/recipe_ingredients_section.dart';
+import '../widgets/recipe_instructions_section.dart';
+import '../widgets/recipe_picker_sheet.dart';
 
 class RecipeEditPage extends ConsumerStatefulWidget {
   final String? recipeId;
@@ -420,7 +424,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                     context: ctx,
                     isScrollControlled: true,
                     builder: (c) =>
-                        _RecipeCatalogPickerSheet(items: catalogItems),
+                        RecipeCatalogPickerSheet(items: catalogItems),
                   );
                   if (picked != null) {
                     nameCtrl.text = picked.title;
@@ -998,7 +1002,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     final picked = await showModalBottomSheet<Recipe>(
       context: context,
       isScrollControlled: true,
-      builder: (c) => _RecipePickerSheet(items: candidates),
+      builder: (c) => RecipePickerSheet(items: candidates),
     );
     if (picked != null) {
       setState(() => _subRecipeIds.add(picked.id));
@@ -1176,14 +1180,14 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                   ),
                 const SizedBox(height: 16),
 
-                _RecipeIngredientsSection(
+                RecipeIngredientsSection(
                   ingredients: _ingredients,
                   onAdd: _addIngredient,
                   onRemove: (i) => setState(() => _ingredients.removeAt(i)),
                 ),
                 const SizedBox(height: 16),
 
-                _RecipeInstructionsSection(
+                RecipeInstructionsSection(
                   instructions: _instructions,
                   onAdd: _addInstruction,
                   onRemove: (i) => setState(() => _instructions.removeAt(i)),
@@ -1200,7 +1204,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                 ),
                 const SizedBox(height: 16),
 
-                _RecipeImagesSection(
+                RecipeImagesSection(
                   savedImageUrls: _savedImageUrls,
                   pendingImages: _pendingImages,
                   primaryImageIndex: _primaryImageIndex,
@@ -1345,406 +1349,6 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _RecipeCatalogPickerSheet extends StatefulWidget {
-  final List<CatalogItem> items;
-  const _RecipeCatalogPickerSheet({required this.items});
-
-  @override
-  State<_RecipeCatalogPickerSheet> createState() =>
-      _RecipeCatalogPickerSheetState();
-}
-
-class _RecipeCatalogPickerSheetState extends State<_RecipeCatalogPickerSheet> {
-  String _search = '';
-
-  List<CatalogItem> get _filtered {
-    if (_search.isEmpty) return widget.items;
-    final q = _search.toLowerCase();
-    return widget.items
-        .where(
-          (i) =>
-              i.title.toLowerCase().contains(q) ||
-              (i.description?.toLowerCase().contains(q) ?? false),
-        )
-        .toList();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.6,
-      maxChildSize: 0.9,
-      builder: (context, scrollController) => Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search catalog...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onChanged: (v) => setState(() => _search = v),
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              controller: scrollController,
-              itemCount: _filtered.length,
-              itemBuilder: (context, index) {
-                final item = _filtered[index];
-                return ListTile(
-                  leading: item.imageUrls.isNotEmpty
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
-                          child: CachedNetworkImage(
-                            imageUrl: item.imageUrls.first,
-                            width: 40,
-                            height: 40,
-                            fit: BoxFit.cover,
-                          ),
-                        )
-                      : CircleAvatar(
-                          child: Text(
-                            item.title.isNotEmpty
-                                ? item.title[0].toUpperCase()
-                                : '?',
-                          ),
-                        ),
-                  title: Text(item.title),
-                  subtitle: item.description != null
-                      ? Text(
-                          item.description!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        )
-                      : null,
-                  onTap: () => Navigator.pop(context, item),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RecipePickerSheet extends StatefulWidget {
-  final List<Recipe> items;
-  const _RecipePickerSheet({required this.items});
-
-  @override
-  State<_RecipePickerSheet> createState() => _RecipePickerSheetState();
-}
-
-class _RecipePickerSheetState extends State<_RecipePickerSheet> {
-  String _search = '';
-
-  List<Recipe> get _filtered {
-    if (_search.isEmpty) return widget.items;
-    final q = _search.toLowerCase();
-    return widget.items
-        .where(
-          (r) =>
-              r.title.toLowerCase().contains(q) ||
-              (r.description?.toLowerCase().contains(q) ?? false),
-        )
-        .toList();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.6,
-      maxChildSize: 0.9,
-      builder: (context, scrollController) => Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search recipes...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onChanged: (v) => setState(() => _search = v),
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              controller: scrollController,
-              itemCount: _filtered.length,
-              itemBuilder: (context, index) {
-                final recipe = _filtered[index];
-                return ListTile(
-                  leading: const Icon(Icons.restaurant_menu),
-                  title: Text(recipe.title),
-                  subtitle: recipe.description != null
-                      ? Text(
-                          recipe.description!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        )
-                      : null,
-                  onTap: () => Navigator.pop(context, recipe),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RecipeImagesSection extends StatelessWidget {
-  final List<String> savedImageUrls;
-  final List<({Uint8List bytes, String fileName})> pendingImages;
-  final int primaryImageIndex;
-  final VoidCallback onAdd;
-  final void Function(int index) onSetPrimary;
-  final void Function(int index) onRemove;
-
-  const _RecipeImagesSection({
-    required this.savedImageUrls,
-    required this.pendingImages,
-    required this.primaryImageIndex,
-    required this.onAdd,
-    required this.onSetPrimary,
-    required this.onRemove,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final total = savedImageUrls.length + pendingImages.length;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Images', style: Theme.of(context).textTheme.titleMedium),
-            TextButton.icon(
-              onPressed: onAdd,
-              icon: const Icon(Icons.add_photo_alternate, size: 18),
-              label: const Text('Add'),
-            ),
-          ],
-        ),
-        if (total > 0)
-          SizedBox(
-            height: 80,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: total,
-              itemBuilder: (context, index) {
-                final isExisting = index < savedImageUrls.length;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: Stack(
-                    children: [
-                      GestureDetector(
-                        onTap: () => onSetPrimary(index),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: isExisting
-                              ? CachedNetworkImage(
-                                  imageUrl: savedImageUrls[index],
-                                  width: 80,
-                                  height: 80,
-                                  fit: BoxFit.cover,
-                                  errorWidget: (_, __, ___) => Container(
-                                    width: 80,
-                                    height: 80,
-                                    color: Colors.grey[300],
-                                    child: const Icon(Icons.broken_image),
-                                  ),
-                                )
-                              : Image.memory(
-                                  pendingImages[index - savedImageUrls.length]
-                                      .bytes,
-                                  width: 80,
-                                  height: 80,
-                                  fit: BoxFit.cover,
-                                ),
-                        ),
-                      ),
-                      if (index == primaryImageIndex)
-                        Positioned(
-                          top: 2,
-                          left: 2,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 1,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primary,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Text(
-                              'Primary',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 9,
-                              ),
-                            ),
-                          ),
-                        ),
-                      Positioned(
-                        top: 0,
-                        right: 0,
-                        child: GestureDetector(
-                          onTap: () => onRemove(index),
-                          child: Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: const BoxDecoration(
-                              color: Colors.black54,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.close,
-                              size: 14,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _RecipeIngredientsSection extends StatelessWidget {
-  final List<Ingredient> ingredients;
-  final VoidCallback onAdd;
-  final void Function(int index) onRemove;
-
-  const _RecipeIngredientsSection({
-    required this.ingredients,
-    required this.onAdd,
-    required this.onRemove,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Ingredients', style: Theme.of(context).textTheme.titleMedium),
-            TextButton.icon(
-              onPressed: onAdd,
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Add'),
-            ),
-          ],
-        ),
-        ...ingredients.asMap().entries.map(
-          (entry) => ListTile(
-            contentPadding: EdgeInsets.zero,
-            dense: true,
-            title: Text(
-              [
-                if (entry.value.quantity != null)
-                  entry.value.quantity!.toString(),
-                if (entry.value.unit != null) entry.value.unit,
-                entry.value.name,
-              ].join(' '),
-            ),
-            trailing: IconButton(
-              icon: const Icon(Icons.remove_circle_outline, size: 20),
-              onPressed: () => onRemove(entry.key),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _RecipeInstructionsSection extends StatelessWidget {
-  final List<RecipeInstruction> instructions;
-  final VoidCallback onAdd;
-  final void Function(int index) onRemove;
-  final ReorderCallback onReorder;
-
-  const _RecipeInstructionsSection({
-    required this.instructions,
-    required this.onAdd,
-    required this.onRemove,
-    required this.onReorder,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Instructions',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            TextButton.icon(
-              onPressed: onAdd,
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Add'),
-            ),
-          ],
-        ),
-        ReorderableListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: instructions.length,
-          onReorderItem: onReorder,
-          itemBuilder: (context, index) => ListTile(
-            key: ValueKey(index),
-            contentPadding: EdgeInsets.zero,
-            dense: true,
-            leading: CircleAvatar(
-              radius: 12,
-              child: Text('${index + 1}', style: const TextStyle(fontSize: 12)),
-            ),
-            title: Text(
-              instructions[index].text,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: instructions[index].imageUrl != null
-                ? Text(
-                    instructions[index].imageUrl!,
-                    style: const TextStyle(fontSize: 11, color: Colors.grey),
-                  )
-                : null,
-            trailing: IconButton(
-              icon: const Icon(Icons.remove_circle_outline, size: 20),
-              onPressed: () => onRemove(index),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
