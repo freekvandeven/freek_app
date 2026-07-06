@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_app/presentation/widgets/app_snackbar.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
@@ -195,11 +196,9 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
       _lastAutosaveAt = DateTime.now();
       _lastSavedSnapshot = snapshot;
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Auto-saved'),
-            duration: Duration(seconds: 2),
-          ),
+        context.showSuccessSnackbar(
+          'Auto-saved',
+          duration: const Duration(seconds: 2),
         );
       }
     } catch (_) {
@@ -237,9 +236,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
       if (mounted) context.pop();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Save failed: $e')));
+        context.showErrorSnackbar('Save failed: $e');
       }
     } finally {
       if (mounted) setState(() => _isUploading = false);
@@ -539,9 +536,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                       imgCtrl.text = url;
                     } catch (e) {
                       if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Upload failed: $e')),
-                        );
+                        context.showErrorSnackbar('Upload failed: $e');
                       }
                     }
                   },
@@ -772,13 +767,9 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     final ready = await configureGeminiForCurrentSettings(ref);
     if (!ready) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Gemini is not configured. Set up an API key or sign in '
-              'with Google in Settings → AI.',
-            ),
-          ),
+        context.showSnackbar(
+          'Gemini is not configured. Set up an API key or sign in '
+          'with Google in Settings → AI.',
         );
       }
       return;
@@ -822,12 +813,8 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
       final data = await geminiService.generateRecipe(prompt);
       if (!mounted) return;
       if (data == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Failed to generate recipe. See Settings → Developer for details.',
-            ),
-          ),
+        context.showErrorSnackbar(
+          'Failed to generate recipe. See Settings → Developer for details.',
         );
         return;
       }
@@ -838,24 +825,19 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
         final message = retry != null
             ? 'Gemini API rate limit reached. Try again in ${retry.inSeconds}s.'
             : 'Gemini API rate limit reached.';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            duration: const Duration(seconds: 8),
-            content: Text(message),
-            action: SnackBarAction(
-              label: 'View limits',
-              onPressed: () =>
-                  launchUrl(Uri.parse('https://ai.dev/rate-limit')),
-            ),
+        context.showSnackbar(
+          message,
+          duration: const Duration(seconds: 8),
+          action: SnackBarAction(
+            label: 'View limits',
+            onPressed: () => launchUrl(Uri.parse('https://ai.dev/rate-limit')),
           ),
         );
       }
     } catch (e, st) {
       LogService.instance.error('Recipe AI flow failed unexpectedly: $e\n$st');
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Recipe AI failed: $e')));
+        context.showErrorSnackbar('Recipe AI failed: $e');
       }
     } finally {
       if (mounted) setState(() => _isUploading = false);
@@ -866,13 +848,9 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     final ready = await configureGeminiForCurrentSettings(ref);
     if (!ready) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Gemini is not configured. Set up an API key or sign in '
-              'with Google in Settings → AI.',
-            ),
-          ),
+        context.showSnackbar(
+          'Gemini is not configured. Set up an API key or sign in '
+          'with Google in Settings → AI.',
         );
       }
       return;
@@ -917,12 +895,8 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
       final data = await geminiService.editRecipe(existing, instruction);
       if (!mounted) return;
       if (data == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Failed to edit recipe with AI. See Settings → Developer for details.',
-            ),
-          ),
+        context.showErrorSnackbar(
+          'Failed to edit recipe with AI. See Settings → Developer for details.',
         );
         return;
       }
@@ -933,24 +907,19 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
         final message = retry != null
             ? 'Gemini API rate limit reached. Try again in ${retry.inSeconds}s.'
             : 'Gemini API rate limit reached.';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            duration: const Duration(seconds: 8),
-            content: Text(message),
-            action: SnackBarAction(
-              label: 'View limits',
-              onPressed: () =>
-                  launchUrl(Uri.parse('https://ai.dev/rate-limit')),
-            ),
+        context.showSnackbar(
+          message,
+          duration: const Duration(seconds: 8),
+          action: SnackBarAction(
+            label: 'View limits',
+            onPressed: () => launchUrl(Uri.parse('https://ai.dev/rate-limit')),
           ),
         );
       }
     } catch (e, st) {
       LogService.instance.error('Recipe edit AI flow failed: $e\n$st');
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Recipe AI failed: $e')));
+        context.showErrorSnackbar('Recipe AI failed: $e');
       }
     } finally {
       if (mounted) setState(() => _isUploading = false);
@@ -1022,9 +991,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
         .toList();
     if (!mounted || candidates.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No other recipes available to link')),
-        );
+        context.showSnackbar('No other recipes available to link');
       }
       return;
     }

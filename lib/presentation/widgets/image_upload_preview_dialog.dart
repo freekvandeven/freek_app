@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../../services/image_upload_service.dart';
+import 'app_snackbar.dart';
 import 'flutter_cropper_page.dart';
 
 /// Result from the image upload preview dialog.
@@ -72,9 +73,7 @@ Future<PickedImage?> resolveImageSource(
       final pasted = await ImageUploadService.readImageFromClipboard();
       if (pasted == null) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No image on clipboard')),
-          );
+          context.showSnackbar('No image on clipboard');
         }
         return null;
       }

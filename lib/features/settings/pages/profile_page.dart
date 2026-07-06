@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_app/presentation/widgets/app_snackbar.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
@@ -62,9 +63,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
     await ref.read(authServiceProvider).updateProfile(updated);
     if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Profile updated')));
+      context.showSuccessSnackbar('Profile updated');
       context.pop();
     }
   }
@@ -123,9 +122,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Photo upload failed: $e')));
+        context.showErrorSnackbar('Photo upload failed: $e');
       }
     } finally {
       if (mounted) setState(() => _uploadingPhoto = false);

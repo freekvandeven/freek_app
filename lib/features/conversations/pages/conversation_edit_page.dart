@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
+import '../../../presentation/widgets/app_snackbar.dart';
 import '../../../presentation/widgets/fullscreen_image_viewer.dart';
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
 import '../../../presentation/widgets/unsaved_changes_guard.dart';
@@ -182,9 +183,7 @@ class _ConversationEditPageState extends ConsumerState<ConversationEditPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Image upload failed: $e')));
+        context.showErrorSnackbar('Image upload failed: $e');
       }
     } finally {
       if (mounted) setState(() => _isUploading = false);

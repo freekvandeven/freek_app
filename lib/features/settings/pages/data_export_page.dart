@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:personal_app/presentation/widgets/app_snackbar.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -271,9 +272,7 @@ class _DataExportPageState extends ConsumerState<DataExportPage> {
 
       if (files.isEmpty) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No collections selected')),
-          );
+          context.showSnackbar('No collections selected');
         }
         return;
       }

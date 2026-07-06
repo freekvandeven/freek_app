@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../presentation/widgets/app_snackbar.dart';
 import '../../../presentation/widgets/fullscreen_image_viewer.dart';
 import '../../../presentation/widgets/quick_actions_title.dart';
 import '../../admin/providers/admin_providers.dart';
@@ -105,17 +106,13 @@ class _PublicProfilePageState extends ConsumerState<PublicProfilePage> {
           _currentLimitBytes = result;
         });
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Storage limit updated to ${_formatBytes(result)}'),
-            ),
+          context.showSuccessSnackbar(
+            'Storage limit updated to ${_formatBytes(result)}',
           );
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Error: $e')));
+          context.showErrorSnackbar('Error: $e');
         }
       }
     }
@@ -151,15 +148,11 @@ class _PublicProfilePageState extends ConsumerState<PublicProfilePage> {
           setState(() {
             _targetIsAdmin = true;
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Admin privileges granted')),
-          );
+          context.showSuccessSnackbar('Admin privileges granted');
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Error: $e')));
+          context.showErrorSnackbar('Error: $e');
         }
       }
     }

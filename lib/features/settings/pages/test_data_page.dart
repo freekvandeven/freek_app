@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../presentation/widgets/app_snackbar.dart';
 import '../../calendar/models/calendar_event.dart';
 import '../../calendar/providers/calendar_providers.dart';
 import '../../conversations/models/conversation_topic.dart';
@@ -213,15 +214,11 @@ class _TestDataPageState extends ConsumerState<TestDataPage> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Created $totalCreated test items')),
-        );
+        context.showSuccessSnackbar('Created $totalCreated test items');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        context.showErrorSnackbar('Error: $e');
       }
     } finally {
       if (mounted) setState(() => _generating = false);

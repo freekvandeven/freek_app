@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_app/presentation/widgets/app_snackbar.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -175,11 +176,9 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
       _lastAutosaveAt = DateTime.now();
       _lastSavedSnapshot = snapshot;
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Auto-saved'),
-            duration: Duration(seconds: 2),
-          ),
+        context.showSuccessSnackbar(
+          'Auto-saved',
+          duration: const Duration(seconds: 2),
         );
       }
     } catch (_) {
@@ -278,15 +277,11 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
       });
     } on StorageLimitExceededException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
+        context.showErrorSnackbar(e.toString());
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+        context.showErrorSnackbar('Upload failed: $e');
       }
     } finally {
       if (mounted) setState(() => _isUploadingAttachment = false);
@@ -306,10 +301,8 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
     if (!mounted) return;
 
     if (!keyAvailable) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No Gemini API key configured. Add one in Settings.'),
-        ),
+      context.showSnackbar(
+        'No Gemini API key configured. Add one in Settings.',
       );
       return;
     }
@@ -368,13 +361,8 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
       final ready = await configureGeminiForCurrentSettings(ref);
       if (!ready) {
         if (mounted) {
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Gemini is not configured. Set it up in Settings → AI.',
-              ),
-            ),
+          context.showSnackbar(
+            'Gemini is not configured. Set it up in Settings → AI.',
           );
         }
         return;
@@ -390,9 +378,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('AI error: $e')));
+        context.showErrorSnackbar('AI error: $e');
       }
     }
   }
@@ -712,15 +698,11 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
       }
     } on StorageLimitExceededException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
+        context.showErrorSnackbar(e.toString());
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+        context.showErrorSnackbar('Upload failed: $e');
       }
     } finally {
       if (mounted) setState(() => _isUploadingAttachment = false);

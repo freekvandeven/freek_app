@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../presentation/widgets/app_snackbar.dart';
 import '../models/inventory_item.dart';
 import '../providers/inventory_providers.dart';
 import '../utils/quantity_transfer.dart';
@@ -101,16 +102,12 @@ class _TransferQuantityDialogState
     } on ArgumentError catch (e) {
       if (mounted) {
         setState(() => _isTransferring = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.message.toString())));
+        context.showErrorSnackbar(e.message.toString());
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isTransferring = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Transfer failed: $e')));
+        context.showErrorSnackbar('Transfer failed: $e');
       }
     }
   }

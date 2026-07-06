@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:personal_app/presentation/widgets/app_snackbar.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
@@ -213,9 +214,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
       if (mounted) context.pop();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Save failed: $e')));
+        context.showErrorSnackbar('Save failed: $e');
       }
     } finally {
       if (mounted) setState(() => _isUploading = false);
@@ -272,13 +271,9 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
     final ready = await configureGeminiForCurrentSettings(ref);
     if (!ready) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Gemini is not configured. Set up an API key or sign in '
-              'with Google in Settings → AI.',
-            ),
-          ),
+        context.showSnackbar(
+          'Gemini is not configured. Set up an API key or sign in '
+          'with Google in Settings → AI.',
         );
       }
       return;
@@ -332,15 +327,9 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
             if (parsed != null) _expiryDate = parsed;
           }
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Fields filled from image analysis')),
-        );
+        context.showSuccessSnackbar('Fields filled from image analysis');
       } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not extract item details from image'),
-          ),
-        );
+        context.showSnackbar('Could not extract item details from image');
       }
     } finally {
       if (mounted) setState(() => _isScanning = false);
@@ -791,9 +780,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
 
     if (!mounted || catalogItems.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No catalog items available')),
-        );
+        context.showSnackbar('No catalog items available');
       }
       return;
     }

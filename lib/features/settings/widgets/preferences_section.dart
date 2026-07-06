@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../presentation/widgets/app_snackbar.dart';
 import '../../auth/models/user_profile.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../auth/services/biometric_service.dart';
@@ -77,11 +78,7 @@ class PreferencesSection extends ConsumerWidget {
             if (v) {
               final available = await BiometricService.isAvailable;
               if (!available && context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Biometrics not available on this device'),
-                  ),
-                );
+                context.showSnackbar('Biometrics not available on this device');
                 return;
               }
             }
@@ -115,24 +112,18 @@ class PreferencesSection extends ConsumerWidget {
     final available = await BiometricService.isAvailable;
     if (!context.mounted) return;
     if (!available) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Biometrics not available on this device'),
-        ),
-      );
+      context.showSnackbar('Biometrics not available on this device');
       return;
     }
     final success = await BiometricService.authenticate(
       reason: 'Testing biometric authentication',
     );
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          success ? 'Authentication successful!' : 'Authentication failed',
-        ),
-      ),
-    );
+    if (success) {
+      context.showSuccessSnackbar('Authentication successful!');
+    } else {
+      context.showErrorSnackbar('Authentication failed');
+    }
   }
 
   void _showCurrencyPicker(

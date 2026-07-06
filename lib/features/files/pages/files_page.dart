@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../presentation/widgets/app_snackbar.dart';
 import '../../../presentation/widgets/file_drop_target.dart';
 import '../../../presentation/widgets/quick_actions_title.dart';
 import '../../../presentation/widgets/responsive_center.dart';
@@ -136,16 +137,12 @@ class FilesPage extends HookConsumerWidget {
             );
       } on StorageLimitExceededException catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(e.toString())));
+          context.showErrorSnackbar(e.toString());
         }
         break;
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+          context.showErrorSnackbar('Upload failed: $e');
         }
       }
     }
@@ -216,15 +213,11 @@ class FilesPage extends HookConsumerWidget {
           );
     } on StorageLimitExceededException catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
+        context.showErrorSnackbar(e.toString());
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+        context.showErrorSnackbar('Upload failed: $e');
       }
     } finally {
       isUploading.value = false;

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_app/presentation/widgets/app_snackbar.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
 import '../models/password_entry.dart';
@@ -130,11 +131,9 @@ class _PasswordDetailPageState extends ConsumerState<PasswordDetailPage> {
 
   void _copyPassword(BuildContext context, String password) {
     Clipboard.setData(ClipboardData(text: password));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Password copied (auto-clears in 30s)'),
-        duration: Duration(seconds: 2),
-      ),
+    context.showSuccessSnackbar(
+      'Password copied (auto-clears in 30s)',
+      duration: const Duration(seconds: 2),
     );
     Timer(const Duration(seconds: 30), () {
       Clipboard.setData(const ClipboardData(text: ''));
@@ -205,11 +204,9 @@ class _FieldTile extends StatelessWidget {
                   onCopy ??
                   () {
                     Clipboard.setData(ClipboardData(text: value));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('$label copied'),
-                        duration: const Duration(seconds: 1),
-                      ),
+                    context.showSuccessSnackbar(
+                      '$label copied',
+                      duration: const Duration(seconds: 1),
                     );
                   },
             ),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_app/presentation/widgets/app_snackbar.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
@@ -158,11 +159,9 @@ class PasswordListPage extends ConsumerWidget {
 
   void _copyPassword(BuildContext context, String password) {
     Clipboard.setData(ClipboardData(text: password));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Password copied (auto-clears in 30s)'),
-        duration: Duration(seconds: 2),
-      ),
+    context.showSuccessSnackbar(
+      'Password copied (auto-clears in 30s)',
+      duration: const Duration(seconds: 2),
     );
     // Auto-clear clipboard after 30 seconds
     Timer(const Duration(seconds: 30), () {

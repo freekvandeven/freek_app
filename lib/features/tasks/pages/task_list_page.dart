@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:personal_app/presentation/widgets/app_snackbar.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
@@ -208,9 +209,7 @@ class _TaskTile extends ConsumerWidget {
                 .read(taskListProvider.notifier)
                 .toggleComplete(task);
             if (reason != null && context.mounted) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text(reason)));
+              context.showSnackbar(reason);
             }
           },
         ),

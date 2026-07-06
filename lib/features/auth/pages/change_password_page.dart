@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_app/presentation/widgets/app_snackbar.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
 import '../../passwords/providers/vault_providers.dart';
@@ -47,9 +48,7 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
         newPassword: _newPasswordController.text,
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Password changed successfully')),
-        );
+        context.showSuccessSnackbar('Password changed successfully');
         await _offerVaultReEncryption();
         if (mounted) context.pop();
       }
@@ -133,14 +132,10 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
     if (!mounted) return;
     if (newKey != null) {
       ref.read(vaultKeyProvider.notifier).state = newKey;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vault re-encrypted with new password')),
-      );
+      context.showSuccessSnackbar('Vault re-encrypted with new password');
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vault re-encryption failed — wrong master password'),
-        ),
+      context.showErrorSnackbar(
+        'Vault re-encryption failed — wrong master password',
       );
     }
   }

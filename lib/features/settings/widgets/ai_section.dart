@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../presentation/widgets/app_snackbar.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../gemini/providers/gemini_providers.dart';
 import '../../gemini/services/gemini_service.dart';
@@ -178,12 +179,8 @@ class _GeminiOAuthTile extends ConsumerWidget {
               final success = await oauth.signIn();
               ref.read(geminiOAuthConnectedProvider.notifier).state = success;
               if (!success && context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Gemini OAuth sign-in failed or was cancelled',
-                    ),
-                  ),
+                context.showErrorSnackbar(
+                  'Gemini OAuth sign-in failed or was cancelled',
                 );
               }
             },
@@ -298,13 +295,9 @@ class _GeminiApiKeyTile extends ConsumerWidget {
         .toList();
 
     if (geminiEntries.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'No Gemini API key found in vault. '
-            'Save one first by entering a key manually.',
-          ),
-        ),
+      context.showSnackbar(
+        'No Gemini API key found in vault. '
+        'Save one first by entering a key manually.',
       );
       return;
     }
@@ -341,9 +334,7 @@ class _GeminiApiKeyTile extends ConsumerWidget {
     ref.read(geminiApiKeyServiceProvider).setApiKey(key);
     ref.invalidate(geminiApiKeyAvailableProvider);
     ref.read(geminiServiceProvider).configure(key);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Gemini API key loaded from vault')),
-    );
+    context.showSuccessSnackbar('Gemini API key loaded from vault');
   }
 
   void _offerSaveToVault(BuildContext context, WidgetRef ref, String key) {
@@ -372,11 +363,7 @@ class _GeminiApiKeyTile extends ConsumerWidget {
                     category: 'API Keys',
                   );
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Gemini API key saved to vault'),
-                  ),
-                );
+                context.showSuccessSnackbar('Gemini API key saved to vault');
               }
             },
             child: const Text('Save to Vault'),

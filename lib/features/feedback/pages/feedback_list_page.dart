@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_app/presentation/widgets/app_snackbar.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 import 'package:personal_app/presentation/widgets/wip_badge.dart';
@@ -181,13 +182,9 @@ class FeedbackListPage extends ConsumerWidget {
     }
 
     Clipboard.setData(ClipboardData(text: buffer.toString()));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Copied ${exportable.length} feedback item${exportable.length == 1 ? '' : 's'} to clipboard'
-          '${entries.length != exportable.length ? ' (${entries.length - exportable.length} manual excluded)' : ''}',
-        ),
-      ),
+    context.showSuccessSnackbar(
+      'Copied ${exportable.length} feedback item${exportable.length == 1 ? '' : 's'} to clipboard'
+      '${entries.length != exportable.length ? ' (${entries.length - exportable.length} manual excluded)' : ''}',
     );
   }
 
@@ -395,9 +392,7 @@ class _FeedbackTile extends ConsumerWidget {
                     ClipboardData(text: entry.toClipboardText()),
                   );
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Copied to clipboard')),
-                    );
+                    context.showSuccessSnackbar('Copied to clipboard');
                   }
                 case 'resolve':
                   await ref
@@ -406,9 +401,7 @@ class _FeedbackTile extends ConsumerWidget {
                         entry.copyWith(status: FeedbackStatus.resolved),
                       );
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Marked as resolved')),
-                    );
+                    context.showSuccessSnackbar('Marked as resolved');
                   }
                 case 'delete':
                   final confirm = await showDialog<bool>(

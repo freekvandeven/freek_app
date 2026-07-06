@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:personal_app/presentation/widgets/app_snackbar.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -163,9 +164,7 @@ class _IntegrationTile extends StatelessWidget {
         subtitle: Text(item.description),
         trailing: OutlinedButton(
           onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('${item.label} integration coming soon')),
-            );
+            context.showSnackbar('${item.label} integration coming soon');
           },
           child: const Text('Connect'),
         ),

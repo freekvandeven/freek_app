@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/app_config.dart';
+import '../../../presentation/widgets/app_snackbar.dart';
 import '../../../services/log_service.dart';
 import 'test_data_page.dart';
 
@@ -57,10 +58,8 @@ class _DeveloperPageState extends ConsumerState<DeveloperPage> {
                 : () {
                     final text = entries.map((e) => e.formatted).join('\n');
                     Clipboard.setData(ClipboardData(text: text));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Copied ${entries.length} log entries'),
-                      ),
+                    context.showSuccessSnackbar(
+                      'Copied ${entries.length} log entries',
                     );
                   },
           ),
@@ -141,9 +140,7 @@ class _DeveloperPageState extends ConsumerState<DeveloperPage> {
                 onPressed: () async {
                   await user?.getIdToken(true);
                   if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Token refreshed')),
-                  );
+                  context.showSuccessSnackbar('Token refreshed');
                   setState(() {});
                 },
               ),
@@ -153,9 +150,7 @@ class _DeveloperPageState extends ConsumerState<DeveloperPage> {
                 onPressed: () {
                   PaintingBinding.instance.imageCache.clear();
                   PaintingBinding.instance.imageCache.clearLiveImages();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Image cache cleared')),
-                  );
+                  context.showSuccessSnackbar('Image cache cleared');
                 },
               ),
               FilledButton.tonalIcon(

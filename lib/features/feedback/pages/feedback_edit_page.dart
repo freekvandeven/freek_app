@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_app/presentation/widgets/app_snackbar.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
 import '../../../presentation/widgets/file_drop_target.dart';
@@ -202,9 +203,7 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Image upload failed: $e')));
+        context.showErrorSnackbar('Image upload failed: $e');
       }
     } finally {
       if (mounted) setState(() => _isUploading = false);
@@ -497,16 +496,12 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
         if (mounted) setState(() => _imageUrls = [..._imageUrls, url]);
       } on StorageLimitExceededException catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(e.toString())));
+          context.showErrorSnackbar(e.toString());
         }
         break;
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+          context.showErrorSnackbar('Upload failed: $e');
         }
       } finally {
         if (mounted) setState(() => _isUploading = false);

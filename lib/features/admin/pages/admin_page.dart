@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../presentation/widgets/app_snackbar.dart';
 import '../providers/admin_providers.dart';
 import '../services/admin_service.dart';
 
@@ -81,15 +82,11 @@ class _AdminPageState extends ConsumerState<AdminPage> {
           .read(adminServiceProvider)
           .createInviteCode(code: customCode.isEmpty ? null : customCode);
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Created invite code: $code')));
+      context.showSuccessSnackbar('Created invite code: $code');
       await _loadCodes();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to create code: $e')));
+      context.showErrorSnackbar('Failed to create code: $e');
     }
   }
 
@@ -120,18 +117,12 @@ class _AdminPageState extends ConsumerState<AdminPage> {
       if (!mounted) return;
       final checked = result['usersChecked'] ?? 0;
       final sent = result['notificationsSent'] ?? 0;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Expiry check complete: $checked users checked, $sent notifications sent.',
-          ),
-        ),
+      context.showSuccessSnackbar(
+        'Expiry check complete: $checked users checked, $sent notifications sent.',
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Expiry check failed: $e')));
+      context.showErrorSnackbar('Expiry check failed: $e');
     }
   }
 
@@ -162,23 +153,17 @@ class _AdminPageState extends ConsumerState<AdminPage> {
     try {
       await ref.read(adminServiceProvider).deleteInviteCode(code);
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Invite code deleted')));
+      context.showSuccessSnackbar('Invite code deleted');
       await _loadCodes();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to delete code: $e')));
+      context.showErrorSnackbar('Failed to delete code: $e');
     }
   }
 
   void _copyCode(String code) {
     Clipboard.setData(ClipboardData(text: code));
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Code copied to clipboard')));
+    context.showSuccessSnackbar('Code copied to clipboard');
   }
 
   @override

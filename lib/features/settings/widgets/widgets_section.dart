@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../../../presentation/widgets/app_snackbar.dart';
 import '../../../services/widget_service.dart';
 import 'section_header.dart';
 
@@ -43,11 +44,7 @@ class WidgetsSection extends StatelessWidget {
   Future<void> _pinWidget(BuildContext context, String widget) async {
     final added = await WidgetService.requestPinWidget(widget: widget);
     if (!added && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pinning widgets is not supported on this launcher'),
-        ),
-      );
+      context.showSnackbar('Pinning widgets is not supported on this launcher');
     }
   }
 }

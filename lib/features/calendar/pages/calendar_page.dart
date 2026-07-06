@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:personal_app/presentation/widgets/app_snackbar.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -41,13 +42,9 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
 
   Future<void> _toggleGoogleCalendar() async {
     if (!GoogleCalendarService.isSupported) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Google Calendar is not supported on this platform. '
-            'Use Android, iOS, macOS, or web.',
-          ),
-        ),
+      context.showSnackbar(
+        'Google Calendar is not supported on this platform. '
+        'Use Android, iOS, macOS, or web.',
       );
       return;
     }
@@ -59,21 +56,15 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
       await service.disconnect();
       if (!mounted) return;
       ref.read(googleCalendarConnectedProvider.notifier).state = false;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Google Calendar disconnected')),
-      );
+      context.showSnackbar('Google Calendar disconnected');
     } else {
       final success = await service.signIn();
       if (!mounted) return;
       if (success) {
         ref.read(googleCalendarConnectedProvider.notifier).state = true;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Google Calendar connected')),
-        );
+        context.showSuccessSnackbar('Google Calendar connected');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to connect Google Calendar')),
-        );
+        context.showErrorSnackbar('Failed to connect Google Calendar');
       }
     }
   }
