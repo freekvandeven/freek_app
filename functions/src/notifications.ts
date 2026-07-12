@@ -30,7 +30,7 @@ async function runExpiryReminderCheck(): Promise<{ usersChecked: number; notific
     const inventorySnap = await db
       .collection("users")
       .doc(userDoc.id)
-      .collection("inventoryItems")
+      .collection("inventory")
       .where("expiryDate", "!=", null)
       .get();
 
@@ -92,7 +92,7 @@ async function runExpiryReminderCheck(): Promise<{ usersChecked: number; notific
 
     if (invalidTokens.length > 0) {
       await userDoc.ref.update({
-        fcmTokens: FieldValue.arrayRemove(invalidTokens),
+        fcmTokens: FieldValue.arrayRemove(...invalidTokens),
       });
     }
   }
@@ -112,7 +112,11 @@ export const checkExpiryReminders = onSchedule(
     region: REGION,
   },
   async () => {
-    await runExpiryReminderCheck();
+    const summary = await runExpiryReminderCheck();
+    console.log(
+      `Expiry check: ${summary.usersChecked} users checked, ` +
+        `${summary.notificationsSent} notifications sent.`,
+    );
   },
 );
 
