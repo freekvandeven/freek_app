@@ -8,6 +8,7 @@ import '../../auth/providers/auth_providers.dart';
 import '../models/inventory_item.dart';
 import '../services/firestore_inventory_service.dart';
 import '../services/inventory_service.dart';
+import '../utils/inventory_sort.dart';
 import '../utils/quantity_transfer.dart';
 
 final inventoryServiceProvider = Provider<InventoryService>((ref) {
@@ -93,6 +94,9 @@ final inventoryListProvider =
 final inventorySearchProvider = StateProvider<String>((_) => '');
 final inventoryCategoryFilterProvider = StateProvider<String?>((_) => null);
 final inventoryLocationFilterProvider = StateProvider<String?>((_) => null);
+final inventorySortProvider = StateProvider<InventorySort>(
+  (_) => InventorySort.name,
+);
 
 final filteredInventoryProvider = Provider<AsyncValue<List<InventoryItem>>>((
   ref,
@@ -101,6 +105,7 @@ final filteredInventoryProvider = Provider<AsyncValue<List<InventoryItem>>>((
   final search = ref.watch(inventorySearchProvider).toLowerCase();
   final category = ref.watch(inventoryCategoryFilterProvider);
   final location = ref.watch(inventoryLocationFilterProvider);
+  final sort = ref.watch(inventorySortProvider);
 
   return items.whenData((list) {
     var filtered = list;
@@ -121,7 +126,7 @@ final filteredInventoryProvider = Provider<AsyncValue<List<InventoryItem>>>((
     if (location != null) {
       filtered = filtered.where((i) => i.location == location).toList();
     }
-    return filtered;
+    return sortInventoryItems(filtered, sort);
   });
 });
 
