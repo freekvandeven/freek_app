@@ -126,6 +126,43 @@ class _AdminPageState extends ConsumerState<AdminPage> {
     }
   }
 
+  Future<void> _triggerDailyAgenda() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Force Daily Agenda'),
+        content: const Text(
+          'This will immediately send every user a summary of their tasks '
+          'and events for today (same as the 06:00 scheduled run). Continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Send Now'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      final result = await ref.read(adminServiceProvider).triggerDailyAgenda();
+      if (!mounted) return;
+      final checked = result['usersChecked'] ?? 0;
+      final sent = result['notificationsSent'] ?? 0;
+      context.showSuccessSnackbar(
+        'Daily agenda sent: $checked users checked, $sent notifications sent.',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      context.showErrorSnackbar('Daily agenda failed: $e');
+    }
+  }
+
   Future<void> _deleteCode(String code) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -231,6 +268,15 @@ class _AdminPageState extends ConsumerState<AdminPage> {
             ),
             trailing: const Icon(Icons.chevron_right),
             onTap: _triggerExpiryCheck,
+          ),
+          ListTile(
+            leading: const Icon(Icons.wb_sunny_outlined),
+            title: const Text('Force daily agenda'),
+            subtitle: const Text(
+              'Send today\'s tasks & events summary now (same as the 06:00 run)',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _triggerDailyAgenda,
           ),
         ],
       ),

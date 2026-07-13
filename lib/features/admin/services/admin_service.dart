@@ -178,13 +178,30 @@ class AdminService {
 
   /// Immediately runs the expiry reminder check across all users.
   /// Returns { usersChecked, notificationsSent }.
-  Future<Map<String, int>> triggerExpiryCheck() async {
+  Future<Map<String, int>> triggerExpiryCheck() => _triggerNotificationFunction(
+    'triggerExpiryCheck',
+    'Failed to trigger expiry check.',
+  );
+
+  /// Immediately sends the daily agenda notification to all users
+  /// (WISH-0087). Returns { usersChecked, notificationsSent }.
+  Future<Map<String, int>> triggerDailyAgenda() => _triggerNotificationFunction(
+    'triggerDailyAgenda',
+    'Failed to trigger the daily agenda.',
+  );
+
+  /// Shared plumbing for the admin-only notification callables — both
+  /// return the same { usersChecked, notificationsSent } shape.
+  Future<Map<String, int>> _triggerNotificationFunction(
+    String functionName,
+    String failureMessage,
+  ) async {
     final user = _auth.currentUser;
     if (user == null) throw Exception('Not authenticated');
 
     final token = await user.getIdToken();
     final response = await http.post(
-      Uri.parse('$_functionsBaseUrl/triggerExpiryCheck'),
+      Uri.parse('$_functionsBaseUrl/$functionName'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -196,8 +213,7 @@ class AdminService {
 
     if (response.statusCode != 200) {
       final error = body['error'] as Map<String, dynamic>?;
-      final message =
-          error?['message'] as String? ?? 'Failed to trigger expiry check.';
+      final message = error?['message'] as String? ?? failureMessage;
       throw Exception(message);
     }
 
