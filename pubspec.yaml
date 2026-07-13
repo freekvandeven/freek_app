@@ -70,6 +70,7 @@ dev_dependencies:
   riverpod_lint: ^2.6.3
   flutter_launcher_icons: ^0.14.4
   msix: ^3.16.13
+  shared_preferences_platform_interface: ^2.4.2
 
 flutter_launcher_icons:
   android: true

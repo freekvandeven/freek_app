@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,6 +7,10 @@ import '../models/catalog_item.dart';
 
 abstract class CatalogService {
   Future<List<CatalogItem>> getItems();
+
+  /// Emits the full item list on listen and again after every change,
+  /// so consumers never need to re-fetch after a mutation.
+  Stream<List<CatalogItem>> watchItems();
   Future<CatalogItem?> getItem(String id);
   Future<void> addItem(CatalogItem item);
   Future<void> updateItem(CatalogItem item);
@@ -15,6 +20,13 @@ abstract class CatalogService {
 class MockCatalogService implements CatalogService {
   static const _itemsKey = 'catalog_items';
   final _prefs = SharedPreferencesAsync();
+  final _changes = StreamController<List<CatalogItem>>.broadcast();
+
+  @override
+  Stream<List<CatalogItem>> watchItems() async* {
+    yield await getItems();
+    yield* _changes.stream;
+  }
 
   @override
   Future<List<CatalogItem>> getItems() async {
@@ -66,5 +78,10 @@ class MockCatalogService implements CatalogService {
       _itemsKey,
       jsonEncode(items.map((e) => e.toMap()).toList()),
     );
+    _changes.add(List.of(items)..sort((a, b) => a.title.compareTo(b.title)));
+  }
+
+  void dispose() {
+    _changes.close();
   }
 }

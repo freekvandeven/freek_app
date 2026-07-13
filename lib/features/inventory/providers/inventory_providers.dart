@@ -16,25 +16,25 @@ final inventoryServiceProvider = Provider<InventoryService>((ref) {
     final userId = ref.watch(currentUserProvider)?.id ?? '';
     return FirestoreInventoryService(userId);
   }
-  return MockInventoryService();
+  final service = MockInventoryService();
+  ref.onDispose(service.dispose);
+  return service;
 });
 
-class InventoryListNotifier extends AsyncNotifier<List<InventoryItem>> {
+class InventoryListNotifier extends StreamNotifier<List<InventoryItem>> {
   @override
-  Future<List<InventoryItem>> build() async {
-    return ref.watch(inventoryServiceProvider).getItems();
+  Stream<List<InventoryItem>> build() {
+    return ref.watch(inventoryServiceProvider).watchItems();
   }
 
   Future<void> addItem(InventoryItem item) async {
     await ref.read(inventoryServiceProvider).addItem(item);
     LogService.instance.info('Inventory item added: ${item.name}');
-    ref.invalidateSelf();
   }
 
   Future<void> updateItem(InventoryItem item) async {
     await ref.read(inventoryServiceProvider).updateItem(item);
     LogService.instance.info('Inventory item updated: ${item.id}');
-    ref.invalidateSelf();
   }
 
   Future<void> deleteItem(String id) async {
@@ -48,7 +48,6 @@ class InventoryListNotifier extends AsyncNotifier<List<InventoryItem>> {
     }
     await ref.read(inventoryServiceProvider).deleteItem(id);
     LogService.instance.info('Inventory item deleted: $id');
-    ref.invalidateSelf();
   }
 
   /// Move [amount] units of quantity from one item to another
@@ -82,12 +81,11 @@ class InventoryListNotifier extends AsyncNotifier<List<InventoryItem>> {
       '(${from.quantity}→${outcome.fromNewQuantity}, '
       '${to.quantity}→${outcome.toNewQuantity})',
     );
-    ref.invalidateSelf();
   }
 }
 
 final inventoryListProvider =
-    AsyncNotifierProvider<InventoryListNotifier, List<InventoryItem>>(
+    StreamNotifierProvider<InventoryListNotifier, List<InventoryItem>>(
       InventoryListNotifier.new,
     );
 

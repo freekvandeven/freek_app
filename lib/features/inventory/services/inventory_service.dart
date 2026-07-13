@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,6 +7,10 @@ import '../models/inventory_item.dart';
 
 abstract class InventoryService {
   Future<List<InventoryItem>> getItems();
+
+  /// Emits the full item list on listen and again after every change,
+  /// so consumers never need to re-fetch after a mutation.
+  Stream<List<InventoryItem>> watchItems();
   Future<InventoryItem?> getItem(String id);
   Future<void> addItem(InventoryItem item);
   Future<void> updateItem(InventoryItem item);
@@ -15,6 +20,7 @@ abstract class InventoryService {
 class MockInventoryService implements InventoryService {
   static const _itemsKey = 'inventory_items';
   final _prefs = SharedPreferencesAsync();
+  final _changes = StreamController<List<InventoryItem>>.broadcast();
 
   @override
   Future<List<InventoryItem>> getItems() async {
@@ -25,6 +31,12 @@ class MockInventoryService implements InventoryService {
         .map((e) => InventoryItem.fromMap(e as Map<String, dynamic>))
         .toList()
       ..sort((a, b) => a.name.compareTo(b.name));
+  }
+
+  @override
+  Stream<List<InventoryItem>> watchItems() async* {
+    yield await getItems();
+    yield* _changes.stream;
   }
 
   @override
@@ -66,5 +78,10 @@ class MockInventoryService implements InventoryService {
       _itemsKey,
       jsonEncode(items.map((i) => i.toMap()).toList()),
     );
+    _changes.add(List.of(items)..sort((a, b) => a.name.compareTo(b.name)));
+  }
+
+  void dispose() {
+    _changes.close();
   }
 }

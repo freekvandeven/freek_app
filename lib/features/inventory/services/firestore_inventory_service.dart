@@ -23,6 +23,15 @@ class FirestoreInventoryService implements InventoryService {
   }
 
   @override
+  Stream<List<InventoryItem>> watchItems() {
+    return _collection.snapshots().map(
+      (snapshot) =>
+          snapshot.docs.map((doc) => InventoryItem.fromMap(doc.data())).toList()
+            ..sort((a, b) => a.name.compareTo(b.name)),
+    );
+  }
+
+  @override
   Future<InventoryItem?> getItem(String id) async {
     final doc = await _collection.doc(id).get();
     if (!doc.exists || doc.data() == null) return null;

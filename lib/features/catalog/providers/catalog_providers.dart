@@ -14,25 +14,25 @@ final catalogServiceProvider = Provider<CatalogService>((ref) {
     final userId = ref.watch(currentUserProvider)?.id ?? '';
     return FirestoreCatalogService(userId);
   }
-  return MockCatalogService();
+  final service = MockCatalogService();
+  ref.onDispose(service.dispose);
+  return service;
 });
 
-class CatalogListNotifier extends AsyncNotifier<List<CatalogItem>> {
+class CatalogListNotifier extends StreamNotifier<List<CatalogItem>> {
   @override
-  Future<List<CatalogItem>> build() async {
-    return ref.watch(catalogServiceProvider).getItems();
+  Stream<List<CatalogItem>> build() {
+    return ref.watch(catalogServiceProvider).watchItems();
   }
 
   Future<void> addItem(CatalogItem item) async {
     await ref.read(catalogServiceProvider).addItem(item);
     LogService.instance.info('Catalog item added: ${item.title}');
-    ref.invalidateSelf();
   }
 
   Future<void> updateItem(CatalogItem item) async {
     await ref.read(catalogServiceProvider).updateItem(item);
     LogService.instance.info('Catalog item updated: ${item.id}');
-    ref.invalidateSelf();
   }
 
   Future<void> deleteItem(String id) async {
@@ -45,12 +45,11 @@ class CatalogListNotifier extends AsyncNotifier<List<CatalogItem>> {
     }
     await ref.read(catalogServiceProvider).deleteItem(id);
     LogService.instance.info('Catalog item deleted: $id');
-    ref.invalidateSelf();
   }
 }
 
 final catalogListProvider =
-    AsyncNotifierProvider<CatalogListNotifier, List<CatalogItem>>(
+    StreamNotifierProvider<CatalogListNotifier, List<CatalogItem>>(
       CatalogListNotifier.new,
     );
 

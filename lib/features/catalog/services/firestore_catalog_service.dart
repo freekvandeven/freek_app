@@ -21,6 +21,15 @@ class FirestoreCatalogService implements CatalogService {
   }
 
   @override
+  Stream<List<CatalogItem>> watchItems() {
+    return _collection.snapshots().map(
+      (snapshot) =>
+          snapshot.docs.map((doc) => CatalogItem.fromMap(doc.data())).toList()
+            ..sort((a, b) => a.title.compareTo(b.title)),
+    );
+  }
+
+  @override
   Future<CatalogItem?> getItem(String id) async {
     final doc = await _collection.doc(id).get();
     if (!doc.exists || doc.data() == null) return null;
