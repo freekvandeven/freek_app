@@ -161,6 +161,7 @@ class _RecipeCard extends ConsumerWidget {
                     imageUrl: recipe.primaryImageUrl!,
                     width: 56,
                     height: 56,
+                    memCacheWidth: 168,
                     fit: BoxFit.cover,
                     errorWidget: (_, __, ___) => Icon(
                       Icons.restaurant_menu,

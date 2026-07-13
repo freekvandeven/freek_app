@@ -109,6 +109,7 @@ class CatalogListPage extends ConsumerWidget {
                                     imageUrl: item.imageUrls.first,
                                     width: 40,
                                     height: 40,
+                                    memCacheWidth: 120,
                                     fit: BoxFit.cover,
                                     errorWidget: (_, __, ___) => CircleAvatar(
                                       child: Text(

@@ -241,6 +241,7 @@ class _CalendarEventEditPageState extends ConsumerState<CalendarEventEditPage> {
                                     imageUrl: _savedImageUrls[index],
                                     width: 100,
                                     height: 100,
+                                    memCacheWidth: 300,
                                     fit: BoxFit.cover,
                                   )
                                 : Image.memory(

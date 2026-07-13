@@ -650,6 +650,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
                                         imageUrl: _savedImageUrls[index],
                                         width: 100,
                                         height: 100,
+                                        memCacheWidth: 300,
                                         fit: BoxFit.cover,
                                       )
                                     : Image.memory(
@@ -749,6 +750,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
                     imageUrl: _linkedCatalogItem!.imageUrls.first,
                     width: 40,
                     height: 40,
+                    memCacheWidth: 120,
                     fit: BoxFit.cover,
                   ),
                 )
@@ -919,6 +921,7 @@ class _CatalogPickerSheetState extends State<_CatalogPickerSheet> {
                             imageUrl: item.imageUrls.first,
                             width: 40,
                             height: 40,
+                            memCacheWidth: 120,
                             fit: BoxFit.cover,
                           ),
                         )

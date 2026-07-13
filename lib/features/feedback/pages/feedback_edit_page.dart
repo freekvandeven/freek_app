@@ -382,6 +382,7 @@ class _FeedbackEditPageState extends ConsumerState<FeedbackEditPage> {
                               imageUrl: _imageUrls[index],
                               width: 120,
                               height: 120,
+                              memCacheWidth: 360,
                               fit: BoxFit.cover,
                               errorWidget: (_, __, ___) => Container(
                                 width: 120,

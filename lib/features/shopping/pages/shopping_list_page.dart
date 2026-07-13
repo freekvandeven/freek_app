@@ -316,6 +316,7 @@ class _ShoppingCatalogPickerSheetState
                             imageUrl: item.imageUrls.first,
                             width: 40,
                             height: 40,
+                            memCacheWidth: 120,
                             fit: BoxFit.cover,
                           ),
                         )

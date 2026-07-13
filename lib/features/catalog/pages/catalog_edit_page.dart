@@ -316,6 +316,7 @@ class _CatalogEditPageState extends ConsumerState<CatalogEditPage> {
                   imageUrl: url,
                   width: 100,
                   height: 100,
+                  memCacheWidth: 300,
                   fit: BoxFit.cover,
                 ),
               ),

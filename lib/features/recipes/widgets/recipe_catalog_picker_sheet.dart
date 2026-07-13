@@ -64,6 +64,7 @@ class _RecipeCatalogPickerSheetState extends State<RecipeCatalogPickerSheet> {
                             imageUrl: item.imageUrls.first,
                             width: 40,
                             height: 40,
+                            memCacheWidth: 120,
                             fit: BoxFit.cover,
                           ),
                         )

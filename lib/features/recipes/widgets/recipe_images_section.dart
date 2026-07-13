@@ -62,6 +62,7 @@ class RecipeImagesSection extends StatelessWidget {
                                   imageUrl: savedImageUrls[index],
                                   width: 80,
                                   height: 80,
+                                  memCacheWidth: 240,
                                   fit: BoxFit.cover,
                                   errorWidget: (_, __, ___) => Container(
                                     width: 80,
