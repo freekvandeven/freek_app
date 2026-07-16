@@ -39,6 +39,24 @@ String? validateTransfer({
   return null;
 }
 
+/// Validates splitting [amount] units off a source item into a brand
+/// new item (WISH-0088). Unlike [validateTransfer], the direction is
+/// fixed: a not-yet-existing item has nothing to give back, so the
+/// amount must be strictly positive.
+String? validateTransferToNew({
+  required int fromQuantity,
+  required int amount,
+}) {
+  if (amount <= 0) {
+    return 'Amount must be positive when creating a new item';
+  }
+  if (fromQuantity - amount < 0) {
+    return 'Not enough quantity on the source item '
+        '($fromQuantity available, $amount requested)';
+  }
+  return null;
+}
+
 /// Computes the post-transfer quantities. Call [validateTransfer]
 /// first; this throws [ArgumentError] on an invalid transfer as a
 /// defensive backstop.

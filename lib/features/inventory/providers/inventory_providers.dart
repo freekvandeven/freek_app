@@ -82,6 +82,56 @@ class InventoryListNotifier extends StreamNotifier<List<InventoryItem>> {
       '${to.quantity}→${outcome.toNewQuantity})',
     );
   }
+
+  /// Split [amount] units off the source item into a brand new item at
+  /// [location] (WISH-0088). The new item copies the source's data —
+  /// name, description, category, price, dates, barcode, catalog link,
+  /// fill percentage, nicknames — but NOT its images: deleting an item
+  /// cascade-deletes its Storage images, so two items sharing image
+  /// URLs would break each other on delete. Throws [ArgumentError]
+  /// with a user-readable message on invalid input.
+  Future<void> transferToNewItem({
+    required String fromId,
+    required String location,
+    required int amount,
+  }) async {
+    final trimmedLocation = location.trim();
+    if (trimmedLocation.isEmpty) {
+      throw ArgumentError('Enter a location for the new item');
+    }
+    final service = ref.read(inventoryServiceProvider);
+    final from = await service.getItem(fromId);
+    if (from == null) {
+      throw ArgumentError('The source item no longer exists');
+    }
+    final error = validateTransferToNew(
+      fromQuantity: from.quantity,
+      amount: amount,
+    );
+    if (error != null) throw ArgumentError(error);
+
+    final newItem = InventoryItem(
+      name: from.name,
+      description: from.description,
+      category: from.category,
+      location: trimmedLocation,
+      quantity: amount,
+      purchasePrice: from.purchasePrice,
+      purchaseDate: from.purchaseDate,
+      expiryDate: from.expiryDate,
+      barcode: from.barcode,
+      catalogItemId: from.catalogItemId,
+      customFields: Map.of(from.customFields),
+      fillPercent: from.fillPercent,
+      searchAliases: from.searchAliases,
+    );
+    await service.addItem(newItem);
+    await service.updateItem(from.copyWith(quantity: from.quantity - amount));
+    LogService.instance.info(
+      'Inventory split: $amount of "${from.name}" to new item at '
+      '"$trimmedLocation" (${from.quantity}→${from.quantity - amount})',
+    );
+  }
 }
 
 final inventoryListProvider =

@@ -36,7 +36,12 @@ class _TransferQuantityDialog extends ConsumerStatefulWidget {
 
 class _TransferQuantityDialogState
     extends ConsumerState<_TransferQuantityDialog> {
+  /// Sentinel dropdown value for "create a new item at another
+  /// location" instead of picking an existing target (WISH-0088).
+  static const _newItemSentinel = '__new_item__';
+
   final _amountController = TextEditingController(text: '1');
+  final _locationController = TextEditingController();
   String? _fromId;
   String? _toId;
   bool _isTransferring = false;
@@ -50,21 +55,31 @@ class _TransferQuantityDialogState
   @override
   void dispose() {
     _amountController.dispose();
+    _locationController.dispose();
     super.dispose();
   }
 
   int? get _amount => int.tryParse(_amountController.text.trim());
 
+  bool get _isCreateNew => _toId == _newItemSentinel;
+
   /// Current validation error for the chosen items + amount, or null
   /// when the transfer is allowed. Also used to disable the button.
   String? _validationError(List<InventoryItem> items) {
     if (_fromId == null || _toId == null) return null; // incomplete, no error
-    if (_fromId == _toId) return 'Choose two different items';
     final from = items.where((i) => i.id == _fromId).firstOrNull;
-    final to = items.where((i) => i.id == _toId).firstOrNull;
-    if (from == null || to == null) return 'Item not found';
+    if (from == null) return 'Item not found';
     final amount = _amount;
     if (amount == null) return 'Enter a whole number';
+    if (_isCreateNew) {
+      if (_locationController.text.trim().isEmpty) {
+        return 'Enter a location for the new item';
+      }
+      return validateTransferToNew(fromQuantity: from.quantity, amount: amount);
+    }
+    if (_fromId == _toId) return 'Choose two different items';
+    final to = items.where((i) => i.id == _toId).firstOrNull;
+    if (to == null) return 'Item not found';
     return validateTransfer(
       fromQuantity: from.quantity,
       toQuantity: to.quantity,
@@ -78,16 +93,14 @@ class _TransferQuantityDialogState
     final amount = _amount;
     if (_fromId == null || _toId == null || amount == null) return null;
     final from = items.where((i) => i.id == _fromId).firstOrNull;
-    final to = items.where((i) => i.id == _toId).firstOrNull;
-    if (from == null || to == null) return null;
-    if (validateTransfer(
-          fromQuantity: from.quantity,
-          toQuantity: to.quantity,
-          amount: amount,
-        ) !=
-        null) {
-      return null;
+    if (from == null) return null;
+    if (_validationError(items) != null) return null;
+    if (_isCreateNew) {
+      return '${from.name}: ${from.quantity} → ${from.quantity - amount}'
+          '  ·  New item at ${_locationController.text.trim()}: $amount';
     }
+    final to = items.where((i) => i.id == _toId).firstOrNull;
+    if (to == null) return null;
     return '${from.name}: ${from.quantity} → ${from.quantity - amount}'
         '  ·  ${to.name}: ${to.quantity} → ${to.quantity + amount}';
   }
@@ -95,9 +108,20 @@ class _TransferQuantityDialogState
   Future<void> _transfer() async {
     setState(() => _isTransferring = true);
     try {
-      await ref
-          .read(inventoryListProvider.notifier)
-          .transferQuantity(fromId: _fromId!, toId: _toId!, amount: _amount!);
+      final notifier = ref.read(inventoryListProvider.notifier);
+      if (_isCreateNew) {
+        await notifier.transferToNewItem(
+          fromId: _fromId!,
+          location: _locationController.text,
+          amount: _amount!,
+        );
+      } else {
+        await notifier.transferQuantity(
+          fromId: _fromId!,
+          toId: _toId!,
+          amount: _amount!,
+        );
+      }
       if (mounted) Navigator.of(context).pop(true);
     } on ArgumentError catch (e) {
       if (mounted) {
@@ -142,15 +166,34 @@ class _TransferQuantityDialogState
               value: _toId,
               items: sorted,
               excludeId: _fromId,
+              includeNewItemOption: true,
               onChanged: (v) => setState(() => _toId = v),
             ),
+            if (_isCreateNew) ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: _locationController,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(
+                  labelText: 'New item location',
+                  border: OutlineInputBorder(),
+                  helperText:
+                      'A copy of the source item is created here with the '
+                      'transferred amount (images are not copied).',
+                  helperMaxLines: 3,
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+            ],
             const SizedBox(height: 12),
             TextField(
               controller: _amountController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Amount',
-                border: OutlineInputBorder(),
-                helperText: 'Negative amounts transfer in the other direction.',
+                border: const OutlineInputBorder(),
+                helperText: _isCreateNew
+                    ? 'How much to split off into the new item.'
+                    : 'Negative amounts transfer in the other direction.',
                 helperMaxLines: 2,
               ),
               keyboardType: const TextInputType.numberWithOptions(signed: true),
@@ -197,10 +240,15 @@ class _TransferQuantityDialogState
     required ValueChanged<String?> onChanged,
     String? excludeId,
     bool enabled = true,
+    bool includeNewItemOption = false,
   }) {
     final options = items.where((i) => i.id != excludeId).toList();
     // Guard against a stale selection (e.g. the excluded item).
-    final effectiveValue = options.any((i) => i.id == value) ? value : null;
+    final effectiveValue =
+        options.any((i) => i.id == value) ||
+            (includeNewItemOption && value == _newItemSentinel)
+        ? value
+        : null;
     return DropdownButtonFormField<String>(
       initialValue: effectiveValue,
       decoration: InputDecoration(
@@ -208,6 +256,11 @@ class _TransferQuantityDialogState
         border: const OutlineInputBorder(),
       ),
       items: [
+        if (includeNewItemOption)
+          const DropdownMenuItem(
+            value: _newItemSentinel,
+            child: Text('➕ New item at another location…'),
+          ),
         for (final item in options)
           DropdownMenuItem(
             value: item.id,

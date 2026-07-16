@@ -66,4 +66,35 @@ void main() {
       );
     });
   });
+
+  group('validateTransferToNew (WISH-0088)', () {
+    test('allows a normal split', () {
+      expect(validateTransferToNew(fromQuantity: 5, amount: 2), isNull);
+    });
+
+    test('allows draining the source to exactly zero', () {
+      expect(validateTransferToNew(fromQuantity: 3, amount: 3), isNull);
+    });
+
+    test('rejects zero amount', () {
+      expect(
+        validateTransferToNew(fromQuantity: 5, amount: 0),
+        'Amount must be positive when creating a new item',
+      );
+    });
+
+    test('rejects negative amount (no reverse into a new item)', () {
+      expect(
+        validateTransferToNew(fromQuantity: 5, amount: -1),
+        'Amount must be positive when creating a new item',
+      );
+    });
+
+    test('rejects a split larger than the source quantity', () {
+      expect(
+        validateTransferToNew(fromQuantity: 2, amount: 3),
+        contains('source item'),
+      );
+    });
+  });
 }
