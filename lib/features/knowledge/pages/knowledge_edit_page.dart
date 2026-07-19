@@ -3,12 +3,13 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:personal_app/presentation/widgets/app_snackbar.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../presentation/hooks/use_autosave.dart';
 import '../../../presentation/widgets/file_drop_target.dart';
 import '../../../presentation/widgets/unsaved_changes_guard.dart';
 import '../../../services/image_upload_service.dart';
@@ -19,7 +20,7 @@ import '../providers/knowledge_providers.dart';
 import '../utils/autosave_snapshot.dart';
 import '../utils/markdown_toolbar_logic.dart';
 
-class KnowledgeEditPage extends ConsumerStatefulWidget {
+class KnowledgeEditPage extends StatefulHookConsumerWidget {
   final String? pageId;
   final String? initialParentId;
   const KnowledgeEditPage({super.key, this.pageId, this.initialParentId});
@@ -43,9 +44,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
   bool _showPreview = false;
   bool _isUploadingAttachment = false;
   KnowledgePage? _existing;
-  Timer? _autosaveTimer;
-  DateTime? _lastAutosaveAt;
-  String? _lastSavedSnapshot;
+  AutosaveController? _autosave;
 
   /// Attachments already persisted to Firestore + Storage. Mutated in
   /// place on add/remove; the new value is sent on save.
@@ -67,20 +66,13 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
     } else {
       _parentId = widget.initialParentId;
       _isLoading = false;
-      // Capture the empty-form snapshot so any typing flips the
-      // unsaved-changes guard on (WISH-0079).
-      _lastSavedSnapshot = _autosaveSnapshot();
-      _setupAutosaveTimer();
     }
   }
 
   /// True when the form has unsaved edits vs. the most recently saved
   /// snapshot — drives the unsaved-changes confirmation on back nav
   /// (WISH-0079).
-  bool get _isDirty {
-    if (_lastSavedSnapshot == null) return false;
-    return _autosaveSnapshot() != _lastSavedSnapshot;
-  }
+  bool get _isDirty => _autosave?.isDirty ?? false;
 
   Future<void> _loadPage() async {
     final page = await ref
@@ -98,22 +90,9 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
         _searchAliasesController.text = page.searchAliases ?? '';
         _isLoading = false;
       });
-      _lastSavedSnapshot = _autosaveSnapshot();
+      _autosave?.markClean();
     } else {
       if (mounted) setState(() => _isLoading = false);
-    }
-    if (mounted) _setupAutosaveTimer();
-  }
-
-  void _setupAutosaveTimer() {
-    _autosaveTimer?.cancel();
-    final minutes =
-        ref.read(currentUserProvider)?.settings.autosaveIntervalMinutes ?? 0;
-    if (minutes > 0) {
-      _autosaveTimer = Timer.periodic(
-        Duration(minutes: minutes),
-        (_) => _autosave(),
-      );
     }
   }
 
@@ -127,68 +106,44 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
     searchAliases: _searchAliasesController.text,
   );
 
-  Future<void> _autosave() async {
-    if (!mounted || !_formKey.currentState!.validate()) return;
-
-    // Browser-throttled Timer.periodic ticks can pile up when the tab is
-    // backgrounded and all fire when it regains focus (BUG-0033). Skip
-    // any tick that arrives within 80% of the configured interval.
-    final intervalMin =
-        ref.read(currentUserProvider)?.settings.autosaveIntervalMinutes ?? 0;
-    if (intervalMin > 0 && _lastAutosaveAt != null) {
-      final since = DateTime.now().difference(_lastAutosaveAt!);
-      final minWait = Duration(milliseconds: intervalMin * 60 * 800);
-      if (since < minWait) return;
-    }
-
-    // Skip if nothing has changed since the previous save.
-    final snapshot = _autosaveSnapshot();
-    if (snapshot == _lastSavedSnapshot) return;
+  /// Persist step for [useAutosave]: returns false when validation fails.
+  /// The first autosave of a brand-new page creates it; edits after that
+  /// update it.
+  Future<bool> _autosavePersist() async {
+    if (!_formKey.currentState!.validate()) return false;
 
     final notifier = ref.read(knowledgeListProvider.notifier);
     final aliases = _searchAliasesController.text.trim();
-    try {
-      if (_existing != null) {
-        await notifier.updatePage(
-          _existing!.copyWith(
-            title: _titleController.text.trim(),
-            content: _contentController.text,
-            tags: _tags,
-            parentId: () => _parentId,
-            isWip: _isWip,
-            attachments: _savedAttachments,
-            searchAliases: () => aliases.isEmpty ? null : aliases,
-          ),
-        );
-      } else {
-        final page = KnowledgePage(
+    if (_existing != null) {
+      await notifier.updatePage(
+        _existing!.copyWith(
           title: _titleController.text.trim(),
           content: _contentController.text,
           tags: _tags,
-          parentId: _parentId,
+          parentId: () => _parentId,
           isWip: _isWip,
           attachments: _savedAttachments,
-          searchAliases: aliases.isEmpty ? null : aliases,
-        );
-        await notifier.addPage(page);
-        if (mounted) setState(() => _existing = page);
-      }
-      _lastAutosaveAt = DateTime.now();
-      _lastSavedSnapshot = snapshot;
-      if (mounted) {
-        context.showSuccessSnackbar(
-          'Auto-saved',
-          duration: const Duration(seconds: 2),
-        );
-      }
-    } catch (_) {
-      // Silently ignore autosave errors
+          searchAliases: () => aliases.isEmpty ? null : aliases,
+        ),
+      );
+    } else {
+      final page = KnowledgePage(
+        title: _titleController.text.trim(),
+        content: _contentController.text,
+        tags: _tags,
+        parentId: _parentId,
+        isWip: _isWip,
+        attachments: _savedAttachments,
+        searchAliases: aliases.isEmpty ? null : aliases,
+      );
+      await notifier.addPage(page);
+      if (mounted) setState(() => _existing = page);
     }
+    return true;
   }
 
   @override
   void dispose() {
-    _autosaveTimer?.cancel();
     _titleController.dispose();
     _contentController.dispose();
     _tagController.dispose();
@@ -247,7 +202,7 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
 
     // Mark the form as clean so the unsaved-changes guard lets the
     // post-save pop through unprompted (WISH-0079).
-    _lastSavedSnapshot = _autosaveSnapshot();
+    _autosave?.markClean();
     if (mounted) context.pop();
   }
 
@@ -386,6 +341,13 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.pageId != null;
+    _autosave = useAutosave(
+      intervalMinutes:
+          ref.watch(currentUserProvider)?.settings.autosaveIntervalMinutes ?? 0,
+      captureInitialBaseline: !isEditing,
+      snapshot: _autosaveSnapshot,
+      save: _autosavePersist,
+    );
     final allPages = ref.watch(knowledgeListProvider);
 
     if (_isLoading) {

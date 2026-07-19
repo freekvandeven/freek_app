@@ -1,14 +1,13 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:personal_app/presentation/widgets/app_snackbar.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../presentation/hooks/use_autosave.dart';
 import '../../../presentation/widgets/image_attachment_picker.dart';
 import '../../../presentation/widgets/image_attachment_strip.dart';
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
@@ -32,7 +31,7 @@ import '../widgets/recipe_ingredients_section.dart';
 import '../widgets/recipe_instructions_section.dart';
 import '../widgets/recipe_picker_sheet.dart';
 
-class RecipeEditPage extends ConsumerStatefulWidget {
+class RecipeEditPage extends StatefulHookConsumerWidget {
   final String? recipeId;
   const RecipeEditPage({super.key, this.recipeId});
 
@@ -63,9 +62,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
   bool _isWip = false;
   double? _rating;
   Recipe? _existingRecipe;
-  Timer? _autosaveTimer;
-  DateTime? _lastAutosaveAt;
-  String? _lastSavedSnapshot;
+  AutosaveController? _autosave;
 
   @override
   void initState() {
@@ -74,10 +71,6 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     if (widget.recipeId != null) {
       _isEditing = true;
       _loadRecipe();
-    } else {
-      // Capture the empty-form snapshot so any typing flips the
-      // unsaved-changes guard on (WISH-0079).
-      _lastSavedSnapshot = _autosaveSnapshot();
     }
   }
 
@@ -89,10 +82,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
 
   /// True when the form has unsaved edits — drives the unsaved-changes
   /// confirmation on back nav (WISH-0079).
-  bool get _isDirty {
-    if (_lastSavedSnapshot == null) return false;
-    return _autosaveSnapshot() != _lastSavedSnapshot;
-  }
+  bool get _isDirty => _autosave?.isDirty ?? false;
 
   Future<void> _loadRecipe() async {
     final service = ref.read(recipeServiceProvider);
@@ -117,20 +107,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
         _rating = recipe.rating;
         _searchAliasesController.text = recipe.searchAliases ?? '';
       });
-      _lastSavedSnapshot = _autosaveSnapshot();
-    }
-    if (mounted) _setupAutosaveTimer();
-  }
-
-  void _setupAutosaveTimer() {
-    _autosaveTimer?.cancel();
-    final minutes =
-        ref.read(currentUserProvider)?.settings.autosaveIntervalMinutes ?? 0;
-    if (minutes > 0 && _isEditing) {
-      _autosaveTimer = Timer.periodic(
-        Duration(minutes: minutes),
-        (_) => _autosave(),
-      );
+      _autosave?.markClean();
     }
   }
 
@@ -153,70 +130,46 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     searchAliases: _searchAliasesController.text,
   );
 
-  Future<void> _autosave() async {
-    if (!mounted || _existingRecipe == null) return;
-    if (!_formKey.currentState!.validate()) return;
-
-    // Browser-throttled Timer.periodic ticks can pile up when the tab is
-    // backgrounded and all fire when it regains focus (BUG-0033). Skip
-    // any tick that arrives within 80% of the configured interval.
-    final intervalMin =
-        ref.read(currentUserProvider)?.settings.autosaveIntervalMinutes ?? 0;
-    if (intervalMin > 0 && _lastAutosaveAt != null) {
-      final since = DateTime.now().difference(_lastAutosaveAt!);
-      final minWait = Duration(milliseconds: intervalMin * 60 * 800);
-      if (since < minWait) return;
-    }
-
-    // Skip if nothing has changed since the previous save.
-    final snapshot = _autosaveSnapshot();
-    if (snapshot == _lastSavedSnapshot) return;
+  /// Persist step for [useAutosave]: returns false while there's nothing
+  /// to save yet (recipe not loaded) or validation fails, so the hook
+  /// keeps the baseline untouched.
+  Future<bool> _autosavePersist() async {
+    if (_existingRecipe == null) return false;
+    if (!_formKey.currentState!.validate()) return false;
 
     final description = _descriptionController.text.trim();
     final source = _sourceController.text.trim();
     final notes = _notesController.text.trim();
     final aliases = _searchAliasesController.text.trim();
 
-    try {
-      final updated = _existingRecipe!.copyWith(
-        title: _titleController.text.trim(),
-        description: description.isEmpty ? null : description,
-        clearDescription: description.isEmpty,
-        servings: int.tryParse(_servingsController.text),
-        prepTimeMinutes: int.tryParse(_prepTimeController.text),
-        cookTimeMinutes: int.tryParse(_cookTimeController.text),
-        ingredients: _ingredients,
-        instructions: _instructions,
-        tags: _tags,
-        images: _images.savedUrls,
-        primaryImageIndex: _images.primaryIndex,
-        videoLinks: _videoLinks,
-        subRecipeIds: _subRecipeIds,
-        isWip: _isWip,
-        source: source.isEmpty ? null : source,
-        clearSource: source.isEmpty,
-        notes: notes.isEmpty ? null : notes,
-        clearNotes: notes.isEmpty,
-        searchAliases: aliases.isEmpty ? null : aliases,
-        clearSearchAliases: aliases.isEmpty,
-      );
-      await ref.read(recipeListProvider.notifier).updateRecipe(updated);
-      _lastAutosaveAt = DateTime.now();
-      _lastSavedSnapshot = snapshot;
-      if (mounted) {
-        context.showSuccessSnackbar(
-          'Auto-saved',
-          duration: const Duration(seconds: 2),
-        );
-      }
-    } catch (_) {
-      // Silently ignore autosave errors
-    }
+    final updated = _existingRecipe!.copyWith(
+      title: _titleController.text.trim(),
+      description: description.isEmpty ? null : description,
+      clearDescription: description.isEmpty,
+      servings: int.tryParse(_servingsController.text),
+      prepTimeMinutes: int.tryParse(_prepTimeController.text),
+      cookTimeMinutes: int.tryParse(_cookTimeController.text),
+      ingredients: _ingredients,
+      instructions: _instructions,
+      tags: _tags,
+      images: _images.savedUrls,
+      primaryImageIndex: _images.primaryIndex,
+      videoLinks: _videoLinks,
+      subRecipeIds: _subRecipeIds,
+      isWip: _isWip,
+      source: source.isEmpty ? null : source,
+      clearSource: source.isEmpty,
+      notes: notes.isEmpty ? null : notes,
+      clearNotes: notes.isEmpty,
+      searchAliases: aliases.isEmpty ? null : aliases,
+      clearSearchAliases: aliases.isEmpty,
+    );
+    await ref.read(recipeListProvider.notifier).updateRecipe(updated);
+    return true;
   }
 
   @override
   void dispose() {
-    _autosaveTimer?.cancel();
     _images.removeListener(_onImagesChanged);
     _images.dispose();
     _titleController.dispose();
@@ -243,7 +196,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
       await _images.deleteRemoved(uploader);
       // Mark form clean so the unsaved-changes guard lets the post-
       // save pop through unprompted (WISH-0079).
-      _lastSavedSnapshot = _autosaveSnapshot();
+      _autosave?.markClean();
       if (mounted) context.pop();
     } catch (e) {
       if (mounted) {
@@ -955,6 +908,14 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
 
   @override
   Widget build(BuildContext context) {
+    _autosave = useAutosave(
+      intervalMinutes:
+          ref.watch(currentUserProvider)?.settings.autosaveIntervalMinutes ?? 0,
+      enabled: _isEditing,
+      captureInitialBaseline: !_isEditing,
+      snapshot: _autosaveSnapshot,
+      save: _autosavePersist,
+    );
     return UnsavedChangesGuard(
       isDirty: _isDirty,
       child: Scaffold(
