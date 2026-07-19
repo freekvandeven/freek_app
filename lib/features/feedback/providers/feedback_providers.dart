@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/app_config.dart';
@@ -15,18 +13,20 @@ final feedbackServiceProvider = Provider<FeedbackService>((ref) {
     final userId = ref.watch(currentUserProvider)?.id ?? '';
     return FirestoreFeedbackService(userId);
   }
-  return MockFeedbackService();
+  final service = MockFeedbackService();
+  ref.onDispose(service.dispose);
+  return service;
 });
 
 final feedbackListProvider =
-    AsyncNotifierProvider<FeedbackListNotifier, List<FeedbackEntry>>(
+    StreamNotifierProvider<FeedbackListNotifier, List<FeedbackEntry>>(
       FeedbackListNotifier.new,
     );
 
-class FeedbackListNotifier extends AsyncNotifier<List<FeedbackEntry>> {
+class FeedbackListNotifier extends StreamNotifier<List<FeedbackEntry>> {
   @override
-  FutureOr<List<FeedbackEntry>> build() {
-    return ref.watch(feedbackServiceProvider).getEntries();
+  Stream<List<FeedbackEntry>> build() {
+    return ref.watch(feedbackServiceProvider).watchEntries();
   }
 
   Future<void> addEntry(FeedbackEntry entry) async {
@@ -53,13 +53,11 @@ class FeedbackListNotifier extends AsyncNotifier<List<FeedbackEntry>> {
     LogService.instance.info(
       'Feedback entry created: ${entry.referenceId} (${entry.type.name})',
     );
-    ref.invalidateSelf();
   }
 
   Future<void> updateEntry(FeedbackEntry entry) async {
     await ref.read(feedbackServiceProvider).updateEntry(entry);
     LogService.instance.info('Feedback entry updated: ${entry.id}');
-    ref.invalidateSelf();
   }
 
   Future<void> deleteEntry(String id) async {
@@ -73,7 +71,6 @@ class FeedbackListNotifier extends AsyncNotifier<List<FeedbackEntry>> {
     }
     await ref.read(feedbackServiceProvider).deleteEntry(id);
     LogService.instance.info('Feedback entry deleted: $id');
-    ref.invalidateSelf();
   }
 }
 

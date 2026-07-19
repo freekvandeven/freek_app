@@ -20,6 +20,14 @@ class FirestoreTaskService implements TaskService {
   }
 
   @override
+  Stream<List<Task>> watchTasks() {
+    return _collection.snapshots().map(
+      (snapshot) =>
+          snapshot.docs.map((doc) => Task.fromMap(doc.data())).toList(),
+    );
+  }
+
+  @override
   Future<Task> createTask(Task task) async {
     await _collection.doc(task.id).set(task.toMap());
     return task;

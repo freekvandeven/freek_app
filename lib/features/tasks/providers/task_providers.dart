@@ -14,31 +14,31 @@ final taskServiceProvider = Provider<TaskService>((ref) {
     final userId = ref.watch(currentUserProvider)?.id ?? '';
     return FirestoreTaskService(userId);
   }
-  return MockTaskService(SharedPreferencesAsync());
+  final service = MockTaskService(SharedPreferencesAsync());
+  ref.onDispose(service.dispose);
+  return service;
 });
 
-final taskListProvider = AsyncNotifierProvider<TaskListNotifier, List<Task>>(
+final taskListProvider = StreamNotifierProvider<TaskListNotifier, List<Task>>(
   TaskListNotifier.new,
 );
 
-class TaskListNotifier extends AsyncNotifier<List<Task>> {
+class TaskListNotifier extends StreamNotifier<List<Task>> {
   TaskService get _service => ref.read(taskServiceProvider);
 
   @override
-  Future<List<Task>> build() {
-    return ref.watch(taskServiceProvider).getTasks();
+  Stream<List<Task>> build() {
+    return ref.watch(taskServiceProvider).watchTasks();
   }
 
   Future<void> addTask(Task task) async {
     await _service.createTask(task);
     LogService.instance.info('Task created: ${task.title}');
-    ref.invalidateSelf();
   }
 
   Future<void> updateTask(Task task) async {
     await _service.updateTask(task);
     LogService.instance.info('Task updated: ${task.id}');
-    ref.invalidateSelf();
   }
 
   Future<void> deleteTask(String id) async {
@@ -58,7 +58,6 @@ class TaskListNotifier extends AsyncNotifier<List<Task>> {
     }
     await _service.deleteTask(id);
     LogService.instance.info('Task deleted: $id');
-    ref.invalidateSelf();
   }
 
   /// Returns null on success, or a user-facing reason string when the toggle
@@ -104,7 +103,6 @@ class TaskListNotifier extends AsyncNotifier<List<Task>> {
       final updated = task.copyWith(isCompleted: false, clearCompletedAt: true);
       await _service.updateTask(updated);
     }
-    ref.invalidateSelf();
     return null;
   }
 }

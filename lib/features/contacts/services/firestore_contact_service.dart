@@ -20,6 +20,14 @@ class FirestoreContactService implements ContactService {
   }
 
   @override
+  Stream<List<Contact>> watchContacts() {
+    return _collection.snapshots().map(
+      (snapshot) =>
+          snapshot.docs.map((doc) => Contact.fromMap(doc.data())).toList(),
+    );
+  }
+
+  @override
   Future<Contact?> getContact(String id) async {
     final doc = await _collection.doc(id).get();
     if (!doc.exists || doc.data() == null) return null;

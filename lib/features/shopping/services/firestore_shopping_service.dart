@@ -26,6 +26,20 @@ class FirestoreShoppingService implements ShoppingService {
   }
 
   @override
+  Stream<List<ShoppingItem>> watchItems() {
+    return _collection.snapshots().map(
+      (snapshot) =>
+          snapshot.docs.map((doc) => ShoppingItem.fromMap(doc.data())).toList()
+            ..sort((a, b) {
+              if (a.isCompleted != b.isCompleted) {
+                return a.isCompleted ? 1 : -1;
+              }
+              return a.createdAt.compareTo(b.createdAt);
+            }),
+    );
+  }
+
+  @override
   Future<ShoppingItem?> getItem(String id) async {
     final doc = await _collection.doc(id).get();
     if (!doc.exists || doc.data() == null) return null;

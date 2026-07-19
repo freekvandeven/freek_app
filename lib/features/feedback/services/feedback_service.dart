@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,6 +7,10 @@ import '../models/feedback_entry.dart';
 
 abstract class FeedbackService {
   Future<List<FeedbackEntry>> getEntries();
+
+  /// Emits the full entry list on listen and again after every change
+  /// (IMPR-0018).
+  Stream<List<FeedbackEntry>> watchEntries();
   Future<FeedbackEntry?> getEntry(String id);
   Future<void> addEntry(FeedbackEntry entry);
   Future<void> updateEntry(FeedbackEntry entry);
@@ -14,6 +19,13 @@ abstract class FeedbackService {
 
 class MockFeedbackService implements FeedbackService {
   static const _key = 'feedback_entries';
+  final _changes = StreamController<List<FeedbackEntry>>.broadcast();
+
+  @override
+  Stream<List<FeedbackEntry>> watchEntries() async* {
+    yield await getEntries();
+    yield* _changes.stream;
+  }
 
   @override
   Future<List<FeedbackEntry>> getEntries() async {
@@ -60,5 +72,12 @@ class MockFeedbackService implements FeedbackService {
       _key,
       entries.map((e) => jsonEncode(e.toMap())).toList(),
     );
+    _changes.add(
+      List.of(entries)..sort((a, b) => b.createdAt.compareTo(a.createdAt)),
+    );
+  }
+
+  void dispose() {
+    _changes.close();
   }
 }

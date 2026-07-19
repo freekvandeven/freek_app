@@ -22,6 +22,15 @@ class FirestoreCalendarService implements CalendarService {
   }
 
   @override
+  Stream<List<CalendarEvent>> watchEvents() {
+    return _collection.snapshots().map(
+      (snapshot) => snapshot.docs
+          .map((doc) => CalendarEvent.fromMap(doc.data()))
+          .toList(),
+    );
+  }
+
+  @override
   Future<void> addEvent(CalendarEvent event) async {
     await _collection.doc(event.id).set(event.toMap());
   }

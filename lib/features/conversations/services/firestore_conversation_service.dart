@@ -24,6 +24,15 @@ class FirestoreConversationService implements ConversationService {
   }
 
   @override
+  Stream<List<ConversationTopic>> watchTopics() {
+    return _collection.snapshots().map(
+      (snapshot) =>
+          snapshot.docs.map((d) => ConversationTopic.fromMap(d.data())).toList()
+            ..sort((a, b) => b.createdAt.compareTo(a.createdAt)),
+    );
+  }
+
+  @override
   Future<ConversationTopic?> getTopic(String id) async {
     final doc = await _collection.doc(id).get();
     if (doc.exists && doc.data() != null) {

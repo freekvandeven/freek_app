@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/app_config.dart';
@@ -13,33 +11,32 @@ final contactServiceProvider = Provider<ContactService>((ref) {
     final userId = ref.watch(currentUserProvider)?.id ?? '';
     return FirestoreContactService(userId);
   }
-  return MockContactService();
+  final service = MockContactService();
+  ref.onDispose(service.dispose);
+  return service;
 });
 
 final contactListProvider =
-    AsyncNotifierProvider<ContactListNotifier, List<Contact>>(
+    StreamNotifierProvider<ContactListNotifier, List<Contact>>(
       ContactListNotifier.new,
     );
 
-class ContactListNotifier extends AsyncNotifier<List<Contact>> {
+class ContactListNotifier extends StreamNotifier<List<Contact>> {
   @override
-  FutureOr<List<Contact>> build() {
-    return ref.watch(contactServiceProvider).getContacts();
+  Stream<List<Contact>> build() {
+    return ref.watch(contactServiceProvider).watchContacts();
   }
 
   Future<void> addContact(Contact contact) async {
     await ref.read(contactServiceProvider).addContact(contact);
-    ref.invalidateSelf();
   }
 
   Future<void> updateContact(Contact contact) async {
     await ref.read(contactServiceProvider).updateContact(contact);
-    ref.invalidateSelf();
   }
 
   Future<void> deleteContact(String id) async {
     await ref.read(contactServiceProvider).deleteContact(id);
-    ref.invalidateSelf();
   }
 }
 

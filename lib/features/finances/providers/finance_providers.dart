@@ -12,16 +12,18 @@ final financeServiceProvider = Provider<FinanceService>((ref) {
     final userId = ref.watch(currentUserProvider)?.id ?? '';
     return FirestoreFinanceService(userId);
   }
-  return MockFinanceService();
+  final service = MockFinanceService();
+  ref.onDispose(service.dispose);
+  return service;
 });
 
 // === Transactions ===
 
 class TransactionListNotifier
-    extends AsyncNotifier<List<FinancialTransaction>> {
+    extends StreamNotifier<List<FinancialTransaction>> {
   @override
-  Future<List<FinancialTransaction>> build() async {
-    return ref.watch(financeServiceProvider).getTransactions();
+  Stream<List<FinancialTransaction>> build() {
+    return ref.watch(financeServiceProvider).watchTransactions();
   }
 
   Future<void> addTransaction(FinancialTransaction transaction) async {
@@ -29,24 +31,21 @@ class TransactionListNotifier
     LogService.instance.info(
       'Transaction added: ${transaction.title} (${transaction.type.name})',
     );
-    ref.invalidateSelf();
   }
 
   Future<void> updateTransaction(FinancialTransaction transaction) async {
     await ref.read(financeServiceProvider).updateTransaction(transaction);
     LogService.instance.info('Transaction updated: ${transaction.id}');
-    ref.invalidateSelf();
   }
 
   Future<void> deleteTransaction(String id) async {
     await ref.read(financeServiceProvider).deleteTransaction(id);
     LogService.instance.info('Transaction deleted: $id');
-    ref.invalidateSelf();
   }
 }
 
 final transactionListProvider =
-    AsyncNotifierProvider<TransactionListNotifier, List<FinancialTransaction>>(
+    StreamNotifierProvider<TransactionListNotifier, List<FinancialTransaction>>(
       TransactionListNotifier.new,
     );
 
@@ -174,59 +173,53 @@ final expenseByCategoryProvider = Provider<AsyncValue<Map<String, double>>>((
 
 // === Categories ===
 
-class CategoryListNotifier extends AsyncNotifier<List<FinancialCategory>> {
+class CategoryListNotifier extends StreamNotifier<List<FinancialCategory>> {
   @override
-  Future<List<FinancialCategory>> build() async {
-    return ref.watch(financeServiceProvider).getCategories();
+  Stream<List<FinancialCategory>> build() {
+    return ref.watch(financeServiceProvider).watchCategories();
   }
 
   Future<void> addCategory(FinancialCategory category) async {
     await ref.read(financeServiceProvider).addCategory(category);
-    ref.invalidateSelf();
   }
 
   Future<void> updateCategory(FinancialCategory category) async {
     await ref.read(financeServiceProvider).updateCategory(category);
-    ref.invalidateSelf();
   }
 
   Future<void> deleteCategory(String id) async {
     await ref.read(financeServiceProvider).deleteCategory(id);
-    ref.invalidateSelf();
   }
 }
 
 final categoryListProvider =
-    AsyncNotifierProvider<CategoryListNotifier, List<FinancialCategory>>(
+    StreamNotifierProvider<CategoryListNotifier, List<FinancialCategory>>(
       CategoryListNotifier.new,
     );
 
 // === Assets ===
 
-class AssetListNotifier extends AsyncNotifier<List<FinancialAsset>> {
+class AssetListNotifier extends StreamNotifier<List<FinancialAsset>> {
   @override
-  Future<List<FinancialAsset>> build() async {
-    return ref.watch(financeServiceProvider).getAssets();
+  Stream<List<FinancialAsset>> build() {
+    return ref.watch(financeServiceProvider).watchAssets();
   }
 
   Future<void> addAsset(FinancialAsset asset) async {
     await ref.read(financeServiceProvider).addAsset(asset);
-    ref.invalidateSelf();
   }
 
   Future<void> updateAsset(FinancialAsset asset) async {
     await ref.read(financeServiceProvider).updateAsset(asset);
-    ref.invalidateSelf();
   }
 
   Future<void> deleteAsset(String id) async {
     await ref.read(financeServiceProvider).deleteAsset(id);
-    ref.invalidateSelf();
   }
 }
 
 final assetListProvider =
-    AsyncNotifierProvider<AssetListNotifier, List<FinancialAsset>>(
+    StreamNotifierProvider<AssetListNotifier, List<FinancialAsset>>(
       AssetListNotifier.new,
     );
 

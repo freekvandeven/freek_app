@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,17 +7,23 @@ import '../models/finance_models.dart';
 
 abstract class FinanceService {
   Future<List<FinancialTransaction>> getTransactions();
+
+  /// Emits the full transaction list on listen and again after every change
+  /// (IMPR-0018). Same contract for [watchCategories] and [watchAssets].
+  Stream<List<FinancialTransaction>> watchTransactions();
   Future<FinancialTransaction?> getTransaction(String id);
   Future<void> addTransaction(FinancialTransaction transaction);
   Future<void> updateTransaction(FinancialTransaction transaction);
   Future<void> deleteTransaction(String id);
 
   Future<List<FinancialCategory>> getCategories();
+  Stream<List<FinancialCategory>> watchCategories();
   Future<void> addCategory(FinancialCategory category);
   Future<void> updateCategory(FinancialCategory category);
   Future<void> deleteCategory(String id);
 
   Future<List<FinancialAsset>> getAssets();
+  Stream<List<FinancialAsset>> watchAssets();
   Future<FinancialAsset?> getAsset(String id);
   Future<void> addAsset(FinancialAsset asset);
   Future<void> updateAsset(FinancialAsset asset);
@@ -29,6 +36,29 @@ class MockFinanceService implements FinanceService {
   static const _assetsKey = 'finance_assets';
 
   final _prefs = SharedPreferencesAsync();
+  final _transactionChanges =
+      StreamController<List<FinancialTransaction>>.broadcast();
+  final _categoryChanges =
+      StreamController<List<FinancialCategory>>.broadcast();
+  final _assetChanges = StreamController<List<FinancialAsset>>.broadcast();
+
+  @override
+  Stream<List<FinancialTransaction>> watchTransactions() async* {
+    yield await getTransactions();
+    yield* _transactionChanges.stream;
+  }
+
+  @override
+  Stream<List<FinancialCategory>> watchCategories() async* {
+    yield await getCategories();
+    yield* _categoryChanges.stream;
+  }
+
+  @override
+  Stream<List<FinancialAsset>> watchAssets() async* {
+    yield await getAssets();
+    yield* _assetChanges.stream;
+  }
 
   @override
   Future<List<FinancialTransaction>> getTransactions() async {
@@ -82,6 +112,9 @@ class MockFinanceService implements FinanceService {
       _transactionsKey,
       jsonEncode(transactions.map((t) => t.toMap()).toList()),
     );
+    _transactionChanges.add(
+      List.of(transactions)..sort((a, b) => b.date.compareTo(a.date)),
+    );
   }
 
   @override
@@ -131,6 +164,7 @@ class MockFinanceService implements FinanceService {
       _categoriesKey,
       jsonEncode(categories.map((c) => c.toMap()).toList()),
     );
+    _categoryChanges.add(List.of(categories));
   }
 
   @override
@@ -182,5 +216,12 @@ class MockFinanceService implements FinanceService {
       _assetsKey,
       jsonEncode(assets.map((a) => a.toMap()).toList()),
     );
+    _assetChanges.add(List.of(assets));
+  }
+
+  void dispose() {
+    _transactionChanges.close();
+    _categoryChanges.close();
+    _assetChanges.close();
   }
 }

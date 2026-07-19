@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,6 +7,10 @@ import '../models/shopping_item.dart';
 
 abstract class ShoppingService {
   Future<List<ShoppingItem>> getItems();
+
+  /// Emits the full item list on listen and again after every change
+  /// (IMPR-0018).
+  Stream<List<ShoppingItem>> watchItems();
   Future<ShoppingItem?> getItem(String id);
   Future<void> addItem(ShoppingItem item);
   Future<void> updateItem(ShoppingItem item);
@@ -15,6 +20,13 @@ abstract class ShoppingService {
 class MockShoppingService implements ShoppingService {
   static const _itemsKey = 'shopping_items';
   final _prefs = SharedPreferencesAsync();
+  final _changes = StreamController<List<ShoppingItem>>.broadcast();
+
+  @override
+  Stream<List<ShoppingItem>> watchItems() async* {
+    yield await getItems();
+    yield* _changes.stream;
+  }
 
   @override
   Future<List<ShoppingItem>> getItems() async {
@@ -71,5 +83,10 @@ class MockShoppingService implements ShoppingService {
       _itemsKey,
       jsonEncode(items.map((e) => e.toMap()).toList()),
     );
+    _changes.add(await getItems());
+  }
+
+  void dispose() {
+    _changes.close();
   }
 }

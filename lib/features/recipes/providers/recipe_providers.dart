@@ -15,32 +15,32 @@ final recipeServiceProvider = Provider<RecipeService>((ref) {
     final userId = ref.watch(currentUserProvider)?.id ?? '';
     return FirestoreRecipeService(userId);
   }
-  return MockRecipeService(SharedPreferencesAsync());
+  final service = MockRecipeService(SharedPreferencesAsync());
+  ref.onDispose(service.dispose);
+  return service;
 });
 
 final recipeListProvider =
-    AsyncNotifierProvider<RecipeListNotifier, List<Recipe>>(
+    StreamNotifierProvider<RecipeListNotifier, List<Recipe>>(
       RecipeListNotifier.new,
     );
 
-class RecipeListNotifier extends AsyncNotifier<List<Recipe>> {
+class RecipeListNotifier extends StreamNotifier<List<Recipe>> {
   RecipeService get _service => ref.read(recipeServiceProvider);
 
   @override
-  Future<List<Recipe>> build() {
-    return ref.watch(recipeServiceProvider).getRecipes();
+  Stream<List<Recipe>> build() {
+    return ref.watch(recipeServiceProvider).watchRecipes();
   }
 
   Future<void> addRecipe(Recipe recipe) async {
     await _service.createRecipe(recipe);
     LogService.instance.info('Recipe created: ${recipe.title}');
-    ref.invalidateSelf();
   }
 
   Future<void> updateRecipe(Recipe recipe) async {
     await _service.updateRecipe(recipe);
     LogService.instance.info('Recipe updated: ${recipe.id}');
-    ref.invalidateSelf();
   }
 
   Future<void> deleteRecipe(String id) async {
@@ -59,14 +59,12 @@ class RecipeListNotifier extends AsyncNotifier<List<Recipe>> {
     }
     await _service.deleteRecipe(id);
     LogService.instance.info('Recipe deleted: $id');
-    ref.invalidateSelf();
   }
 
   Future<void> toggleFavorite(Recipe recipe) async {
     await _service.updateRecipe(
       recipe.copyWith(isFavorite: !recipe.isFavorite),
     );
-    ref.invalidateSelf();
   }
 }
 

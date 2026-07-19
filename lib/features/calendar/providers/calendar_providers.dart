@@ -25,24 +25,25 @@ final calendarServiceProvider = Provider<CalendarService>((ref) {
     final userId = ref.watch(currentUserProvider)?.id ?? '';
     return FirestoreCalendarService(userId);
   }
-  return MockCalendarService();
+  final service = MockCalendarService();
+  ref.onDispose(service.dispose);
+  return service;
 });
 
-class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
+class CalendarEventsNotifier extends StreamNotifier<List<CalendarEvent>> {
   bool _syncing = false;
   DateTime? _lastSyncAt;
   static const _autoSyncCooldown = Duration(seconds: 10);
 
   @override
-  Future<List<CalendarEvent>> build() async {
-    // Watch sync-derived providers only — no FutureProvider dependencies here.
-    // Mixing await + ref.watch(FutureProvider) causes ConcurrentModificationError
-    // in Riverpod's listener graph. Google events are merged in allCalendarEventsProvider.
+  Stream<List<CalendarEvent>> build() {
+    // Custom events stream live from Firestore; task/finance-derived
+    // events come from watched providers, so build() re-runs (and the
+    // stream re-maps) whenever those change (IMPR-0018). Google events
+    // are merged separately in allCalendarEventsProvider.
     final service = ref.watch(calendarServiceProvider);
     final tasks = ref.watch(taskListProvider).valueOrNull ?? [];
     final transactions = ref.watch(transactionListProvider).valueOrNull ?? [];
-
-    final customEvents = await service.getEvents();
 
     final taskEvents = tasks
         .where((t) => t.dueDate != null && !t.isCompleted)
@@ -75,13 +76,11 @@ class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
         )
         .toList();
 
-    LogService.instance.info(
-      'Calendar built: ${customEvents.length} custom, '
-      '${taskEvents.length} tasks, ${financeEvents.length} finance',
+    return service.watchEvents().map(
+      (customEvents) =>
+          [...customEvents, ...taskEvents, ...financeEvents]
+            ..sort((a, b) => a.date.compareTo(b.date)),
     );
-
-    return [...customEvents, ...taskEvents, ...financeEvents]
-      ..sort((a, b) => a.date.compareTo(b.date));
   }
 
   Future<void> addEvent(CalendarEvent event) async {
@@ -102,8 +101,6 @@ class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
         await service.updateEvent(event.copyWith(googleEventId: googleId));
       }
     }
-
-    ref.invalidateSelf();
   }
 
   Future<void> updateEvent(CalendarEvent event) async {
@@ -116,7 +113,6 @@ class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
           .read(googleCalendarServiceProvider)
           .updateEvent(event.googleEventId!, event);
     }
-    ref.invalidateSelf();
   }
 
   /// Pulls fresh Google Calendar data and reconciles linked local events.
@@ -196,7 +192,6 @@ class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
         LogService.instance.info(
           'Calendar sync from Google: patched $patched, deleted $deleted',
         );
-        ref.invalidateSelf();
       }
       return GoogleSyncResult(patched: patched, deleted: deleted);
     } finally {
@@ -222,12 +217,11 @@ class CalendarEventsNotifier extends AsyncNotifier<List<CalendarEvent>> {
           .read(googleCalendarServiceProvider)
           .deleteEvent(event!.googleEventId!);
     }
-    ref.invalidateSelf();
   }
 }
 
 final calendarEventsProvider =
-    AsyncNotifierProvider<CalendarEventsNotifier, List<CalendarEvent>>(
+    StreamNotifierProvider<CalendarEventsNotifier, List<CalendarEvent>>(
       CalendarEventsNotifier.new,
     );
 

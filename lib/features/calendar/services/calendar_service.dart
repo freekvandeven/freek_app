@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,6 +7,10 @@ import '../models/calendar_event.dart';
 
 abstract class CalendarService {
   Future<List<CalendarEvent>> getEvents();
+
+  /// Emits the full event list on listen and again after every change
+  /// (IMPR-0018).
+  Stream<List<CalendarEvent>> watchEvents();
   Future<void> addEvent(CalendarEvent event);
   Future<void> updateEvent(CalendarEvent event);
   Future<void> deleteEvent(String id);
@@ -14,6 +19,13 @@ abstract class CalendarService {
 class MockCalendarService implements CalendarService {
   static const _eventsKey = 'calendar_events';
   final _prefs = SharedPreferencesAsync();
+  final _changes = StreamController<List<CalendarEvent>>.broadcast();
+
+  @override
+  Stream<List<CalendarEvent>> watchEvents() async* {
+    yield await getEvents();
+    yield* _changes.stream;
+  }
 
   @override
   Future<List<CalendarEvent>> getEvents() async {
@@ -54,5 +66,10 @@ class MockCalendarService implements CalendarService {
       _eventsKey,
       jsonEncode(events.map((e) => e.toMap()).toList()),
     );
+    _changes.add(List.of(events));
+  }
+
+  void dispose() {
+    _changes.close();
   }
 }

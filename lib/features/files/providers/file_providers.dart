@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/app_config.dart';
@@ -14,28 +12,28 @@ final fileServiceProvider = Provider<FileService>((ref) {
     final userId = ref.watch(currentUserProvider)?.id ?? '';
     return FirestoreFileService(userId);
   }
-  return MockFileService();
+  final service = MockFileService();
+  ref.onDispose(service.dispose);
+  return service;
 });
 
 final fileListProvider =
-    AsyncNotifierProvider<FileListNotifier, List<FileEntry>>(
+    StreamNotifierProvider<FileListNotifier, List<FileEntry>>(
       FileListNotifier.new,
     );
 
-class FileListNotifier extends AsyncNotifier<List<FileEntry>> {
+class FileListNotifier extends StreamNotifier<List<FileEntry>> {
   @override
-  FutureOr<List<FileEntry>> build() {
-    return ref.watch(fileServiceProvider).getEntries();
+  Stream<List<FileEntry>> build() {
+    return ref.watch(fileServiceProvider).watchEntries();
   }
 
   Future<void> addEntry(FileEntry entry) async {
     await ref.read(fileServiceProvider).addEntry(entry);
-    ref.invalidateSelf();
   }
 
   Future<void> updateEntry(FileEntry entry) async {
     await ref.read(fileServiceProvider).updateEntry(entry);
-    ref.invalidateSelf();
   }
 
   /// Delete a single entry — for files, also removes the Storage blob so
@@ -48,7 +46,6 @@ class FileListNotifier extends AsyncNotifier<List<FileEntry>> {
       await ref.read(imageUploadServiceProvider).deleteFile(entry.url!);
     }
     await service.deleteEntry(id);
-    ref.invalidateSelf();
   }
 
   /// Recursively delete a directory and everything beneath it.
@@ -82,7 +79,6 @@ class FileListNotifier extends AsyncNotifier<List<FileEntry>> {
       }
       await service.deleteEntry(entry.id);
     }
-    ref.invalidateSelf();
   }
 }
 

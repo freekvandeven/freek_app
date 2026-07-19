@@ -20,6 +20,14 @@ class FirestoreRecipeService implements RecipeService {
   }
 
   @override
+  Stream<List<Recipe>> watchRecipes() {
+    return _collection.snapshots().map(
+      (snapshot) =>
+          snapshot.docs.map((doc) => Recipe.fromMap(doc.data())).toList(),
+    );
+  }
+
+  @override
   Future<Recipe> createRecipe(Recipe recipe) async {
     await _collection.doc(recipe.id).set(recipe.toMap());
     return recipe;

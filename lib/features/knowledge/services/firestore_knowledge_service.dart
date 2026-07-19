@@ -23,6 +23,15 @@ class FirestoreKnowledgeService implements KnowledgeService {
   }
 
   @override
+  Stream<List<KnowledgePage>> watchPages() {
+    return _collection.snapshots().map(
+      (snapshot) =>
+          snapshot.docs.map((doc) => KnowledgePage.fromMap(doc.data())).toList()
+            ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder)),
+    );
+  }
+
+  @override
   Future<KnowledgePage?> getPage(String id) async {
     final doc = await _collection.doc(id).get();
     if (!doc.exists || doc.data() == null) return null;

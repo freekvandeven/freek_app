@@ -64,6 +64,15 @@ class FirestoreVaultService implements VaultService {
   }
 
   @override
+  Stream<List<PasswordEntry>> watchEntries() {
+    return _entries.snapshots().map(
+      (snapshot) =>
+          snapshot.docs.map((doc) => PasswordEntry.fromMap(doc.data())).toList()
+            ..sort((a, b) => a.title.compareTo(b.title)),
+    );
+  }
+
+  @override
   Future<void> addEntry(PasswordEntry entry) async {
     await _entries.doc(entry.id).set(entry.toMap());
   }

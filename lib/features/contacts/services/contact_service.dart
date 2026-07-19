@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,6 +7,10 @@ import '../models/contact.dart';
 
 abstract class ContactService {
   Future<List<Contact>> getContacts();
+
+  /// Emits the full contact list on listen and again after every change
+  /// (IMPR-0018).
+  Stream<List<Contact>> watchContacts();
   Future<Contact?> getContact(String id);
   Future<void> addContact(Contact contact);
   Future<void> updateContact(Contact contact);
@@ -14,6 +19,13 @@ abstract class ContactService {
 
 class MockContactService implements ContactService {
   static const _key = 'contacts';
+  final _changes = StreamController<List<Contact>>.broadcast();
+
+  @override
+  Stream<List<Contact>> watchContacts() async* {
+    yield await getContacts();
+    yield* _changes.stream;
+  }
 
   @override
   Future<List<Contact>> getContacts() async {
@@ -60,5 +72,10 @@ class MockContactService implements ContactService {
       _key,
       contacts.map((c) => jsonEncode(c.toMap())).toList(),
     );
+    _changes.add(List.of(contacts));
+  }
+
+  void dispose() {
+    _changes.close();
   }
 }

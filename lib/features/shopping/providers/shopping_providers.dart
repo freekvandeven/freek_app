@@ -12,30 +12,29 @@ final shoppingServiceProvider = Provider<ShoppingService>((ref) {
     final userId = ref.watch(currentUserProvider)?.id ?? '';
     return FirestoreShoppingService(userId);
   }
-  return MockShoppingService();
+  final service = MockShoppingService();
+  ref.onDispose(service.dispose);
+  return service;
 });
 
-class ShoppingListNotifier extends AsyncNotifier<List<ShoppingItem>> {
+class ShoppingListNotifier extends StreamNotifier<List<ShoppingItem>> {
   @override
-  Future<List<ShoppingItem>> build() async {
-    return ref.watch(shoppingServiceProvider).getItems();
+  Stream<List<ShoppingItem>> build() {
+    return ref.watch(shoppingServiceProvider).watchItems();
   }
 
   Future<void> addItem(ShoppingItem item) async {
     await ref.read(shoppingServiceProvider).addItem(item);
     LogService.instance.info('Shopping item added: ${item.title}');
-    ref.invalidateSelf();
   }
 
   Future<void> updateItem(ShoppingItem item) async {
     await ref.read(shoppingServiceProvider).updateItem(item);
-    ref.invalidateSelf();
   }
 
   Future<void> deleteItem(String id) async {
     await ref.read(shoppingServiceProvider).deleteItem(id);
     LogService.instance.info('Shopping item deleted: $id');
-    ref.invalidateSelf();
   }
 
   Future<void> toggleItem(String id) async {
@@ -43,7 +42,6 @@ class ShoppingListNotifier extends AsyncNotifier<List<ShoppingItem>> {
     final item = await service.getItem(id);
     if (item != null) {
       await service.updateItem(item.copyWith(isCompleted: !item.isCompleted));
-      ref.invalidateSelf();
     }
   }
 
@@ -52,12 +50,11 @@ class ShoppingListNotifier extends AsyncNotifier<List<ShoppingItem>> {
     for (final item in items.where((i) => i.isCompleted)) {
       await ref.read(shoppingServiceProvider).deleteItem(item.id);
     }
-    ref.invalidateSelf();
   }
 }
 
 final shoppingListProvider =
-    AsyncNotifierProvider<ShoppingListNotifier, List<ShoppingItem>>(
+    StreamNotifierProvider<ShoppingListNotifier, List<ShoppingItem>>(
       ShoppingListNotifier.new,
     );
 

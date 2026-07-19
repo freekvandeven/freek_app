@@ -31,6 +31,17 @@ class FirestoreFinanceService implements FinanceService {
   }
 
   @override
+  Stream<List<FinancialTransaction>> watchTransactions() {
+    return _transactions.snapshots().map(
+      (snapshot) =>
+          snapshot.docs
+              .map((doc) => FinancialTransaction.fromMap(doc.data()))
+              .toList()
+            ..sort((a, b) => b.date.compareTo(a.date)),
+    );
+  }
+
+  @override
   Future<FinancialTransaction?> getTransaction(String id) async {
     final doc = await _transactions.doc(id).get();
     if (!doc.exists || doc.data() == null) return null;
@@ -72,6 +83,18 @@ class FirestoreFinanceService implements FinanceService {
         .toList();
   }
 
+  /// Seeds default categories first (via [getCategories]) so an empty
+  /// collection never streams an empty list to the UI.
+  @override
+  Stream<List<FinancialCategory>> watchCategories() async* {
+    await getCategories();
+    yield* _categories.snapshots().map(
+      (snapshot) => snapshot.docs
+          .map((doc) => FinancialCategory.fromMap(doc.data()))
+          .toList(),
+    );
+  }
+
   @override
   Future<void> addCategory(FinancialCategory category) async {
     await _categories.doc(category.id).set(category.toMap());
@@ -95,6 +118,15 @@ class FirestoreFinanceService implements FinanceService {
     return snapshot.docs
         .map((doc) => FinancialAsset.fromMap(doc.data()))
         .toList();
+  }
+
+  @override
+  Stream<List<FinancialAsset>> watchAssets() {
+    return _assets.snapshots().map(
+      (snapshot) => snapshot.docs
+          .map((doc) => FinancialAsset.fromMap(doc.data()))
+          .toList(),
+    );
   }
 
   @override

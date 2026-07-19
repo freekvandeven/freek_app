@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,6 +7,10 @@ import '../models/knowledge_page.dart';
 
 abstract class KnowledgeService {
   Future<List<KnowledgePage>> getPages();
+
+  /// Emits the full page list on listen and again after every change
+  /// (IMPR-0018).
+  Stream<List<KnowledgePage>> watchPages();
   Future<KnowledgePage?> getPage(String id);
   Future<void> addPage(KnowledgePage page);
   Future<void> updatePage(KnowledgePage page);
@@ -14,6 +19,13 @@ abstract class KnowledgeService {
 
 class MockKnowledgeService implements KnowledgeService {
   static const _key = 'knowledge_pages';
+  final _changes = StreamController<List<KnowledgePage>>.broadcast();
+
+  @override
+  Stream<List<KnowledgePage>> watchPages() async* {
+    yield await getPages();
+    yield* _changes.stream;
+  }
 
   @override
   Future<List<KnowledgePage>> getPages() async {
@@ -68,5 +80,12 @@ class MockKnowledgeService implements KnowledgeService {
       _key,
       pages.map((p) => jsonEncode(p.toMap())).toList(),
     );
+    _changes.add(
+      List.of(pages)..sort((a, b) => a.sortOrder.compareTo(b.sortOrder)),
+    );
+  }
+
+  void dispose() {
+    _changes.close();
   }
 }

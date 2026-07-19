@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,6 +7,10 @@ import '../models/recipe.dart';
 
 abstract class RecipeService {
   Future<List<Recipe>> getRecipes();
+
+  /// Emits the full recipe list on listen and again after every change
+  /// (IMPR-0018).
+  Stream<List<Recipe>> watchRecipes();
   Future<Recipe> createRecipe(Recipe recipe);
   Future<Recipe> updateRecipe(Recipe recipe);
   Future<void> deleteRecipe(String id);
@@ -17,6 +22,7 @@ abstract class RecipeService {
 class MockRecipeService implements RecipeService {
   final SharedPreferencesAsync _prefs;
   static const _key = 'mock_recipes';
+  final _changes = StreamController<List<Recipe>>.broadcast();
 
   MockRecipeService(this._prefs);
 
@@ -26,6 +32,12 @@ class MockRecipeService implements RecipeService {
     if (json == null) return [];
     final list = jsonDecode(json) as List;
     return list.map((e) => Recipe.fromMap(e as Map<String, dynamic>)).toList();
+  }
+
+  @override
+  Stream<List<Recipe>> watchRecipes() async* {
+    yield await getRecipes();
+    yield* _changes.stream;
   }
 
   @override
@@ -64,6 +76,11 @@ class MockRecipeService implements RecipeService {
       _key,
       jsonEncode(recipes.map((r) => r.toMap()).toList()),
     );
+    _changes.add(List.of(recipes));
+  }
+
+  void dispose() {
+    _changes.close();
   }
 
   static const _tagsKey = 'mock_recipe_tags';

@@ -15,7 +15,9 @@ final vaultServiceProvider = Provider<VaultService>((ref) {
     final userId = ref.watch(currentUserProvider)?.id ?? '';
     return FirestoreVaultService(userId);
   }
-  return MockVaultService();
+  final service = MockVaultService();
+  ref.onDispose(service.dispose);
+  return service;
 });
 
 final vaultSetupProvider = FutureProvider<bool>((ref) {
@@ -30,31 +32,43 @@ final vaultLockedProvider = Provider<bool>((ref) {
   return ref.watch(vaultKeyProvider) == null;
 });
 
-class VaultEntriesNotifier extends AsyncNotifier<List<DecryptedPasswordEntry>> {
+class VaultEntriesNotifier
+    extends StreamNotifier<List<DecryptedPasswordEntry>> {
   @override
-  Future<List<DecryptedPasswordEntry>> build() async {
+  Stream<List<DecryptedPasswordEntry>> build() {
     final key = ref.watch(vaultKeyProvider);
-    if (key == null) return [];
+    // While locked there is nothing to decrypt and the entry stream is never
+    // subscribed. Locking rebuilds this provider (key -> null), which cancels
+    // the subscription and replaces the decrypted state with an empty list,
+    // so plaintext never outlives the unlock session.
+    if (key == null) return Stream.value(const []);
 
-    final entries = await ref.read(vaultServiceProvider).getEntries();
-    return entries.map((entry) {
-      try {
-        final password = VaultCrypto.decryptField(entry.encryptedPassword, key);
-        final notes = entry.encryptedNotes != null
-            ? VaultCrypto.decryptField(entry.encryptedNotes!, key)
-            : null;
-        return DecryptedPasswordEntry(
-          entry: entry,
-          password: password,
-          notes: notes,
+    return ref
+        .watch(vaultServiceProvider)
+        .watchEntries()
+        .map(
+          (entries) => entries.map((entry) {
+            try {
+              final password = VaultCrypto.decryptField(
+                entry.encryptedPassword,
+                key,
+              );
+              final notes = entry.encryptedNotes != null
+                  ? VaultCrypto.decryptField(entry.encryptedNotes!, key)
+                  : null;
+              return DecryptedPasswordEntry(
+                entry: entry,
+                password: password,
+                notes: notes,
+              );
+            } catch (_) {
+              return DecryptedPasswordEntry(
+                entry: entry,
+                password: '*** decryption failed ***',
+              );
+            }
+          }).toList(),
         );
-      } catch (_) {
-        return DecryptedPasswordEntry(
-          entry: entry,
-          password: '*** decryption failed ***',
-        );
-      }
-    }).toList();
   }
 
   Future<void> addEntry({
@@ -83,7 +97,6 @@ class VaultEntriesNotifier extends AsyncNotifier<List<DecryptedPasswordEntry>> {
     );
 
     await ref.read(vaultServiceProvider).addEntry(entry);
-    ref.invalidateSelf();
   }
 
   Future<void> updateEntry({
@@ -114,17 +127,15 @@ class VaultEntriesNotifier extends AsyncNotifier<List<DecryptedPasswordEntry>> {
     );
 
     await ref.read(vaultServiceProvider).updateEntry(entry);
-    ref.invalidateSelf();
   }
 
   Future<void> deleteEntry(String id) async {
     await ref.read(vaultServiceProvider).deleteEntry(id);
-    ref.invalidateSelf();
   }
 }
 
 final vaultEntriesProvider =
-    AsyncNotifierProvider<VaultEntriesNotifier, List<DecryptedPasswordEntry>>(
+    StreamNotifierProvider<VaultEntriesNotifier, List<DecryptedPasswordEntry>>(
       VaultEntriesNotifier.new,
     );
 

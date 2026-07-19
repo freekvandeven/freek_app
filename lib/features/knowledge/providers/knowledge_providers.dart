@@ -15,28 +15,28 @@ final knowledgeServiceProvider = Provider<KnowledgeService>((ref) {
     final userId = ref.watch(currentUserProvider)?.id ?? '';
     return FirestoreKnowledgeService(userId);
   }
-  return MockKnowledgeService();
+  final service = MockKnowledgeService();
+  ref.onDispose(service.dispose);
+  return service;
 });
 
 final knowledgeListProvider =
-    AsyncNotifierProvider<KnowledgeListNotifier, List<KnowledgePage>>(
+    StreamNotifierProvider<KnowledgeListNotifier, List<KnowledgePage>>(
       KnowledgeListNotifier.new,
     );
 
-class KnowledgeListNotifier extends AsyncNotifier<List<KnowledgePage>> {
+class KnowledgeListNotifier extends StreamNotifier<List<KnowledgePage>> {
   @override
-  FutureOr<List<KnowledgePage>> build() {
-    return ref.watch(knowledgeServiceProvider).getPages();
+  Stream<List<KnowledgePage>> build() {
+    return ref.watch(knowledgeServiceProvider).watchPages();
   }
 
   Future<void> addPage(KnowledgePage page) async {
     await ref.read(knowledgeServiceProvider).addPage(page);
-    ref.invalidateSelf();
   }
 
   Future<void> updatePage(KnowledgePage page) async {
     await ref.read(knowledgeServiceProvider).updatePage(page);
-    ref.invalidateSelf();
   }
 
   Future<void> deletePage(String id) async {
@@ -53,7 +53,6 @@ class KnowledgeListNotifier extends AsyncNotifier<List<KnowledgePage>> {
       }
     }
     await service.deletePage(id);
-    ref.invalidateSelf();
   }
 }
 

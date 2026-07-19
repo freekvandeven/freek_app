@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/app_config.dart';
@@ -15,30 +13,30 @@ final conversationServiceProvider = Provider<ConversationService>((ref) {
     final userId = ref.watch(currentUserProvider)?.id ?? '';
     return FirestoreConversationService(userId);
   }
-  return MockConversationService();
+  final service = MockConversationService();
+  ref.onDispose(service.dispose);
+  return service;
 });
 
 final conversationListProvider =
-    AsyncNotifierProvider<ConversationListNotifier, List<ConversationTopic>>(
+    StreamNotifierProvider<ConversationListNotifier, List<ConversationTopic>>(
       ConversationListNotifier.new,
     );
 
-class ConversationListNotifier extends AsyncNotifier<List<ConversationTopic>> {
+class ConversationListNotifier extends StreamNotifier<List<ConversationTopic>> {
   @override
-  FutureOr<List<ConversationTopic>> build() {
-    return ref.watch(conversationServiceProvider).getTopics();
+  Stream<List<ConversationTopic>> build() {
+    return ref.watch(conversationServiceProvider).watchTopics();
   }
 
   Future<void> addTopic(ConversationTopic topic) async {
     await ref.read(conversationServiceProvider).addTopic(topic);
     LogService.instance.info('Conversation topic added: ${topic.title}');
-    ref.invalidateSelf();
   }
 
   Future<void> updateTopic(ConversationTopic topic) async {
     await ref.read(conversationServiceProvider).updateTopic(topic);
     LogService.instance.info('Conversation topic updated: ${topic.id}');
-    ref.invalidateSelf();
   }
 
   Future<void> deleteTopic(String id) async {
@@ -52,7 +50,6 @@ class ConversationListNotifier extends AsyncNotifier<List<ConversationTopic>> {
     }
     await ref.read(conversationServiceProvider).deleteTopic(id);
     LogService.instance.info('Conversation topic deleted: $id');
-    ref.invalidateSelf();
   }
 }
 

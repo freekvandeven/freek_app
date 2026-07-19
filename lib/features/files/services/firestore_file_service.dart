@@ -20,6 +20,14 @@ class FirestoreFileService implements FileService {
   }
 
   @override
+  Stream<List<FileEntry>> watchEntries() {
+    return _collection.snapshots().map(
+      (snapshot) =>
+          snapshot.docs.map((doc) => FileEntry.fromMap(doc.data())).toList(),
+    );
+  }
+
+  @override
   Future<FileEntry?> getEntry(String id) async {
     final doc = await _collection.doc(id).get();
     if (!doc.exists || doc.data() == null) return null;

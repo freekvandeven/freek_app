@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,6 +7,10 @@ import '../models/file_entry.dart';
 
 abstract class FileService {
   Future<List<FileEntry>> getEntries();
+
+  /// Emits the full entry list on listen and again after every change
+  /// (IMPR-0018).
+  Stream<List<FileEntry>> watchEntries();
   Future<FileEntry?> getEntry(String id);
   Future<void> addEntry(FileEntry entry);
   Future<void> updateEntry(FileEntry entry);
@@ -14,6 +19,13 @@ abstract class FileService {
 
 class MockFileService implements FileService {
   static const _key = 'file_entries';
+  final _changes = StreamController<List<FileEntry>>.broadcast();
+
+  @override
+  Stream<List<FileEntry>> watchEntries() async* {
+    yield await getEntries();
+    yield* _changes.stream;
+  }
 
   @override
   Future<List<FileEntry>> getEntries() async {
@@ -60,5 +72,10 @@ class MockFileService implements FileService {
       _key,
       entries.map((e) => jsonEncode(e.toMap())).toList(),
     );
+    _changes.add(List.of(entries));
+  }
+
+  void dispose() {
+    _changes.close();
   }
 }

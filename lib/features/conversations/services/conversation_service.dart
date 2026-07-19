@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,6 +7,10 @@ import '../models/conversation_topic.dart';
 
 abstract class ConversationService {
   Future<List<ConversationTopic>> getTopics();
+
+  /// Emits the full topic list on listen and again after every change
+  /// (IMPR-0018).
+  Stream<List<ConversationTopic>> watchTopics();
   Future<ConversationTopic?> getTopic(String id);
   Future<void> addTopic(ConversationTopic topic);
   Future<void> updateTopic(ConversationTopic topic);
@@ -14,6 +19,13 @@ abstract class ConversationService {
 
 class MockConversationService implements ConversationService {
   static const _key = 'conversation_topics';
+  final _changes = StreamController<List<ConversationTopic>>.broadcast();
+
+  @override
+  Stream<List<ConversationTopic>> watchTopics() async* {
+    yield await getTopics();
+    yield* _changes.stream;
+  }
 
   @override
   Future<List<ConversationTopic>> getTopics() async {
@@ -64,5 +76,12 @@ class MockConversationService implements ConversationService {
       _key,
       topics.map((t) => jsonEncode(t.toMap())).toList(),
     );
+    _changes.add(
+      List.of(topics)..sort((a, b) => b.createdAt.compareTo(a.createdAt)),
+    );
+  }
+
+  void dispose() {
+    _changes.close();
   }
 }

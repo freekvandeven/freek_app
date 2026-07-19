@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -11,6 +12,11 @@ abstract class VaultService {
   Future<void> setupVault(String masterPassword);
   Future<Uint8List?> unlockVault(String masterPassword);
   Future<List<PasswordEntry>> getEntries();
+
+  /// Emits the full (still encrypted) entry list on listen and again after
+  /// every change (IMPR-0018). Decryption is the caller's job so plaintext
+  /// never enters the service layer.
+  Stream<List<PasswordEntry>> watchEntries();
   Future<void> addEntry(PasswordEntry entry);
   Future<void> updateEntry(PasswordEntry entry);
   Future<void> deleteEntry(String id);
@@ -26,6 +32,13 @@ class MockVaultService implements VaultService {
   static const _entriesKey = 'vault_entries';
 
   final _prefs = SharedPreferencesAsync();
+  final _changes = StreamController<List<PasswordEntry>>.broadcast();
+
+  @override
+  Stream<List<PasswordEntry>> watchEntries() async* {
+    yield await getEntries();
+    yield* _changes.stream;
+  }
 
   @override
   Future<bool> isVaultSetup() async {
@@ -97,6 +110,11 @@ class MockVaultService implements VaultService {
       _entriesKey,
       jsonEncode(entries.map((e) => e.toMap()).toList()),
     );
+    _changes.add(List.of(entries)..sort((a, b) => a.title.compareTo(b.title)));
+  }
+
+  void dispose() {
+    _changes.close();
   }
 
   @override

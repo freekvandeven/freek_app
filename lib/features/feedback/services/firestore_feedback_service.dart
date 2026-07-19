@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/feedback_entry.dart';
@@ -34,6 +36,41 @@ class FirestoreFeedbackService implements FeedbackService {
     ];
     entries.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return entries;
+  }
+
+  /// Combines the public and private collection snapshots; emits once both
+  /// have delivered their first snapshot, then on every change to either.
+  @override
+  Stream<List<FeedbackEntry>> watchEntries() {
+    final controller = StreamController<List<FeedbackEntry>>();
+    List<FeedbackEntry>? public;
+    List<FeedbackEntry>? private;
+
+    void emit() {
+      if (public == null || private == null) return;
+      controller.add(
+        [...public!, ...private!]
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt)),
+      );
+    }
+
+    final subs = [
+      _publicCollection.snapshots().listen((s) {
+        public = s.docs.map((d) => FeedbackEntry.fromMap(d.data())).toList();
+        emit();
+      }, onError: controller.addError),
+      _privateCollection.snapshots().listen((s) {
+        private = s.docs.map((d) => FeedbackEntry.fromMap(d.data())).toList();
+        emit();
+      }, onError: controller.addError),
+    ];
+    controller.onCancel = () {
+      for (final sub in subs) {
+        sub.cancel();
+      }
+      controller.close();
+    };
+    return controller.stream;
   }
 
   @override
