@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,9 +8,10 @@ import 'package:personal_app/presentation/widgets/app_snackbar.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
-import '../../../presentation/widgets/fullscreen_image_viewer.dart';
-import '../../../presentation/widgets/image_upload_preview_dialog.dart';
+import '../../../presentation/widgets/image_attachment_picker.dart';
+import '../../../presentation/widgets/image_attachment_strip.dart';
 import '../../../presentation/widgets/unsaved_changes_guard.dart';
+import '../../../services/image_attachment_controller.dart';
 import '../../../services/image_upload_service.dart';
 import '../../../utils/decimal_input.dart';
 import '../../auth/providers/auth_providers.dart';
@@ -48,9 +47,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
   DateTime? _expiryDate;
   // Null means "fill not tracked" (WISH-0078). 0–100 when set.
   int? _fillPercent;
-  List<String> _savedImageUrls = [];
-  List<({Uint8List bytes, String fileName})> _pendingImages = [];
-  final List<String> _removedImageUrls = [];
+  final _images = ImageAttachmentController(folder: 'inventory');
   bool _isUploading = false;
   bool _isLoading = true;
   bool _isScanning = false;
@@ -61,6 +58,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
   @override
   void initState() {
     super.initState();
+    _images.addListener(_onImagesChanged);
     if (widget.itemId != null) {
       _loadItem();
     } else {
@@ -73,6 +71,12 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
       _isLoading = false;
       _initialSnapshot = _snapshot();
     }
+  }
+
+  /// Rebuild when images change so the strip, the snackbar state, and the
+  /// unsaved-changes guard all pick up the new image state.
+  void _onImagesChanged() {
+    if (mounted) setState(() {});
   }
 
   /// Stable concatenation of the form fields used as a dirty-check
@@ -89,8 +93,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
     _purchaseDate?.toIso8601String() ?? '',
     _expiryDate?.toIso8601String() ?? '',
     _fillPercent ?? '',
-    _savedImageUrls.join(','),
-    _pendingImages.length,
+    _images.dirtySignature,
     _catalogItemId ?? '',
   ].join('|');
 
@@ -117,7 +120,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
         _searchAliasesController.text = item.searchAliases ?? '';
         _purchaseDate = item.purchaseDate;
         _expiryDate = item.expiryDate;
-        _savedImageUrls = List.of(item.imageUrls);
+        _images.seed(item.imageUrls);
         _catalogItemId = item.catalogItemId;
         _fillPercent = item.fillPercent;
         _isLoading = false;
@@ -139,6 +142,8 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
 
   @override
   void dispose() {
+    _images.removeListener(_onImagesChanged);
+    _images.dispose();
     _nameController.dispose();
     _descriptionController.dispose();
     _categoryController.dispose();
@@ -155,16 +160,8 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
 
     setState(() => _isUploading = true);
     try {
-      // Upload pending images
       final uploader = ref.read(imageUploadServiceProvider);
-      for (final pending in _pendingImages) {
-        final url = await uploader.uploadImageBytes(
-          pending.bytes,
-          fileName: pending.fileName,
-          folder: 'inventory',
-        );
-        _savedImageUrls.add(url);
-      }
+      await _images.uploadPending(uploader);
 
       final item = InventoryItem(
         id: widget.itemId,
@@ -186,7 +183,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
             : null,
         purchaseDate: _purchaseDate,
         expiryDate: _expiryDate,
-        imageUrls: _savedImageUrls,
+        imageUrls: _images.savedUrls,
         barcode: _barcodeController.text.trim().isEmpty
             ? null
             : _barcodeController.text.trim(),
@@ -207,15 +204,15 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
       // Delete removed images from Storage — skipping URLs another
       // item still references, since transfer-to-new-item copies image
       // URLs between items (WISH-0088).
-      if (_removedImageUrls.isNotEmpty) {
-        final deletable = imageUrlsSafeToDelete(
-          allItems: await ref.read(inventoryServiceProvider).getItems(),
-          excludeItemId: widget.itemId,
-          candidateUrls: _removedImageUrls,
+      if (_images.removedUrls.isNotEmpty) {
+        await _images.deleteRemoved(
+          uploader,
+          deletable: imageUrlsSafeToDelete(
+            allItems: await ref.read(inventoryServiceProvider).getItems(),
+            excludeItemId: widget.itemId,
+            candidateUrls: _images.removedUrls,
+          ),
         );
-        for (final url in deletable) {
-          await uploader.deleteImage(url);
-        }
       }
 
       // Mark form clean so the unsaved-changes guard lets the post-
@@ -630,91 +627,14 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
                 // Images
                 Text('Images', style: Theme.of(context).textTheme.labelLarge),
                 const SizedBox(height: 8),
-                if (_savedImageUrls.isNotEmpty || _pendingImages.isNotEmpty)
-                  SizedBox(
-                    height: 100,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _savedImageUrls.length + _pendingImages.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 8),
-                      itemBuilder: (context, index) {
-                        final isExisting = index < _savedImageUrls.length;
-                        return Stack(
-                          children: [
-                            GestureDetector(
-                              onTap: () => isExisting
-                                  ? showFullscreenNetworkImage(
-                                      context,
-                                      _savedImageUrls[index],
-                                    )
-                                  : showFullscreenMemoryImage(
-                                      context,
-                                      _pendingImages[index -
-                                              _savedImageUrls.length]
-                                          .bytes,
-                                    ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: isExisting
-                                    ? CachedNetworkImage(
-                                        imageUrl: _savedImageUrls[index],
-                                        width: 100,
-                                        height: 100,
-                                        memCacheWidth: 300,
-                                        fit: BoxFit.cover,
-                                      )
-                                    : Image.memory(
-                                        _pendingImages[index -
-                                                _savedImageUrls.length]
-                                            .bytes,
-                                        width: 100,
-                                        height: 100,
-                                        fit: BoxFit.cover,
-                                      ),
-                              ),
-                            ),
-                            Positioned(
-                              top: 2,
-                              right: 2,
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    if (index < _savedImageUrls.length) {
-                                      _removedImageUrls.add(
-                                        _savedImageUrls[index],
-                                      );
-                                      _savedImageUrls = List.of(_savedImageUrls)
-                                        ..removeAt(index);
-                                    } else {
-                                      final pendingIndex =
-                                          index - _savedImageUrls.length;
-                                      _pendingImages = List.of(_pendingImages)
-                                        ..removeAt(pendingIndex);
-                                    }
-                                  });
-                                },
-                                child: Container(
-                                  decoration: const BoxDecoration(
-                                    color: Colors.black54,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  padding: const EdgeInsets.all(4),
-                                  child: const Icon(
-                                    Icons.close,
-                                    size: 16,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
+                ImageAttachmentStrip(controller: _images),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
-                  onPressed: _addImage,
+                  onPressed: () => pickImageInto(
+                    context,
+                    ref.read(imageUploadServiceProvider),
+                    _images,
+                  ),
                   icon: const Icon(Icons.add_photo_alternate),
                   label: const Text('Add image'),
                 ),
@@ -808,10 +728,10 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
         _catalogItemId = picked.id;
         _linkedCatalogItem = picked;
         // Add catalog images to item (referencing same URLs — no storage duplication)
-        if (picked.imageUrls.isNotEmpty &&
-            _savedImageUrls.isEmpty &&
-            _pendingImages.isEmpty) {
-          _savedImageUrls = List.of(picked.imageUrls);
+        if (picked.imageUrls.isNotEmpty && _images.isEmpty) {
+          for (final url in picked.imageUrls) {
+            _images.addSavedUrl(url);
+          }
         }
         // Auto-fill name if empty
         if (_nameController.text.isEmpty) {
@@ -825,51 +745,6 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
         }
       });
     }
-  }
-
-  Future<void> _addImage() async {
-    final source = await showModalBottomSheet<String>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Gallery'),
-              onTap: () => Navigator.pop(ctx, 'gallery'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Camera'),
-              onTap: () => Navigator.pop(ctx, 'camera'),
-            ),
-            const PasteFromClipboardTile(),
-          ],
-        ),
-      ),
-    );
-    if (source == null || !mounted) return;
-
-    final uploader = ref.read(imageUploadServiceProvider);
-    final picked = await resolveImageSource(context, source, uploader);
-    if (picked == null || !mounted) return;
-
-    final result = await showImageUploadPreviewDialog(
-      context: context,
-      originalBytes: picked.bytes,
-      fileName: picked.fileName,
-      sourcePath: picked.sourcePath,
-    );
-    if (result == null || !mounted) return;
-    await result.maybeRemoveSourceFromDevice();
-
-    setState(() {
-      _pendingImages = [
-        ..._pendingImages,
-        (bytes: result.bytes, fileName: result.fileName),
-      ];
-    });
   }
 }
 

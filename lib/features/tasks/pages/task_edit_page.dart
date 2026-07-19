@@ -1,6 +1,3 @@
-import 'dart:typed_data';
-
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,9 +6,10 @@ import 'package:personal_app/presentation/widgets/app_snackbar.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
-import '../../../presentation/widgets/fullscreen_image_viewer.dart';
-import '../../../presentation/widgets/image_upload_preview_dialog.dart';
+import '../../../presentation/widgets/image_attachment_picker.dart';
+import '../../../presentation/widgets/image_attachment_strip.dart';
 import '../../../presentation/widgets/unsaved_changes_guard.dart';
+import '../../../services/image_attachment_controller.dart';
 import '../../../services/image_upload_service.dart';
 import '../models/task.dart';
 import '../providers/task_providers.dart';
@@ -40,9 +38,7 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
   DateTime? _dueDate;
   TimeOfDay? _dueTime;
   bool _hasDueTime = false;
-  List<String> _savedImageUrls = [];
-  List<({Uint8List bytes, String fileName})> _pendingImages = [];
-  final List<String> _removedImageUrls = [];
+  final _images = ImageAttachmentController(folder: 'tasks');
   bool _isUploading = false;
   bool _isRepeatable = false;
   RepeatType _repeatType = RepeatType.daily;
@@ -58,6 +54,7 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
   @override
   void initState() {
     super.initState();
+    _images.addListener(_onImagesChanged);
     if (widget.taskId != null) {
       _isEditing = true;
       _loadTask();
@@ -67,6 +64,12 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
       _parentTaskId = widget.initialParentTaskId;
       _initialSnapshot = _snapshot();
     }
+  }
+
+  /// Rebuild when images change so the strip and the unsaved-changes
+  /// guard pick up the new image state.
+  void _onImagesChanged() {
+    if (mounted) setState(() {});
   }
 
   /// Stable concatenation of the form fields used as a dirty-check
@@ -80,8 +83,7 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
     _hasDueTime,
     _dueTime?.hour,
     _dueTime?.minute,
-    _savedImageUrls.join(','),
-    _pendingImages.length,
+    _images.dirtySignature,
     _isRepeatable,
     _repeatType.name,
     _repeatInterval,
@@ -108,7 +110,7 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
             minute: task.dueDate!.minute,
           );
         }
-        _savedImageUrls = List.of(task.attachments);
+        _images.seed(task.attachments);
         _isRepeatable = task.isRepeatable;
         _repeatType = task.repeatType ?? RepeatType.daily;
         _repeatInterval = task.repeatInterval;
@@ -121,6 +123,8 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
 
   @override
   void dispose() {
+    _images.removeListener(_onImagesChanged);
+    _images.dispose();
     _titleController.dispose();
     _descriptionController.dispose();
     _categoryController.dispose();
@@ -145,16 +149,8 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
 
     setState(() => _isUploading = true);
     try {
-      // Upload pending images
       final uploader = ref.read(imageUploadServiceProvider);
-      for (final pending in _pendingImages) {
-        final url = await uploader.uploadImageBytes(
-          pending.bytes,
-          fileName: pending.fileName,
-          folder: 'tasks',
-        );
-        _savedImageUrls.add(url);
-      }
+      await _images.uploadPending(uploader);
 
       final category = _categoryController.text.trim();
       final description = _descriptionController.text.trim();
@@ -185,7 +181,7 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
             clearDueDate: _dueDate == null,
             category: category.isEmpty ? null : category,
             clearCategory: category.isEmpty,
-            attachments: _savedImageUrls,
+            attachments: _images.savedUrls,
             isRepeatable: _isRepeatable,
             repeatType: _isRepeatable ? _repeatType : null,
             clearRepeatType: !_isRepeatable,
@@ -205,7 +201,7 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
           dueDate: dueDate,
           hasDueTime: _hasDueTime,
           category: category.isEmpty ? null : category,
-          attachments: _savedImageUrls,
+          attachments: _images.savedUrls,
           isRepeatable: _isRepeatable,
           repeatType: _isRepeatable ? _repeatType : null,
           repeatInterval: _isRepeatable ? _repeatInterval : 1,
@@ -215,10 +211,7 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
         await ref.read(taskListProvider.notifier).addTask(task);
       }
 
-      // Delete removed images from Storage
-      for (final url in _removedImageUrls) {
-        await uploader.deleteImage(url);
-      }
+      await _images.deleteRemoved(uploader);
 
       // Mark form clean so the unsaved-changes guard lets the post-
       // save pop through unprompted (WISH-0079).
@@ -456,76 +449,14 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
                   style: Theme.of(context).textTheme.labelLarge,
                 ),
                 const SizedBox(height: 8),
-                if (_savedImageUrls.isNotEmpty || _pendingImages.isNotEmpty)
-                  SizedBox(
-                    height: 100,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _savedImageUrls.length + _pendingImages.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 8),
-                      itemBuilder: (context, index) {
-                        final isExisting = index < _savedImageUrls.length;
-                        return Stack(
-                          children: [
-                            GestureDetector(
-                              onTap: () => isExisting
-                                  ? showFullscreenNetworkImage(
-                                      context,
-                                      _savedImageUrls[index],
-                                    )
-                                  : showFullscreenMemoryImage(
-                                      context,
-                                      _pendingImages[index -
-                                              _savedImageUrls.length]
-                                          .bytes,
-                                    ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: isExisting
-                                    ? CachedNetworkImage(
-                                        imageUrl: _savedImageUrls[index],
-                                        width: 100,
-                                        height: 100,
-                                        memCacheWidth: 300,
-                                        fit: BoxFit.cover,
-                                      )
-                                    : Image.memory(
-                                        _pendingImages[index -
-                                                _savedImageUrls.length]
-                                            .bytes,
-                                        width: 100,
-                                        height: 100,
-                                        fit: BoxFit.cover,
-                                      ),
-                              ),
-                            ),
-                            Positioned(
-                              top: 2,
-                              right: 2,
-                              child: GestureDetector(
-                                onTap: () => _removeAttachment(index),
-                                child: Container(
-                                  decoration: const BoxDecoration(
-                                    color: Colors.black54,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  padding: const EdgeInsets.all(4),
-                                  child: const Icon(
-                                    Icons.close,
-                                    size: 16,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
+                ImageAttachmentStrip(controller: _images),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
-                  onPressed: _addAttachment,
+                  onPressed: () => pickImageInto(
+                    context,
+                    ref.read(imageUploadServiceProvider),
+                    _images,
+                  ),
                   icon: const Icon(Icons.add_photo_alternate),
                   label: const Text('Add image'),
                 ),
@@ -607,62 +538,5 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
         ),
       ),
     );
-  }
-
-  Future<void> _addAttachment() async {
-    final source = await showModalBottomSheet<String>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Gallery'),
-              onTap: () => Navigator.pop(ctx, 'gallery'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Camera'),
-              onTap: () => Navigator.pop(ctx, 'camera'),
-            ),
-            const PasteFromClipboardTile(),
-          ],
-        ),
-      ),
-    );
-    if (source == null || !mounted) return;
-
-    final uploader = ref.read(imageUploadServiceProvider);
-    final picked = await resolveImageSource(context, source, uploader);
-    if (picked == null || !mounted) return;
-
-    final result = await showImageUploadPreviewDialog(
-      context: context,
-      originalBytes: picked.bytes,
-      fileName: picked.fileName,
-      sourcePath: picked.sourcePath,
-    );
-    if (result == null || !mounted) return;
-    await result.maybeRemoveSourceFromDevice();
-
-    setState(() {
-      _pendingImages = [
-        ..._pendingImages,
-        (bytes: result.bytes, fileName: result.fileName),
-      ];
-    });
-  }
-
-  void _removeAttachment(int index) {
-    setState(() {
-      if (index < _savedImageUrls.length) {
-        _removedImageUrls.add(_savedImageUrls[index]);
-        _savedImageUrls = List.of(_savedImageUrls)..removeAt(index);
-      } else {
-        final pendingIndex = index - _savedImageUrls.length;
-        _pendingImages = List.of(_pendingImages)..removeAt(pendingIndex);
-      }
-    });
   }
 }

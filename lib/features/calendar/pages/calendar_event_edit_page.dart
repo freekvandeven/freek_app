@@ -1,14 +1,12 @@
-import 'dart:typed_data';
-
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../presentation/widgets/app_snackbar.dart';
-import '../../../presentation/widgets/fullscreen_image_viewer.dart';
-import '../../../presentation/widgets/image_upload_preview_dialog.dart';
+import '../../../presentation/widgets/image_attachment_picker.dart';
+import '../../../presentation/widgets/image_attachment_strip.dart';
+import '../../../services/image_attachment_controller.dart';
 import '../../../services/image_upload_service.dart';
 import '../models/calendar_event.dart';
 import '../providers/calendar_providers.dart';
@@ -36,9 +34,7 @@ class _CalendarEventEditPageState extends ConsumerState<CalendarEventEditPage> {
   bool _isAllDay = true;
   bool _hasEndDate = false;
 
-  List<String> _savedImageUrls = [];
-  List<({Uint8List bytes, String fileName})> _pendingImages = [];
-  final List<String> _removedImageUrls = [];
+  final _images = ImageAttachmentController(folder: 'calendar');
   bool _isUploading = false;
 
   bool get _isEditing => widget.eventId != null;
@@ -57,6 +53,7 @@ class _CalendarEventEditPageState extends ConsumerState<CalendarEventEditPage> {
 
   @override
   void dispose() {
+    _images.dispose();
     _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
@@ -70,7 +67,7 @@ class _CalendarEventEditPageState extends ConsumerState<CalendarEventEditPage> {
     _startDate = DateTime(event.date.year, event.date.month, event.date.day);
     _startTime = TimeOfDay(hour: event.date.hour, minute: event.date.minute);
     _isAllDay = event.isAllDay;
-    _savedImageUrls = List.of(event.imageUrls);
+    _images.seed(event.imageUrls);
     if (event.endDate != null) {
       _hasEndDate = true;
       _endDate = DateTime(
@@ -212,88 +209,14 @@ class _CalendarEventEditPageState extends ConsumerState<CalendarEventEditPage> {
             // Images
             Text('Images', style: Theme.of(context).textTheme.labelLarge),
             const SizedBox(height: 8),
-            if (_savedImageUrls.isNotEmpty || _pendingImages.isNotEmpty)
-              SizedBox(
-                height: 100,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _savedImageUrls.length + _pendingImages.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemBuilder: (context, index) {
-                    final isExisting = index < _savedImageUrls.length;
-                    return Stack(
-                      children: [
-                        GestureDetector(
-                          onTap: () => isExisting
-                              ? showFullscreenNetworkImage(
-                                  context,
-                                  _savedImageUrls[index],
-                                )
-                              : showFullscreenMemoryImage(
-                                  context,
-                                  _pendingImages[index - _savedImageUrls.length]
-                                      .bytes,
-                                ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: isExisting
-                                ? CachedNetworkImage(
-                                    imageUrl: _savedImageUrls[index],
-                                    width: 100,
-                                    height: 100,
-                                    memCacheWidth: 300,
-                                    fit: BoxFit.cover,
-                                  )
-                                : Image.memory(
-                                    _pendingImages[index -
-                                            _savedImageUrls.length]
-                                        .bytes,
-                                    width: 100,
-                                    height: 100,
-                                    fit: BoxFit.cover,
-                                  ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 2,
-                          right: 2,
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                if (index < _savedImageUrls.length) {
-                                  _removedImageUrls.add(_savedImageUrls[index]);
-                                  _savedImageUrls = List.of(_savedImageUrls)
-                                    ..removeAt(index);
-                                } else {
-                                  final pendingIndex =
-                                      index - _savedImageUrls.length;
-                                  _pendingImages = List.of(_pendingImages)
-                                    ..removeAt(pendingIndex);
-                                }
-                              });
-                            },
-                            child: Container(
-                              decoration: const BoxDecoration(
-                                color: Colors.black54,
-                                shape: BoxShape.circle,
-                              ),
-                              padding: const EdgeInsets.all(4),
-                              child: const Icon(
-                                Icons.close,
-                                size: 16,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
+            ImageAttachmentStrip(controller: _images),
             const SizedBox(height: 8),
             OutlinedButton.icon(
-              onPressed: _addImage,
+              onPressed: () => pickImageInto(
+                context,
+                ref.read(imageUploadServiceProvider),
+                _images,
+              ),
               icon: const Icon(Icons.add_photo_alternate),
               label: const Text('Add image'),
             ),
@@ -348,16 +271,8 @@ class _CalendarEventEditPageState extends ConsumerState<CalendarEventEditPage> {
 
     setState(() => _isUploading = true);
     try {
-      // Upload pending images
       final uploader = ref.read(imageUploadServiceProvider);
-      for (final pending in _pendingImages) {
-        final url = await uploader.uploadImageBytes(
-          pending.bytes,
-          fileName: pending.fileName,
-          folder: 'calendar',
-        );
-        _savedImageUrls.add(url);
-      }
+      await _images.uploadPending(uploader);
 
       final startDateTime = _isAllDay
           ? DateTime(_startDate.year, _startDate.month, _startDate.day)
@@ -393,7 +308,7 @@ class _CalendarEventEditPageState extends ConsumerState<CalendarEventEditPage> {
           date: startDateTime,
           endDate: endDateTime,
           isAllDay: _isAllDay,
-          imageUrls: _savedImageUrls,
+          imageUrls: _images.savedUrls,
           clearDescription: description == null,
           clearEndDate: !_hasEndDate,
         );
@@ -408,15 +323,12 @@ class _CalendarEventEditPageState extends ConsumerState<CalendarEventEditPage> {
                 date: startDateTime,
                 endDate: endDateTime,
                 isAllDay: _isAllDay,
-                imageUrls: _savedImageUrls,
+                imageUrls: _images.savedUrls,
               ),
             );
       }
 
-      // Delete removed images from Storage
-      for (final url in _removedImageUrls) {
-        await uploader.deleteImage(url);
-      }
+      await _images.deleteRemoved(uploader);
 
       if (mounted) context.pop();
     } catch (e) {
@@ -426,51 +338,6 @@ class _CalendarEventEditPageState extends ConsumerState<CalendarEventEditPage> {
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }
-  }
-
-  Future<void> _addImage() async {
-    final source = await showModalBottomSheet<String>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Gallery'),
-              onTap: () => Navigator.pop(ctx, 'gallery'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Camera'),
-              onTap: () => Navigator.pop(ctx, 'camera'),
-            ),
-            const PasteFromClipboardTile(),
-          ],
-        ),
-      ),
-    );
-    if (source == null || !mounted) return;
-
-    final uploader = ref.read(imageUploadServiceProvider);
-    final picked = await resolveImageSource(context, source, uploader);
-    if (picked == null || !mounted) return;
-
-    final result = await showImageUploadPreviewDialog(
-      context: context,
-      originalBytes: picked.bytes,
-      fileName: picked.fileName,
-      sourcePath: picked.sourcePath,
-    );
-    if (result == null || !mounted) return;
-    await result.maybeRemoveSourceFromDevice();
-
-    setState(() {
-      _pendingImages = [
-        ..._pendingImages,
-        (bytes: result.bytes, fileName: result.fileName),
-      ];
-    });
   }
 
   void _confirmDelete() {

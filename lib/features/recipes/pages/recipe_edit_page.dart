@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,9 +9,12 @@ import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../presentation/widgets/image_attachment_picker.dart';
+import '../../../presentation/widgets/image_attachment_strip.dart';
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
 import '../../../presentation/widgets/star_rating.dart';
 import '../../../presentation/widgets/unsaved_changes_guard.dart';
+import '../../../services/image_attachment_controller.dart';
 import '../../../services/image_upload_service.dart';
 import '../../../services/log_service.dart';
 import '../../../utils/decimal_input.dart';
@@ -26,7 +28,6 @@ import '../providers/recipe_providers.dart';
 import '../utils/autosave_snapshot.dart';
 import '../utils/video_link_parser.dart';
 import '../widgets/recipe_catalog_picker_sheet.dart';
-import '../widgets/recipe_images_section.dart';
 import '../widgets/recipe_ingredients_section.dart';
 import '../widgets/recipe_instructions_section.dart';
 import '../widgets/recipe_picker_sheet.dart';
@@ -54,10 +55,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
   List<Ingredient> _ingredients = [];
   List<RecipeInstruction> _instructions = [];
   List<String> _tags = [];
-  List<String> _savedImageUrls = [];
-  List<({Uint8List bytes, String fileName})> _pendingImages = [];
-  final List<String> _removedImageUrls = [];
-  int _primaryImageIndex = 0;
+  final _images = ImageAttachmentController(folder: 'recipes');
   List<String> _videoLinks = [];
   List<String> _subRecipeIds = [];
   bool _isEditing = false;
@@ -72,6 +70,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
   @override
   void initState() {
     super.initState();
+    _images.addListener(_onImagesChanged);
     if (widget.recipeId != null) {
       _isEditing = true;
       _loadRecipe();
@@ -80,6 +79,12 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
       // unsaved-changes guard on (WISH-0079).
       _lastSavedSnapshot = _autosaveSnapshot();
     }
+  }
+
+  /// Rebuild when images change so the strip and the unsaved-changes
+  /// guard pick up the new image state.
+  void _onImagesChanged() {
+    if (mounted) setState(() {});
   }
 
   /// True when the form has unsaved edits — drives the unsaved-changes
@@ -105,8 +110,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
         _ingredients = List.from(recipe.ingredients);
         _instructions = List.from(recipe.instructions);
         _tags = recipe.tags.map((t) => t.toLowerCase()).toList();
-        _savedImageUrls = List.from(recipe.images);
-        _primaryImageIndex = recipe.primaryImageIndex;
+        _images.seed(recipe.images, primaryIndex: recipe.primaryImageIndex);
         _videoLinks = List.from(recipe.videoLinks);
         _subRecipeIds = List.from(recipe.subRecipeIds);
         _isWip = recipe.isWip;
@@ -141,8 +145,8 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     ingredients: _ingredients,
     instructions: _instructions,
     tags: _tags,
-    savedImageUrls: _savedImageUrls,
-    primaryImageIndex: _primaryImageIndex,
+    savedImageUrls: _images.savedUrls,
+    primaryImageIndex: _images.primaryIndex,
     videoLinks: _videoLinks,
     subRecipeIds: _subRecipeIds,
     isWip: _isWip,
@@ -184,8 +188,8 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
         ingredients: _ingredients,
         instructions: _instructions,
         tags: _tags,
-        images: _savedImageUrls,
-        primaryImageIndex: _primaryImageIndex,
+        images: _images.savedUrls,
+        primaryImageIndex: _images.primaryIndex,
         videoLinks: _videoLinks,
         subRecipeIds: _subRecipeIds,
         isWip: _isWip,
@@ -213,6 +217,8 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
   @override
   void dispose() {
     _autosaveTimer?.cancel();
+    _images.removeListener(_onImagesChanged);
+    _images.dispose();
     _titleController.dispose();
     _descriptionController.dispose();
     _servingsController.dispose();
@@ -231,9 +237,10 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
 
     setState(() => _isUploading = true);
     try {
-      await _uploadPendingImages();
+      final uploader = ref.read(imageUploadServiceProvider);
+      await _images.uploadPending(uploader);
       await _persistRecipe();
-      await _deleteRemovedImages();
+      await _images.deleteRemoved(uploader);
       // Mark form clean so the unsaved-changes guard lets the post-
       // save pop through unprompted (WISH-0079).
       _lastSavedSnapshot = _autosaveSnapshot();
@@ -282,25 +289,6 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     return true;
   }
 
-  Future<void> _uploadPendingImages() async {
-    final uploader = ref.read(imageUploadServiceProvider);
-    for (final pending in _pendingImages) {
-      final url = await uploader.uploadImageBytes(
-        pending.bytes,
-        fileName: pending.fileName,
-        folder: 'recipes',
-      );
-      _savedImageUrls.add(url);
-    }
-  }
-
-  Future<void> _deleteRemovedImages() async {
-    final uploader = ref.read(imageUploadServiceProvider);
-    for (final url in _removedImageUrls) {
-      await uploader.deleteImage(url);
-    }
-  }
-
   /// Build a fresh [Recipe] from the current form state (used for the
   /// "new recipe" path).
   Recipe _newRecipeFromForm() {
@@ -317,8 +305,8 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
       ingredients: _ingredients,
       instructions: _instructions,
       tags: _tags,
-      images: _savedImageUrls,
-      primaryImageIndex: _primaryImageIndex,
+      images: _images.savedUrls,
+      primaryImageIndex: _images.primaryIndex,
       videoLinks: _videoLinks,
       subRecipeIds: _subRecipeIds,
       isWip: _isWip,
@@ -345,8 +333,8 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
       ingredients: _ingredients,
       instructions: _instructions,
       tags: _tags,
-      images: _savedImageUrls,
-      primaryImageIndex: _primaryImageIndex,
+      images: _images.savedUrls,
+      primaryImageIndex: _images.primaryIndex,
       videoLinks: _videoLinks,
       subRecipeIds: _subRecipeIds,
       isWip: _isWip,
@@ -588,7 +576,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
               title: const Text('Upload from gallery'),
               onTap: () async {
                 Navigator.pop(ctx);
-                await _uploadImage();
+                await _addImageFrom('gallery');
               },
             ),
             ListTile(
@@ -596,7 +584,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
               title: const Text('Take a photo'),
               onTap: () async {
                 Navigator.pop(ctx);
-                await _captureImage();
+                await _addImageFrom('camera');
               },
             ),
             ListTile(
@@ -604,7 +592,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
               title: const Text('Paste from clipboard'),
               onTap: () async {
                 Navigator.pop(ctx);
-                await _pasteImage();
+                await _addImageFrom('clipboard');
               },
             ),
             ListTile(
@@ -621,75 +609,12 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     );
   }
 
-  Future<void> _uploadImage() async {
-    final service = ref.read(imageUploadServiceProvider);
-    final file = await service.pickImage();
-    if (file == null || !mounted) return;
-
-    final bytes = await file.readAsBytes();
-    if (!mounted) return;
-
-    final result = await showImageUploadPreviewDialog(
-      context: context,
-      originalBytes: bytes,
-      fileName: file.name,
-      sourcePath: file.path,
-    );
-    if (result == null || !mounted) return;
-    await result.maybeRemoveSourceFromDevice();
-
-    setState(() {
-      _pendingImages = [
-        ..._pendingImages,
-        (bytes: result.bytes, fileName: result.fileName),
-      ];
-    });
-  }
-
-  Future<void> _pasteImage() async {
-    final service = ref.read(imageUploadServiceProvider);
-    final picked = await resolveImageSource(context, 'clipboard', service);
-    if (picked == null || !mounted) return;
-
-    final result = await showImageUploadPreviewDialog(
-      context: context,
-      originalBytes: picked.bytes,
-      fileName: picked.fileName,
-    );
-    if (result == null || !mounted) return;
-
-    setState(() {
-      _pendingImages = [
-        ..._pendingImages,
-        (bytes: result.bytes, fileName: result.fileName),
-      ];
-    });
-  }
-
-  Future<void> _captureImage() async {
-    final service = ref.read(imageUploadServiceProvider);
-    final file = await service.captureImage();
-    if (file == null || !mounted) return;
-
-    final bytes = await file.readAsBytes();
-    if (!mounted) return;
-
-    final result = await showImageUploadPreviewDialog(
-      context: context,
-      originalBytes: bytes,
-      fileName: file.name,
-      sourcePath: file.path,
-    );
-    if (result == null || !mounted) return;
-    await result.maybeRemoveSourceFromDevice();
-
-    setState(() {
-      _pendingImages = [
-        ..._pendingImages,
-        (bytes: result.bytes, fileName: result.fileName),
-      ];
-    });
-  }
+  Future<void> _addImageFrom(String source) => addImageFromSource(
+    context,
+    ref.read(imageUploadServiceProvider),
+    _images,
+    source,
+  );
 
   void _addImageByUrl() {
     final ctrl = TextEditingController();
@@ -712,7 +637,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
           TextButton(
             onPressed: () {
               if (ctrl.text.trim().isNotEmpty) {
-                setState(() => _savedImageUrls.add(ctrl.text.trim()));
+                _images.addSavedUrl(ctrl.text.trim());
               }
               Navigator.pop(ctx);
             },
@@ -1204,29 +1129,25 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                 ),
                 const SizedBox(height: 16),
 
-                RecipeImagesSection(
-                  savedImageUrls: _savedImageUrls,
-                  pendingImages: _pendingImages,
-                  primaryImageIndex: _primaryImageIndex,
-                  onAdd: _addImage,
-                  onSetPrimary: (int i) =>
-                      setState(() => _primaryImageIndex = i),
-                  onRemove: (int i) {
-                    setState(() {
-                      final totalCount =
-                          _savedImageUrls.length + _pendingImages.length;
-                      if (i < _savedImageUrls.length) {
-                        _removedImageUrls.add(_savedImageUrls[i]);
-                        _savedImageUrls.removeAt(i);
-                      } else {
-                        _pendingImages.removeAt(i - _savedImageUrls.length);
-                      }
-                      final newTotal = totalCount - 1;
-                      if (_primaryImageIndex >= newTotal) {
-                        _primaryImageIndex = newTotal <= 0 ? 0 : newTotal - 1;
-                      }
-                    });
-                  },
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Images',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    TextButton.icon(
+                      onPressed: _addImage,
+                      icon: const Icon(Icons.add_photo_alternate, size: 18),
+                      label: const Text('Add'),
+                    ),
+                  ],
+                ),
+                ImageAttachmentStrip(
+                  controller: _images,
+                  thumbnailSize: 80,
+                  showPrimaryBadge: true,
+                  onTapImage: _images.setPrimary,
                 ),
                 const SizedBox(height: 16),
 
