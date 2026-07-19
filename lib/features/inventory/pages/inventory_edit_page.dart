@@ -22,6 +22,7 @@ import '../../gemini/providers/gemini_providers.dart';
 import '../../settings/providers/currency_providers.dart';
 import '../models/inventory_item.dart';
 import '../providers/inventory_providers.dart';
+import '../utils/shared_image_guard.dart';
 import '../widgets/transfer_quantity_dialog.dart';
 
 class InventoryEditPage extends ConsumerStatefulWidget {
@@ -203,9 +204,18 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
         await notifier.addItem(item);
       }
 
-      // Delete removed images from Storage
-      for (final url in _removedImageUrls) {
-        await uploader.deleteImage(url);
+      // Delete removed images from Storage — skipping URLs another
+      // item still references, since transfer-to-new-item copies image
+      // URLs between items (WISH-0088).
+      if (_removedImageUrls.isNotEmpty) {
+        final deletable = imageUrlsSafeToDelete(
+          allItems: await ref.read(inventoryServiceProvider).getItems(),
+          excludeItemId: widget.itemId,
+          candidateUrls: _removedImageUrls,
+        );
+        for (final url in deletable) {
+          await uploader.deleteImage(url);
+        }
       }
 
       // Mark form clean so the unsaved-changes guard lets the post-

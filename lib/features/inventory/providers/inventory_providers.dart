@@ -10,6 +10,7 @@ import '../services/firestore_inventory_service.dart';
 import '../services/inventory_service.dart';
 import '../utils/inventory_sort.dart';
 import '../utils/quantity_transfer.dart';
+import '../utils/shared_image_guard.dart';
 
 final inventoryServiceProvider = Provider<InventoryService>((ref) {
   if (AppConfig.useFirebase) {
@@ -38,15 +39,23 @@ class InventoryListNotifier extends StreamNotifier<List<InventoryItem>> {
   }
 
   Future<void> deleteItem(String id) async {
-    // Delete associated images from Storage
-    final item = await ref.read(inventoryServiceProvider).getItem(id);
+    // Delete associated images from Storage — but only the ones no
+    // other item references, since transfer-to-new-item copies image
+    // URLs between items (WISH-0088).
+    final service = ref.read(inventoryServiceProvider);
+    final item = await service.getItem(id);
     if (item != null && item.imageUrls.isNotEmpty) {
+      final deletable = imageUrlsSafeToDelete(
+        allItems: await service.getItems(),
+        excludeItemId: id,
+        candidateUrls: item.imageUrls,
+      );
       final uploader = ref.read(imageUploadServiceProvider);
-      for (final url in item.imageUrls) {
+      for (final url in deletable) {
         await uploader.deleteImage(url);
       }
     }
-    await ref.read(inventoryServiceProvider).deleteItem(id);
+    await service.deleteItem(id);
     LogService.instance.info('Inventory item deleted: $id');
   }
 
@@ -86,10 +95,11 @@ class InventoryListNotifier extends StreamNotifier<List<InventoryItem>> {
   /// Split [amount] units off the source item into a brand new item at
   /// [location] (WISH-0088). The new item copies the source's data —
   /// name, description, category, price, dates, barcode, catalog link,
-  /// fill percentage, nicknames — but NOT its images: deleting an item
-  /// cascade-deletes its Storage images, so two items sharing image
-  /// URLs would break each other on delete. Throws [ArgumentError]
-  /// with a user-readable message on invalid input.
+  /// fill percentage, nicknames, and image references. Both items then
+  /// point at the same Storage files, which is safe because the image
+  /// cascade-delete skips URLs still referenced by another item.
+  /// Throws [ArgumentError] with a user-readable message on invalid
+  /// input.
   Future<void> transferToNewItem({
     required String fromId,
     required String location,
@@ -119,6 +129,7 @@ class InventoryListNotifier extends StreamNotifier<List<InventoryItem>> {
       purchasePrice: from.purchasePrice,
       purchaseDate: from.purchaseDate,
       expiryDate: from.expiryDate,
+      imageUrls: List.of(from.imageUrls),
       barcode: from.barcode,
       catalogItemId: from.catalogItemId,
       customFields: Map.of(from.customFields),

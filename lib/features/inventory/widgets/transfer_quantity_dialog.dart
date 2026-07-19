@@ -178,8 +178,8 @@ class _TransferQuantityDialogState
                   labelText: 'New item location',
                   border: OutlineInputBorder(),
                   helperText:
-                      'A copy of the source item is created here with the '
-                      'transferred amount (images are not copied).',
+                      'A copy of the source item — including its images — '
+                      'is created here with the transferred amount.',
                   helperMaxLines: 3,
                 ),
                 onChanged: (_) => setState(() {}),
