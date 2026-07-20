@@ -5,7 +5,8 @@ plugins {
     // START: FlutterFire Configuration
     id("com.google.gms.google-services")
     // END: FlutterFire Configuration
-    id("kotlin-android")
+    // Kotlin is applied by Flutter's Built-in Kotlin support (IMPR-0022) —
+    // no explicit id("kotlin-android") here. See docs/decisions/ADR_005_kgp_builtin_kotlin_migration.md.
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
