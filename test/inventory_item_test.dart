@@ -40,4 +40,38 @@ void main() {
       expect(updated.fillPercent, 50);
     });
   });
+
+  group('InventoryItem.isOpened', () {
+    test('defaults to false when not set', () {
+      final item = InventoryItem(name: 'Soy sauce');
+      expect(item.isOpened, isFalse);
+    });
+
+    test('roundtrips through toMap/fromMap', () {
+      final item = InventoryItem(name: 'Flour bag', isOpened: true);
+      final copy = InventoryItem.fromMap(item.toMap());
+      expect(copy.isOpened, isTrue);
+    });
+
+    test('fromMap tolerates missing isOpened (legacy data)', () {
+      final legacy = InventoryItem(name: 'Old item').toMap()
+        ..remove('isOpened');
+      final restored = InventoryItem.fromMap(legacy);
+      expect(restored.isOpened, isFalse);
+    });
+
+    test('copyWith updates the value', () {
+      final item = InventoryItem(name: 'a');
+      final updated = item.copyWith(isOpened: true);
+      expect(updated.isOpened, isTrue);
+    });
+
+    test('is independent of fillPercent', () {
+      final item = InventoryItem(name: 'a', isOpened: true);
+      expect(item.fillPercent, isNull);
+      final withFill = item.copyWith(fillPercent: 40);
+      expect(withFill.isOpened, isTrue);
+      expect(withFill.fillPercent, 40);
+    });
+  });
 }

@@ -180,7 +180,24 @@ class InventoryListPage extends ConsumerWidget {
                                         : '?',
                                   ),
                                 ),
-                          title: Text(item.name),
+                          title: Row(
+                            children: [
+                              if (item.isOpened) ...[
+                                Icon(
+                                  Icons.check_circle,
+                                  size: 16,
+                                  color: theme.colorScheme.primary,
+                                ),
+                                const SizedBox(width: 4),
+                              ],
+                              Expanded(
+                                child: Text(
+                                  item.name,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
                           subtitle: Text(
                             [
                               if (item.category != null) item.category!,
@@ -188,6 +205,7 @@ class InventoryListPage extends ConsumerWidget {
                               if (item.quantity > 1) 'Qty: ${item.quantity}',
                               if (item.fillPercent != null)
                                 '${item.fillPercent}% full',
+                              if (item.isOpened) 'Opened',
                               if (item.expiryDate != null)
                                 item.expiryDate!.isBefore(DateTime.now())
                                     ? 'EXPIRED'

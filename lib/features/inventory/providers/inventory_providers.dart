@@ -134,6 +134,7 @@ class InventoryListNotifier extends StreamNotifier<List<InventoryItem>> {
       catalogItemId: from.catalogItemId,
       customFields: Map.of(from.customFields),
       fillPercent: from.fillPercent,
+      isOpened: from.isOpened,
       searchAliases: from.searchAliases,
     );
     await service.addItem(newItem);

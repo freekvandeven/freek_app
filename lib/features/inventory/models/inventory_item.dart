@@ -21,6 +21,11 @@ class InventoryItem {
   /// tracked" and the UI hides the indicator entirely.
   final int? fillPercent;
 
+  /// Whether the item has been opened / is in active use — independent
+  /// of [fillPercent], for when the user wants a simple opened/unopened
+  /// flag without tracking how full it is (WISH-0089).
+  final bool isOpened;
+
   /// Raw nicknames string — extra search words separated by space,
   /// comma or period. Only shown on the edit page, never in lists
   /// (WISH-0082).
@@ -44,6 +49,7 @@ class InventoryItem {
     this.catalogItemId,
     this.customFields = const {},
     this.fillPercent,
+    this.isOpened = false,
     this.searchAliases,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -65,6 +71,7 @@ class InventoryItem {
     String? catalogItemId,
     Map<String, String>? customFields,
     int? fillPercent,
+    bool? isOpened,
     String? searchAliases,
     bool clearDescription = false,
     bool clearCategory = false,
@@ -98,6 +105,7 @@ class InventoryItem {
           : (catalogItemId ?? this.catalogItemId),
       customFields: customFields ?? this.customFields,
       fillPercent: clearFillPercent ? null : (fillPercent ?? this.fillPercent),
+      isOpened: isOpened ?? this.isOpened,
       searchAliases: clearSearchAliases
           ? null
           : (searchAliases ?? this.searchAliases),
@@ -121,6 +129,7 @@ class InventoryItem {
     'catalogItemId': catalogItemId,
     'customFields': customFields,
     'fillPercent': fillPercent,
+    'isOpened': isOpened,
     'searchAliases': searchAliases,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
@@ -158,6 +167,7 @@ class InventoryItem {
           ? Map<String, String>.from(map['customFields'] as Map)
           : {},
       fillPercent: (map['fillPercent'] as num?)?.toInt(),
+      isOpened: map['isOpened'] as bool? ?? false,
       searchAliases: map['searchAliases'] as String?,
       createdAt: DateTime.parse(map['createdAt'] as String),
       updatedAt: DateTime.parse(map['updatedAt'] as String),

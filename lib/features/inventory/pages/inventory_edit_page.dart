@@ -47,6 +47,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
   DateTime? _expiryDate;
   // Null means "fill not tracked" (WISH-0078). 0–100 when set.
   int? _fillPercent;
+  bool _isOpened = false;
   final _images = ImageAttachmentController(folder: 'inventory');
   bool _isUploading = false;
   bool _isLoading = true;
@@ -93,6 +94,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
     _purchaseDate?.toIso8601String() ?? '',
     _expiryDate?.toIso8601String() ?? '',
     _fillPercent ?? '',
+    _isOpened,
     _images.dirtySignature,
     _catalogItemId ?? '',
   ].join('|');
@@ -123,6 +125,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
         _images.seed(item.imageUrls);
         _catalogItemId = item.catalogItemId;
         _fillPercent = item.fillPercent;
+        _isOpened = item.isOpened;
         _isLoading = false;
       });
       _initialSnapshot = _snapshot();
@@ -189,6 +192,7 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
             : _barcodeController.text.trim(),
         catalogItemId: _catalogItemId,
         fillPercent: _fillPercent,
+        isOpened: _isOpened,
         searchAliases: _searchAliasesController.text.trim().isEmpty
             ? null
             : _searchAliasesController.text.trim(),
@@ -555,6 +559,19 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
                     onChanged: (v) => setState(() => _fillPercent = v.round()),
                   ),
                 if (_fillPercent != null) const SizedBox(height: 16),
+
+                // Opened status — independent of fill percentage, for when
+                // the user just wants a simple opened/unopened flag
+                // (WISH-0089).
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: const Text('Opened'),
+                  subtitle: const Text('Mark as opened / in active use'),
+                  value: _isOpened,
+                  onChanged: (v) => setState(() => _isOpened = v ?? false),
+                ),
+                const SizedBox(height: 16),
 
                 ListTile(
                   contentPadding: EdgeInsets.zero,
