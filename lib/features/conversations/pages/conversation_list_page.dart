@@ -5,6 +5,7 @@ import 'package:personal_app/presentation/widgets/app_snackbar.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
+import '../../../presentation/widgets/pullable_center.dart';
 import '../../contacts/providers/contact_providers.dart';
 import '../models/conversation_topic.dart';
 import '../providers/conversation_providers.dart';
@@ -123,31 +124,37 @@ class ConversationListPage extends ConsumerWidget {
         child: const Icon(Icons.add),
       ),
       body: ResponsiveCenter(
-        child: topicsAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Error: $e')),
-          data: (topics) {
-            if (topics.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.forum_outlined,
-                      size: 64,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text('No conversation topics yet'),
-                  ],
-                ),
+        child: RefreshIndicator(
+          onRefresh: () => ref.refresh(conversationListProvider.future),
+          child: topicsAsync.when(
+            loading: () =>
+                const PullableCenter(child: CircularProgressIndicator()),
+            error: (e, _) => PullableCenter(child: Text('Error: $e')),
+            data: (topics) {
+              if (topics.isEmpty) {
+                return PullableCenter(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.forum_outlined,
+                        size: 64,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(height: 16),
+                      const Text('No conversation topics yet'),
+                    ],
+                  ),
+                );
+              }
+              return ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: topics.length,
+                itemBuilder: (context, index) =>
+                    _TopicTile(topic: topics[index]),
               );
-            }
-            return ListView.builder(
-              itemCount: topics.length,
-              itemBuilder: (context, index) => _TopicTile(topic: topics[index]),
-            );
-          },
+            },
+          ),
         ),
       ),
     );

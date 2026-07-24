@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
+import 'package:personal_app/presentation/theme/app_scroll_behavior.dart';
 import 'package:personal_app/presentation/theme/app_theme.dart';
 import 'package:personal_app/routing/app_router.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -214,6 +215,7 @@ class PersonalApp extends ConsumerWidget {
           child: MaterialApp.router(
             title: 'Freek App',
             debugShowCheckedModeBanner: false,
+            scrollBehavior: AppScrollBehavior(),
             theme: AppTheme.lightTheme(seedColor),
             darkTheme: AppTheme.darkTheme(seedColor),
             themeMode: ref.watch(themeModeProvider),

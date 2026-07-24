@@ -8,6 +8,7 @@ import 'package:personal_app/presentation/widgets/star_rating.dart';
 import 'package:personal_app/presentation/widgets/wip_badge.dart';
 
 import '../../../presentation/hooks/use_synced_search_controller.dart';
+import '../../../presentation/widgets/pullable_center.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../models/recipe.dart';
 import '../providers/recipe_providers.dart';
@@ -73,38 +74,43 @@ class RecipeListPage extends HookConsumerWidget {
             ),
             _buildTagChips(context, ref),
             Expanded(
-              child: recipesAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Error: $e')),
-                data: (recipes) => recipes.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.restaurant_menu_rounded,
-                              size: 64,
-                              color: colorScheme.onSurfaceVariant.withAlpha(
-                                100,
+              child: RefreshIndicator(
+                onRefresh: () => ref.refresh(recipeListProvider.future),
+                child: recipesAsync.when(
+                  loading: () =>
+                      const PullableCenter(child: CircularProgressIndicator()),
+                  error: (e, _) => PullableCenter(child: Text('Error: $e')),
+                  data: (recipes) => recipes.isEmpty
+                      ? PullableCenter(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.restaurant_menu_rounded,
+                                size: 64,
+                                color: colorScheme.onSurfaceVariant.withAlpha(
+                                  100,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No recipes yet',
-                              style: Theme.of(context).textTheme.bodyLarge
-                                  ?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                            ),
-                          ],
+                              const SizedBox(height: 16),
+                              Text(
+                                'No recipes yet',
+                                style: Theme.of(context).textTheme.bodyLarge
+                                    ?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.only(bottom: 80),
+                          itemCount: recipes.length,
+                          itemBuilder: (context, index) =>
+                              _RecipeCard(recipe: recipes[index]),
                         ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.only(bottom: 80),
-                        itemCount: recipes.length,
-                        itemBuilder: (context, index) =>
-                            _RecipeCard(recipe: recipes[index]),
-                      ),
+                ),
               ),
             ),
           ],

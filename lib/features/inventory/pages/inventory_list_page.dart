@@ -7,6 +7,7 @@ import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
 import '../../../presentation/hooks/use_synced_search_controller.dart';
+import '../../../presentation/widgets/pullable_center.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../settings/providers/currency_providers.dart';
 import '../providers/inventory_providers.dart';
@@ -109,126 +110,138 @@ class InventoryListPage extends HookConsumerWidget {
 
             // Item list
             Expanded(
-              child: items.when(
-                data: (list) {
-                  if (list.isEmpty) {
-                    return const Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.inventory_2, size: 64, color: Colors.grey),
-                          SizedBox(height: 16),
-                          Text('No items yet'),
-                        ],
-                      ),
-                    );
-                  }
-
-                  return ListView.builder(
-                    itemCount: list.length,
-                    itemBuilder: (context, index) {
-                      final item = list[index];
-                      return Dismissible(
-                        key: Key(item.id),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          color: Colors.red,
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 16),
-                          child: const Icon(Icons.delete, color: Colors.white),
-                        ),
-                        confirmDismiss: (_) => showDialog<bool>(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('Delete Item'),
-                            content: Text('Delete "${item.name}"?'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx, false),
-                                child: const Text('Cancel'),
-                              ),
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx, true),
-                                child: const Text('Delete'),
-                              ),
-                            ],
-                          ),
-                        ),
-                        onDismissed: (_) => ref
-                            .read(inventoryListProvider.notifier)
-                            .deleteItem(item.id),
-                        child: ListTile(
-                          leading: showImages && item.imageUrls.isNotEmpty
-                              ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(20),
-                                  child: CachedNetworkImage(
-                                    imageUrl: item.imageUrls.first,
-                                    width: 40,
-                                    height: 40,
-                                    memCacheWidth: 120,
-                                    fit: BoxFit.cover,
-                                    errorWidget: (_, __, ___) => CircleAvatar(
-                                      child: Text(
-                                        item.name.isNotEmpty
-                                            ? item.name[0].toUpperCase()
-                                            : '?',
-                                      ),
-                                    ),
-                                  ),
-                                )
-                              : CircleAvatar(
-                                  child: Text(
-                                    item.name.isNotEmpty
-                                        ? item.name[0].toUpperCase()
-                                        : '?',
-                                  ),
-                                ),
-                          title: Row(
-                            children: [
-                              if (item.isOpened) ...[
-                                Icon(
-                                  Icons.check_circle,
-                                  size: 16,
-                                  color: theme.colorScheme.primary,
-                                ),
-                                const SizedBox(width: 4),
-                              ],
-                              Expanded(
-                                child: Text(
-                                  item.name,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          subtitle: Text(
-                            [
-                              if (item.category != null) item.category!,
-                              if (item.location != null) item.location!,
-                              if (item.quantity > 1) 'Qty: ${item.quantity}',
-                              if (item.fillPercent != null)
-                                '${item.fillPercent}% full',
-                              if (item.isOpened) 'Opened',
-                              if (item.expiryDate != null)
-                                item.expiryDate!.isBefore(DateTime.now())
-                                    ? 'EXPIRED'
-                                    : 'Exp: ${DateFormat.yMMMd().format(item.expiryDate!)}',
-                            ].join(' \u2022 '),
-                          ),
-                          trailing: item.purchasePrice != null
-                              ? Text(
-                                  converter.format(item.purchasePrice!),
-                                  style: theme.textTheme.bodySmall,
-                                )
-                              : null,
-                          onTap: () => context.push('/inventory/${item.id}'),
+              child: RefreshIndicator(
+                onRefresh: () => ref.refresh(inventoryListProvider.future),
+                child: items.when(
+                  data: (list) {
+                    if (list.isEmpty) {
+                      return const PullableCenter(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.inventory_2,
+                              size: 64,
+                              color: Colors.grey,
+                            ),
+                            SizedBox(height: 16),
+                            Text('No items yet'),
+                          ],
                         ),
                       );
-                    },
-                  );
-                },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Error: $e')),
+                    }
+
+                    return ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      itemCount: list.length,
+                      itemBuilder: (context, index) {
+                        final item = list[index];
+                        return Dismissible(
+                          key: Key(item.id),
+                          direction: DismissDirection.endToStart,
+                          background: Container(
+                            color: Colors.red,
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.only(right: 16),
+                            child: const Icon(
+                              Icons.delete,
+                              color: Colors.white,
+                            ),
+                          ),
+                          confirmDismiss: (_) => showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Delete Item'),
+                              content: Text('Delete "${item.name}"?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  child: const Text('Delete'),
+                                ),
+                              ],
+                            ),
+                          ),
+                          onDismissed: (_) => ref
+                              .read(inventoryListProvider.notifier)
+                              .deleteItem(item.id),
+                          child: ListTile(
+                            leading: showImages && item.imageUrls.isNotEmpty
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(20),
+                                    child: CachedNetworkImage(
+                                      imageUrl: item.imageUrls.first,
+                                      width: 40,
+                                      height: 40,
+                                      memCacheWidth: 120,
+                                      fit: BoxFit.cover,
+                                      errorWidget: (_, __, ___) => CircleAvatar(
+                                        child: Text(
+                                          item.name.isNotEmpty
+                                              ? item.name[0].toUpperCase()
+                                              : '?',
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : CircleAvatar(
+                                    child: Text(
+                                      item.name.isNotEmpty
+                                          ? item.name[0].toUpperCase()
+                                          : '?',
+                                    ),
+                                  ),
+                            title: Row(
+                              children: [
+                                if (item.isOpened) ...[
+                                  Icon(
+                                    Icons.check_circle,
+                                    size: 16,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                ],
+                                Expanded(
+                                  child: Text(
+                                    item.name,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            subtitle: Text(
+                              [
+                                if (item.category != null) item.category!,
+                                if (item.location != null) item.location!,
+                                if (item.quantity > 1) 'Qty: ${item.quantity}',
+                                if (item.fillPercent != null)
+                                  '${item.fillPercent}% full',
+                                if (item.isOpened) 'Opened',
+                                if (item.expiryDate != null)
+                                  item.expiryDate!.isBefore(DateTime.now())
+                                      ? 'EXPIRED'
+                                      : 'Exp: ${DateFormat.yMMMd().format(item.expiryDate!)}',
+                              ].join(' \u2022 '),
+                            ),
+                            trailing: item.purchasePrice != null
+                                ? Text(
+                                    converter.format(item.purchasePrice!),
+                                    style: theme.textTheme.bodySmall,
+                                  )
+                                : null,
+                            onTap: () => context.push('/inventory/${item.id}'),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                  loading: () =>
+                      const PullableCenter(child: CircularProgressIndicator()),
+                  error: (e, _) => PullableCenter(child: Text('Error: $e')),
+                ),
               ),
             ),
           ],

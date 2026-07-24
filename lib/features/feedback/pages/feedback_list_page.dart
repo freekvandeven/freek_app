@@ -7,6 +7,7 @@ import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 import 'package:personal_app/presentation/widgets/wip_badge.dart';
 
+import '../../../presentation/widgets/pullable_center.dart';
 import '../models/feedback_entry.dart';
 import '../providers/feedback_providers.dart';
 
@@ -314,23 +315,28 @@ class FeedbackListPage extends ConsumerWidget {
         child: const Icon(Icons.add),
       ),
       body: ResponsiveCenter(
-        child: entriesAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Error: $e')),
-          data: (entries) {
-            if (entries.isEmpty) {
-              return const Center(
-                child: Text('No feedback entries yet.\nTap + to add one.'),
+        child: RefreshIndicator(
+          onRefresh: () => ref.refresh(feedbackListProvider.future),
+          child: entriesAsync.when(
+            loading: () =>
+                const PullableCenter(child: CircularProgressIndicator()),
+            error: (e, _) => PullableCenter(child: Text('Error: $e')),
+            data: (entries) {
+              if (entries.isEmpty) {
+                return const PullableCenter(
+                  child: Text('No feedback entries yet.\nTap + to add one.'),
+                );
+              }
+              return ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: entries.length,
+                itemBuilder: (context, index) {
+                  final entry = entries[index];
+                  return _FeedbackTile(entry: entry);
+                },
               );
-            }
-            return ListView.builder(
-              itemCount: entries.length,
-              itemBuilder: (context, index) {
-                final entry = entries[index];
-                return _FeedbackTile(entry: entry);
-              },
-            );
-          },
+            },
+          ),
         ),
       ),
     );

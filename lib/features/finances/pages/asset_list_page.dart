@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
+import '../../../presentation/widgets/pullable_center.dart';
 import '../../settings/providers/currency_providers.dart';
 import '../models/finance_models.dart';
 import '../providers/finance_providers.dart';
@@ -46,80 +47,85 @@ class AssetListPage extends ConsumerWidget {
 
           // Asset list
           Expanded(
-            child: assets.when(
-              data: (list) {
-                if (list.isEmpty) {
-                  return const Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.account_balance_wallet,
-                          size: 64,
-                          color: Colors.grey,
-                        ),
-                        SizedBox(height: 16),
-                        Text('No assets yet'),
-                      ],
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  itemCount: list.length,
-                  itemBuilder: (context, index) {
-                    final asset = list[index];
-                    return Dismissible(
-                      key: Key(asset.id),
-                      direction: DismissDirection.endToStart,
-                      background: Container(
-                        color: Colors.red,
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.only(right: 16),
-                        child: const Icon(Icons.delete, color: Colors.white),
-                      ),
-                      confirmDismiss: (_) => showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('Delete Asset'),
-                          content: Text('Delete "${asset.name}"?'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx, false),
-                              child: const Text('Cancel'),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx, true),
-                              child: const Text('Delete'),
-                            ),
-                          ],
-                        ),
-                      ),
-                      onDismissed: (_) => ref
-                          .read(assetListProvider.notifier)
-                          .deleteAsset(asset.id),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          child: Icon(_assetTypeIcon(asset.type)),
-                        ),
-                        title: Text(asset.name),
-                        subtitle: Text(
-                          asset.type.name[0].toUpperCase() +
-                              asset.type.name.substring(1),
-                        ),
-                        trailing: Text(
-                          converter.format(asset.currentValue),
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        onTap: () =>
-                            context.push('/finance/assets/${asset.id}'),
+            child: RefreshIndicator(
+              onRefresh: () => ref.refresh(assetListProvider.future),
+              child: assets.when(
+                data: (list) {
+                  if (list.isEmpty) {
+                    return const PullableCenter(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.account_balance_wallet,
+                            size: 64,
+                            color: Colors.grey,
+                          ),
+                          SizedBox(height: 16),
+                          Text('No assets yet'),
+                        ],
                       ),
                     );
-                  },
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Error: $e')),
+                  }
+
+                  return ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    itemCount: list.length,
+                    itemBuilder: (context, index) {
+                      final asset = list[index];
+                      return Dismissible(
+                        key: Key(asset.id),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          color: Colors.red,
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 16),
+                          child: const Icon(Icons.delete, color: Colors.white),
+                        ),
+                        confirmDismiss: (_) => showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Delete Asset'),
+                            content: Text('Delete "${asset.name}"?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                child: const Text('Delete'),
+                              ),
+                            ],
+                          ),
+                        ),
+                        onDismissed: (_) => ref
+                            .read(assetListProvider.notifier)
+                            .deleteAsset(asset.id),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            child: Icon(_assetTypeIcon(asset.type)),
+                          ),
+                          title: Text(asset.name),
+                          subtitle: Text(
+                            asset.type.name[0].toUpperCase() +
+                                asset.type.name.substring(1),
+                          ),
+                          trailing: Text(
+                            converter.format(asset.currentValue),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          onTap: () =>
+                              context.push('/finance/assets/${asset.id}'),
+                        ),
+                      );
+                    },
+                  );
+                },
+                loading: () =>
+                    const PullableCenter(child: CircularProgressIndicator()),
+                error: (e, _) => PullableCenter(child: Text('Error: $e')),
+              ),
             ),
           ),
         ],

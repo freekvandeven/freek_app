@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../presentation/widgets/app_snackbar.dart';
 import '../../../presentation/widgets/file_drop_target.dart';
+import '../../../presentation/widgets/pullable_center.dart';
 import '../../../presentation/widgets/quick_actions_title.dart';
 import '../../../presentation/widgets/responsive_center.dart';
 import '../../../services/image_upload_service.dart';
@@ -80,25 +81,30 @@ class FilesPage extends HookConsumerWidget {
               _Breadcrumb(crumbs: crumbs),
               const Divider(height: 1),
               Expanded(
-                child: entries.when(
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                  error: (e, _) => Center(child: Text('Error: $e')),
-                  data: (list) {
-                    if (list.isEmpty) {
-                      return const Center(
-                        child: Text(
-                          'No files here yet.\nUse + to upload, '
-                          'drag a file in, or create a folder.',
-                          textAlign: TextAlign.center,
-                        ),
+                child: RefreshIndicator(
+                  onRefresh: () => ref.refresh(fileListProvider.future),
+                  child: entries.when(
+                    loading: () => const PullableCenter(
+                      child: CircularProgressIndicator(),
+                    ),
+                    error: (e, _) => PullableCenter(child: Text('Error: $e')),
+                    data: (list) {
+                      if (list.isEmpty) {
+                        return const PullableCenter(
+                          child: Text(
+                            'No files here yet.\nUse + to upload, '
+                            'drag a file in, or create a folder.',
+                            textAlign: TextAlign.center,
+                          ),
+                        );
+                      }
+                      return ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount: list.length,
+                        itemBuilder: (_, i) => _EntryTile(entry: list[i]),
                       );
-                    }
-                    return ListView.builder(
-                      itemCount: list.length,
-                      itemBuilder: (_, i) => _EntryTile(entry: list[i]),
-                    );
-                  },
+                    },
+                  ),
                 ),
               ),
             ],

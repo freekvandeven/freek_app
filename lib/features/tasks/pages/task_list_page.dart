@@ -6,6 +6,7 @@ import 'package:personal_app/presentation/widgets/app_snackbar.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
+import '../../../presentation/widgets/pullable_center.dart';
 import '../models/task.dart';
 import '../providers/task_providers.dart';
 
@@ -62,35 +63,39 @@ class TaskListPage extends ConsumerWidget {
               ),
             ),
             Expanded(
-              child: tasksAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Error: $e')),
-                data: (tasks) => tasks.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.check_circle_outline,
-                              size: 64,
-                              color: colorScheme.onSurfaceVariant.withAlpha(
-                                100,
+              child: RefreshIndicator(
+                onRefresh: () => ref.refresh(taskListProvider.future),
+                child: tasksAsync.when(
+                  loading: () =>
+                      const PullableCenter(child: CircularProgressIndicator()),
+                  error: (e, _) => PullableCenter(child: Text('Error: $e')),
+                  data: (tasks) => tasks.isEmpty
+                      ? PullableCenter(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.check_circle_outline,
+                                size: 64,
+                                color: colorScheme.onSurfaceVariant.withAlpha(
+                                  100,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              filter == TaskFilter.completed
-                                  ? 'No completed tasks'
-                                  : 'No tasks yet',
-                              style: Theme.of(context).textTheme.bodyLarge
-                                  ?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : _buildTaskList(tasks, allTasks),
+                              const SizedBox(height: 16),
+                              Text(
+                                filter == TaskFilter.completed
+                                    ? 'No completed tasks'
+                                    : 'No tasks yet',
+                                style: Theme.of(context).textTheme.bodyLarge
+                                    ?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : _buildTaskList(tasks, allTasks),
+                ),
               ),
             ),
           ],
@@ -125,6 +130,7 @@ class TaskListPage extends ConsumerWidget {
         .toList();
 
     return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.only(bottom: 80),
       itemCount: roots.length,
       itemBuilder: (context, index) {

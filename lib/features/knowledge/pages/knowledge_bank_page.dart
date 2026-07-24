@@ -6,6 +6,7 @@ import 'package:personal_app/presentation/widgets/responsive_center.dart';
 import 'package:personal_app/presentation/widgets/wip_badge.dart';
 
 import '../../../presentation/hooks/use_synced_search_controller.dart';
+import '../../../presentation/widgets/pullable_center.dart';
 import '../models/knowledge_page.dart';
 import '../providers/knowledge_providers.dart';
 
@@ -65,7 +66,12 @@ class KnowledgeBankPage extends HookConsumerWidget {
                     ref.read(knowledgeSearchProvider.notifier).state = v,
               ),
             ),
-            Expanded(child: isSearching ? _SearchResults() : _TreeView()),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () => ref.refresh(knowledgeListProvider.future),
+                child: isSearching ? _SearchResults() : _TreeView(),
+              ),
+            ),
           ],
         ),
       ),
@@ -79,13 +85,14 @@ class _SearchResults extends ConsumerWidget {
     final filtered = ref.watch(filteredKnowledgeProvider);
 
     return filtered.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      loading: () => const PullableCenter(child: CircularProgressIndicator()),
+      error: (e, _) => PullableCenter(child: Text('Error: $e')),
       data: (pages) {
         if (pages.isEmpty) {
-          return const Center(child: Text('No pages found'));
+          return const PullableCenter(child: Text('No pages found'));
         }
         return ListView.builder(
+          physics: const AlwaysScrollableScrollPhysics(),
           itemCount: pages.length,
           itemBuilder: (context, index) {
             final page = pages[index];
@@ -110,15 +117,16 @@ class _TreeView extends ConsumerWidget {
     final rootPages = ref.watch(rootKnowledgePagesProvider);
 
     return rootPages.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      loading: () => const PullableCenter(child: CircularProgressIndicator()),
+      error: (e, _) => PullableCenter(child: Text('Error: $e')),
       data: (pages) {
         if (pages.isEmpty) {
-          return const Center(
+          return const PullableCenter(
             child: Text('No pages yet.\nTap + to create your first page.'),
           );
         }
         return ListView.builder(
+          physics: const AlwaysScrollableScrollPhysics(),
           itemCount: pages.length,
           itemBuilder: (context, index) {
             return _PageTreeTile(page: pages[index], depth: 0);

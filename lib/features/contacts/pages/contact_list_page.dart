@@ -5,6 +5,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../presentation/hooks/use_synced_search_controller.dart';
+import '../../../presentation/widgets/pullable_center.dart';
 import '../../../presentation/widgets/quick_actions_title.dart';
 import '../../../presentation/widgets/responsive_center.dart';
 import '../models/contact.dart';
@@ -64,25 +65,30 @@ class ContactListPage extends HookConsumerWidget {
               ),
             ),
             Expanded(
-              child: contacts.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Error: $e')),
-                data: (list) {
-                  if (list.isEmpty) {
-                    return Center(
-                      child: Text(
-                        search.isEmpty
-                            ? 'No contacts yet.\nTap + to add one.'
-                            : 'No contacts match "$search".',
-                        textAlign: TextAlign.center,
-                      ),
+              child: RefreshIndicator(
+                onRefresh: () => ref.refresh(contactListProvider.future),
+                child: contacts.when(
+                  loading: () =>
+                      const PullableCenter(child: CircularProgressIndicator()),
+                  error: (e, _) => PullableCenter(child: Text('Error: $e')),
+                  data: (list) {
+                    if (list.isEmpty) {
+                      return PullableCenter(
+                        child: Text(
+                          search.isEmpty
+                              ? 'No contacts yet.\nTap + to add one.'
+                              : 'No contacts match "$search".',
+                          textAlign: TextAlign.center,
+                        ),
+                      );
+                    }
+                    return ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      itemCount: list.length,
+                      itemBuilder: (_, i) => _ContactTile(contact: list[i]),
                     );
-                  }
-                  return ListView.builder(
-                    itemCount: list.length,
-                    itemBuilder: (_, i) => _ContactTile(contact: list[i]),
-                  );
-                },
+                  },
+                ),
               ),
             ),
           ],
