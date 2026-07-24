@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 import 'package:personal_app/presentation/widgets/wip_badge.dart';
 
+import '../../../presentation/hooks/use_synced_search_controller.dart';
 import '../models/knowledge_page.dart';
 import '../providers/knowledge_providers.dart';
 
-class KnowledgeBankPage extends ConsumerWidget {
+class KnowledgeBankPage extends HookConsumerWidget {
   const KnowledgeBankPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final search = ref.watch(knowledgeSearchProvider);
+    final searchController = useSyncedSearchController(search);
     final isSearching = search.isNotEmpty;
     final wipOnly = ref.watch(knowledgeWipOnlyProvider);
 
@@ -42,6 +44,7 @@ class KnowledgeBankPage extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.all(12),
               child: TextField(
+                controller: searchController,
                 decoration: InputDecoration(
                   hintText: 'Search by title or tag...',
                   prefixIcon: const Icon(Icons.search),

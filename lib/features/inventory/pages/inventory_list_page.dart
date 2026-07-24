@@ -1,11 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
+import '../../../presentation/hooks/use_synced_search_controller.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../settings/providers/currency_providers.dart';
 import '../providers/inventory_providers.dart';
@@ -13,7 +14,7 @@ import '../utils/inventory_sort.dart';
 import '../widgets/default_location_dialog.dart';
 import '../widgets/transfer_quantity_dialog.dart';
 
-class InventoryListPage extends ConsumerWidget {
+class InventoryListPage extends HookConsumerWidget {
   const InventoryListPage({super.key});
 
   @override
@@ -21,6 +22,7 @@ class InventoryListPage extends ConsumerWidget {
     final converter = ref.watch(currencyConverterProvider);
     final items = ref.watch(filteredInventoryProvider);
     final search = ref.watch(inventorySearchProvider);
+    final searchController = useSyncedSearchController(search);
     final totalValue = ref.watch(inventoryTotalValueProvider);
     final showImages =
         ref.watch(currentUserProvider)?.settings.showImagePreviews ?? true;
@@ -67,6 +69,7 @@ class InventoryListPage extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: TextField(
+                controller: searchController,
                 decoration: InputDecoration(
                   hintText: 'Search items...',
                   prefixIcon: const Icon(Icons.search),

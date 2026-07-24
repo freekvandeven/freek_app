@@ -1,17 +1,18 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 import 'package:personal_app/presentation/widgets/star_rating.dart';
 import 'package:personal_app/presentation/widgets/wip_badge.dart';
 
+import '../../../presentation/hooks/use_synced_search_controller.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../models/recipe.dart';
 import '../providers/recipe_providers.dart';
 
-class RecipeListPage extends ConsumerWidget {
+class RecipeListPage extends HookConsumerWidget {
   const RecipeListPage({super.key});
 
   @override
@@ -19,6 +20,8 @@ class RecipeListPage extends ConsumerWidget {
     final recipesAsync = ref.watch(filteredRecipesProvider);
     final favOnly = ref.watch(recipeFavoritesOnlyProvider);
     final wipOnly = ref.watch(recipeWipOnlyProvider);
+    final search = ref.watch(recipeSearchProvider);
+    final searchController = useSyncedSearchController(search);
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -47,6 +50,7 @@ class RecipeListPage extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: TextField(
+                controller: searchController,
                 decoration: InputDecoration(
                   hintText: 'Search recipes...',
                   prefixIcon: const Icon(Icons.search),
@@ -54,6 +58,14 @@ class RecipeListPage extends ConsumerWidget {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
+                  suffixIcon: search.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () =>
+                              ref.read(recipeSearchProvider.notifier).state =
+                                  '',
+                        )
+                      : null,
                 ),
                 onChanged: (v) =>
                     ref.read(recipeSearchProvider.notifier).state = v,

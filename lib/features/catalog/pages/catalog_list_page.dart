@@ -1,15 +1,17 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 import 'package:personal_app/presentation/widgets/star_rating.dart';
 
+import '../../../presentation/hooks/use_synced_search_controller.dart';
 import '../../settings/providers/currency_providers.dart';
 import '../providers/catalog_providers.dart';
 
-class CatalogListPage extends ConsumerWidget {
+class CatalogListPage extends HookConsumerWidget {
   const CatalogListPage({super.key});
 
   @override
@@ -17,7 +19,20 @@ class CatalogListPage extends ConsumerWidget {
     final converter = ref.watch(currencyConverterProvider);
     final items = ref.watch(filteredCatalogProvider);
     final search = ref.watch(catalogSearchProvider);
+    final searchController = useSyncedSearchController(search);
     final theme = Theme.of(context);
+
+    // Catalog isn't part of the bottom-nav shell, so a normal push/pop
+    // disposes this page when the user leaves for a different feature —
+    // reset the search then (but not on the way back from a detail/edit
+    // push within Catalog itself, since that doesn't dispose this page)
+    // (BUG-0047).
+    useEffect(() {
+      if (ref.read(catalogSearchProvider).isNotEmpty) {
+        ref.read(catalogSearchProvider.notifier).state = '';
+      }
+      return null;
+    }, const []);
 
     return Scaffold(
       appBar: AppBar(
@@ -29,6 +44,7 @@ class CatalogListPage extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: TextField(
+                controller: searchController,
                 decoration: InputDecoration(
                   hintText: 'Search catalog...',
                   prefixIcon: const Icon(Icons.search),

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../presentation/hooks/use_synced_search_controller.dart';
 import '../../../presentation/widgets/quick_actions_title.dart';
 import '../../../presentation/widgets/responsive_center.dart';
 import '../models/contact.dart';
@@ -16,7 +17,18 @@ class ContactListPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final search = ref.watch(contactSearchProvider);
     final contacts = ref.watch(filteredContactsProvider);
-    final searchController = useTextEditingController(text: search);
+    final searchController = useSyncedSearchController(search);
+
+    // Not part of the bottom-nav shell, so leaving disposes this page —
+    // reset the search then, but not on the way back from a detail/edit
+    // push within Contacts itself, since that doesn't dispose this page
+    // (BUG-0047).
+    useEffect(() {
+      if (ref.read(contactSearchProvider).isNotEmpty) {
+        ref.read(contactSearchProvider.notifier).state = '';
+      }
+      return null;
+    }, const []);
 
     return Scaffold(
       appBar: AppBar(title: const QuickActionsTitle(child: Text('Contacts'))),
@@ -41,10 +53,9 @@ class ContactListPage extends HookConsumerWidget {
                   suffixIcon: search.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            searchController.clear();
-                            ref.read(contactSearchProvider.notifier).state = '';
-                          },
+                          onPressed: () =>
+                              ref.read(contactSearchProvider.notifier).state =
+                                  '',
                         )
                       : null,
                 ),
