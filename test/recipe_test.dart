@@ -204,5 +204,29 @@ void main() {
       expect(recipe.copyWith(rating: 5).rating, 5);
       expect(recipe.copyWith(clearRating: true).rating, isNull);
     });
+
+    test('hasBeenMade defaults to false (WISH-0091)', () {
+      final recipe = Recipe(title: 'Untried');
+      expect(recipe.hasBeenMade, isFalse);
+    });
+
+    test('hasBeenMade roundtrips through toMap/fromMap', () {
+      final recipe = Recipe(title: 'r', hasBeenMade: true);
+      final copy = Recipe.fromMap(recipe.toMap());
+      expect(copy.hasBeenMade, isTrue);
+    });
+
+    test('fromMap tolerates legacy records without hasBeenMade', () {
+      final legacy = Recipe(title: 'legacy').toMap()..remove('hasBeenMade');
+      expect(Recipe.fromMap(legacy).hasBeenMade, isFalse);
+    });
+
+    test('copyWith updates hasBeenMade independently of other fields', () {
+      final recipe = Recipe(title: 'r', isFavorite: true, rating: 4);
+      final updated = recipe.copyWith(hasBeenMade: true);
+      expect(updated.hasBeenMade, isTrue);
+      expect(updated.isFavorite, isTrue);
+      expect(updated.rating, 4);
+    });
   });
 }

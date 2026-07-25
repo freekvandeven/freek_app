@@ -75,6 +75,20 @@ class _RecipeDetailPageState extends ConsumerState<RecipeDetailPage> {
                   ref.read(recipeListProvider.notifier).toggleFavorite(recipe),
             ),
             IconButton(
+              tooltip: recipe.hasBeenMade
+                  ? 'Made before'
+                  : 'Mark as made before',
+              icon: Icon(
+                recipe.hasBeenMade
+                    ? Icons.check_circle
+                    : Icons.check_circle_outline,
+                color: recipe.hasBeenMade ? Colors.green : null,
+              ),
+              onPressed: () => ref
+                  .read(recipeListProvider.notifier)
+                  .toggleHasBeenMade(recipe),
+            ),
+            IconButton(
               icon: const Icon(Icons.edit),
               onPressed: () => context.push('/recipes/${recipe.id}/edit'),
             ),

@@ -21,6 +21,7 @@ class RecipeListPage extends HookConsumerWidget {
     final recipesAsync = ref.watch(filteredRecipesProvider);
     final favOnly = ref.watch(recipeFavoritesOnlyProvider);
     final wipOnly = ref.watch(recipeWipOnlyProvider);
+    final madeOnly = ref.watch(recipeMadeOnlyProvider);
     final search = ref.watch(recipeSearchProvider);
     final searchController = useSyncedSearchController(search);
     final colorScheme = Theme.of(context).colorScheme;
@@ -42,6 +43,15 @@ class RecipeListPage extends HookConsumerWidget {
             icon: Icon(favOnly ? Icons.favorite : Icons.favorite_border),
             onPressed: () =>
                 ref.read(recipeFavoritesOnlyProvider.notifier).state = !favOnly,
+          ),
+          IconButton(
+            tooltip: 'Made before only',
+            icon: Icon(
+              Icons.check_circle,
+              color: madeOnly ? Colors.green : null,
+            ),
+            onPressed: () =>
+                ref.read(recipeMadeOnlyProvider.notifier).state = !madeOnly,
           ),
         ],
       ),
@@ -202,10 +212,18 @@ class _RecipeCard extends ConsumerWidget {
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                         ),
-                        if (recipe.isWip) ...[
+                        if (recipe.hasBeenMade) ...[
+                          const Tooltip(
+                            message: 'Made before',
+                            child: Icon(
+                              Icons.check_circle,
+                              size: 18,
+                              color: Colors.green,
+                            ),
+                          ),
                           const SizedBox(width: 6),
-                          const WipBadge(),
                         ],
+                        if (recipe.isWip) const WipBadge(),
                       ],
                     ),
                     if (recipe.description != null) ...[

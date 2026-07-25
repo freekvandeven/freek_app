@@ -66,12 +66,19 @@ class RecipeListNotifier extends StreamNotifier<List<Recipe>> {
       recipe.copyWith(isFavorite: !recipe.isFavorite),
     );
   }
+
+  Future<void> toggleHasBeenMade(Recipe recipe) async {
+    await _service.updateRecipe(
+      recipe.copyWith(hasBeenMade: !recipe.hasBeenMade),
+    );
+  }
 }
 
 final recipeSearchProvider = StateProvider<String>((ref) => '');
 final recipeTagFilterProvider = StateProvider<String?>((ref) => null);
 final recipeFavoritesOnlyProvider = StateProvider<bool>((ref) => false);
 final recipeWipOnlyProvider = StateProvider<bool>((ref) => false);
+final recipeMadeOnlyProvider = StateProvider<bool>((ref) => false);
 
 final filteredRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
   final recipesAsync = ref.watch(recipeListProvider);
@@ -79,6 +86,7 @@ final filteredRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
   final tag = ref.watch(recipeTagFilterProvider);
   final favOnly = ref.watch(recipeFavoritesOnlyProvider);
   final wipOnly = ref.watch(recipeWipOnlyProvider);
+  final madeOnly = ref.watch(recipeMadeOnlyProvider);
 
   return recipesAsync.whenData((recipes) {
     var filtered = recipes.toList();
@@ -99,6 +107,9 @@ final filteredRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
     }
     if (wipOnly) {
       filtered = filtered.where((r) => r.isWip).toList();
+    }
+    if (madeOnly) {
+      filtered = filtered.where((r) => r.hasBeenMade).toList();
     }
     filtered.sort((a, b) => a.title.compareTo(b.title));
     return filtered;

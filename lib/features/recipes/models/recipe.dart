@@ -67,6 +67,11 @@ class Recipe {
   final List<String> subRecipeIds;
   final bool isFavorite;
   final bool isWip;
+
+  /// Whether the user has made this recipe at least once (WISH-0091).
+  /// A quick toggle like [isFavorite] — not an edit-form field — so it
+  /// isn't part of the autosave/dirty-check snapshot.
+  final bool hasBeenMade;
   final String? source;
   final String? notes;
 
@@ -98,6 +103,7 @@ class Recipe {
     this.subRecipeIds = const [],
     this.isFavorite = false,
     this.isWip = false,
+    this.hasBeenMade = false,
     this.source,
     this.notes,
     this.rating,
@@ -128,6 +134,7 @@ class Recipe {
     List<String>? subRecipeIds,
     bool? isFavorite,
     bool? isWip,
+    bool? hasBeenMade,
     String? source,
     String? notes,
     double? rating,
@@ -154,6 +161,7 @@ class Recipe {
       subRecipeIds: subRecipeIds ?? this.subRecipeIds,
       isFavorite: isFavorite ?? this.isFavorite,
       isWip: isWip ?? this.isWip,
+      hasBeenMade: hasBeenMade ?? this.hasBeenMade,
       source: clearSource ? null : (source ?? this.source),
       notes: clearNotes ? null : (notes ?? this.notes),
       rating: clearRating ? null : (rating ?? this.rating),
@@ -186,6 +194,7 @@ class Recipe {
     'subRecipeIds': subRecipeIds,
     'isFavorite': isFavorite,
     'isWip': isWip,
+    'hasBeenMade': hasBeenMade,
     'source': source,
     'notes': notes,
     'rating': rating,
@@ -232,6 +241,7 @@ class Recipe {
           [],
       isFavorite: map['isFavorite'] as bool? ?? false,
       isWip: map['isWip'] as bool? ?? false,
+      hasBeenMade: map['hasBeenMade'] as bool? ?? false,
       source: map['source'] as String?,
       notes: map['notes'] as String?,
       rating: (map['rating'] as num?)?.toDouble(),
