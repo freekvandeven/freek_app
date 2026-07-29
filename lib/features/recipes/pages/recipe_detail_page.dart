@@ -14,6 +14,7 @@ import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import '../models/recipe.dart';
 import '../providers/recipe_providers.dart';
 import '../utils/video_link_parser.dart';
+import '../widgets/recipe_ask_ai_sheet.dart';
 
 class RecipeDetailPage extends ConsumerStatefulWidget {
   final String recipeId;
@@ -87,6 +88,15 @@ class _RecipeDetailPageState extends ConsumerState<RecipeDetailPage> {
               onPressed: () => ref
                   .read(recipeListProvider.notifier)
                   .toggleHasBeenMade(recipe),
+            ),
+            IconButton(
+              tooltip: 'Ask AI about this recipe',
+              icon: const Icon(Icons.chat_bubble_outline),
+              onPressed: () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                builder: (_) => RecipeAskAiSheet(recipe: recipe),
+              ),
             ),
             IconButton(
               icon: const Icon(Icons.edit),

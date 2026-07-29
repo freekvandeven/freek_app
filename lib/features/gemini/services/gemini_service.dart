@@ -77,6 +77,27 @@ String stripCodeFences(String text) {
       .trim();
 }
 
+/// Pulls the human-readable part out of Gemini's verbose 429 body and
+/// appends an actionable hint pointing at the model picker. Shared by
+/// every chat-style surface (the general assistant chat and the
+/// per-recipe Q&A, WISH-0092) so the same rate-limit message reads the
+/// same way everywhere.
+String humanizeGeminiRateLimit(GeminiRateLimitException e) {
+  final body = e.message;
+  String detail = body;
+  try {
+    final json = jsonDecode(body) as Map<String, dynamic>?;
+    final error = json?['error'] as Map<String, dynamic>?;
+    final message = error?['message'] as String?;
+    if (message != null && message.trim().isNotEmpty) detail = message.trim();
+  } catch (_) {
+    // Body wasn't JSON — fall back to the raw text.
+  }
+  return '⚠️ $detail\n\n'
+      'Try a different model in **Settings → AI → Gemini Model** — some '
+      'models still have free-tier quota when others are depleted.';
+}
+
 class GeminiService {
   static const defaultModel = 'gemini-2.5-flash';
   static const _apiBase = 'https://generativelanguage.googleapis.com/v1beta';
@@ -479,6 +500,74 @@ class GeminiService {
         'Gemini $op: JSON parse failed: $e\nResponse: $preview',
       );
       return null;
+    }
+  }
+
+  /// Answers a question about an existing recipe, grounded in its full
+  /// content (title, ingredients, instructions, notes, etc.), without
+  /// ever asking the model to return an updated recipe (WISH-0092).
+  ///
+  /// [history] carries the prior turns of this Q&A session so follow-up
+  /// questions have context — pass an empty list for the first question.
+  /// Unlike [sendMessage], this never reads or mutates the service's own
+  /// [_chatHistory]: each call builds its `contents` from [history]
+  /// explicitly, so a recipe Q&A session never bleeds into the general
+  /// assistant chat (or another recipe's session) and vice versa.
+  Future<String> askAboutRecipe(
+    Map<String, dynamic> recipeContext,
+    List<({bool isUser, String text})> history,
+    String question,
+  ) async {
+    if (!isConfigured) {
+      return 'Gemini is not configured. Set it up in Settings → AI.';
+    }
+    final contents = [
+      {
+        'role': 'user',
+        'parts': [
+          {
+            'text':
+                'You are a cooking assistant answering questions about one '
+                'specific recipe. Use the recipe below as your source of '
+                'truth. You cannot modify the recipe — only discuss it; if '
+                'the user asks for a change, explain what they could edit '
+                'instead of producing a new recipe. Keep answers concise '
+                'and practical.\n\n'
+                'RECIPE (JSON):\n${jsonEncode(recipeContext)}',
+          },
+        ],
+      },
+      {
+        'role': 'model',
+        'parts': [
+          {'text': 'Understood. Ask me anything about this recipe.'},
+        ],
+      },
+      for (final turn in history)
+        {
+          'role': turn.isUser ? 'user' : 'model',
+          'parts': [
+            {'text': turn.text},
+          ],
+        },
+      {
+        'role': 'user',
+        'parts': [
+          {'text': question},
+        ],
+      },
+    ];
+    try {
+      final response = await _postModel('generateContent', {
+        'contents': contents,
+      }, op: 'askAboutRecipe');
+      if (response == null) return 'No response received.';
+      final text = _firstText(response)?.trim();
+      return (text == null || text.isEmpty) ? 'No response received.' : text;
+    } catch (e) {
+      if (e is GeminiRateLimitException) rethrow;
+      if (e is GeminiScopeException) rethrow;
+      return 'Error: $e';
     }
   }
 

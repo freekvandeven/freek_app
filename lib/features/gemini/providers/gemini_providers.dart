@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/providers/auth_providers.dart';
@@ -143,27 +141,9 @@ class GeminiChatNotifier extends Notifier<List<ChatMessage>> {
       // surface the API message so the user knows what happened, plus a
       // hint to switch model in Settings → AI (some models still have
       // free-tier quota even when others are depleted).
-      final msg = _humanizeRateLimit(e);
+      final msg = humanizeGeminiRateLimit(e);
       state = [...state, ChatMessage(text: msg, isUser: false)];
     }
-  }
-
-  /// Pulls the human-readable part out of Gemini's verbose 429 body and
-  /// appends an actionable hint pointing at the model picker.
-  String _humanizeRateLimit(GeminiRateLimitException e) {
-    final body = e.message;
-    String detail = body;
-    try {
-      final json = jsonDecode(body) as Map<String, dynamic>?;
-      final error = json?['error'] as Map<String, dynamic>?;
-      final message = error?['message'] as String?;
-      if (message != null && message.trim().isNotEmpty) detail = message.trim();
-    } catch (_) {
-      // Body wasn't JSON — fall back to the raw text.
-    }
-    return '⚠️ $detail\n\n'
-        'Try a different model in **Settings → AI → Gemini Model** — some '
-        'models still have free-tier quota when others are depleted.';
   }
 
   void clearChat() {
