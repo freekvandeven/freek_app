@@ -11,6 +11,7 @@ import 'package:personal_app/presentation/widgets/star_rating.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
+import '../../../utils/decimal_input.dart';
 import '../models/recipe.dart';
 import '../providers/recipe_providers.dart';
 import '../utils/video_link_parser.dart';
@@ -382,7 +383,7 @@ class _RecipeDetailPageState extends ConsumerState<RecipeDetailPage> {
                 const SizedBox(width: 8),
                 Text(
                   [
-                    if (scaledQty != null) _formatQuantity(scaledQty),
+                    if (scaledQty != null) formatDecimal(scaledQty),
                     if (i.unit != null) i.unit,
                     i.name,
                   ].join(' '),
@@ -495,14 +496,6 @@ class _RecipeDetailPageState extends ConsumerState<RecipeDetailPage> {
       mainAxisSize: MainAxisSize.min,
       children: [Icon(icon, size: 16), const SizedBox(width: 4), Text(text)],
     );
-  }
-
-  String _formatQuantity(double q) {
-    if (q == q.roundToDouble()) return q.toInt().toString();
-    final rounded = double.parse(q.toStringAsFixed(2));
-    return rounded == rounded.roundToDouble()
-        ? rounded.toInt().toString()
-        : rounded.toString();
   }
 }
 

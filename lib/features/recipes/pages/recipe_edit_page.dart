@@ -315,16 +315,30 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     await notifier.updateRecipe(_existingRecipeFromForm(existing));
   }
 
-  void _addIngredient() {
-    final nameCtrl = TextEditingController();
-    final qtyCtrl = TextEditingController();
-    final unitCtrl = TextEditingController();
-    String? catalogItemId;
+  void _addIngredient() => _showIngredientDialog();
+
+  /// Opens the same dialog as [_addIngredient] pre-filled with the
+  /// ingredient at [editIndex], replacing it in place on save instead of
+  /// appending a new one (BUG-0048).
+  void _editIngredient(int editIndex) =>
+      _showIngredientDialog(editIndex: editIndex);
+
+  void _showIngredientDialog({int? editIndex}) {
+    final isEditing = editIndex != null;
+    final existing = isEditing ? _ingredients[editIndex] : null;
+    final nameCtrl = TextEditingController(text: existing?.name);
+    final qtyCtrl = TextEditingController(
+      text: existing?.quantity != null
+          ? formatDecimal(existing!.quantity!)
+          : '',
+    );
+    final unitCtrl = TextEditingController(text: existing?.unit);
+    String? catalogItemId = existing?.catalogItemId;
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Add Ingredient'),
+        title: Text(isEditing ? 'Edit Ingredient' : 'Add Ingredient'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -386,35 +400,48 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
           TextButton(
             onPressed: () {
               if (nameCtrl.text.trim().isNotEmpty) {
+                final ingredient = Ingredient(
+                  name: nameCtrl.text.trim(),
+                  quantity: parseDecimal(qtyCtrl.text),
+                  unit: unitCtrl.text.trim().isEmpty
+                      ? null
+                      : unitCtrl.text.trim(),
+                  catalogItemId: catalogItemId,
+                );
                 setState(() {
-                  _ingredients.add(
-                    Ingredient(
-                      name: nameCtrl.text.trim(),
-                      quantity: parseDecimal(qtyCtrl.text),
-                      unit: unitCtrl.text.trim().isEmpty
-                          ? null
-                          : unitCtrl.text.trim(),
-                      catalogItemId: catalogItemId,
-                    ),
-                  );
+                  if (isEditing) {
+                    _ingredients[editIndex] = ingredient;
+                  } else {
+                    _ingredients.add(ingredient);
+                  }
                 });
               }
               Navigator.pop(ctx);
             },
-            child: const Text('Add'),
+            child: Text(isEditing ? 'Save' : 'Add'),
           ),
         ],
       ),
     );
   }
 
-  void _addInstruction() {
-    final ctrl = TextEditingController();
-    final imgCtrl = TextEditingController();
+  void _addInstruction() => _showInstructionDialog();
+
+  /// Opens the same dialog as [_addInstruction] pre-filled with the step
+  /// at [editIndex], replacing it in place on save instead of appending
+  /// a new one (BUG-0048).
+  void _editInstruction(int editIndex) =>
+      _showInstructionDialog(editIndex: editIndex);
+
+  void _showInstructionDialog({int? editIndex}) {
+    final isEditing = editIndex != null;
+    final existing = isEditing ? _instructions[editIndex] : null;
+    final ctrl = TextEditingController(text: existing?.text);
+    final imgCtrl = TextEditingController(text: existing?.imageUrl);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Add Step'),
+        title: Text(isEditing ? 'Edit Step' : 'Add Step'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -499,18 +526,21 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
             onPressed: () {
               if (ctrl.text.trim().isNotEmpty) {
                 final imgUrl = imgCtrl.text.trim();
-                setState(
-                  () => _instructions.add(
-                    RecipeInstruction(
-                      text: ctrl.text.trim(),
-                      imageUrl: imgUrl.isEmpty ? null : imgUrl,
-                    ),
-                  ),
+                final instruction = RecipeInstruction(
+                  text: ctrl.text.trim(),
+                  imageUrl: imgUrl.isEmpty ? null : imgUrl,
                 );
+                setState(() {
+                  if (isEditing) {
+                    _instructions[editIndex] = instruction;
+                  } else {
+                    _instructions.add(instruction);
+                  }
+                });
               }
               Navigator.pop(ctx);
             },
-            child: const Text('Add'),
+            child: Text(isEditing ? 'Save' : 'Add'),
           ),
         ],
       ),
@@ -1069,6 +1099,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                 RecipeIngredientsSection(
                   ingredients: _ingredients,
                   onAdd: _addIngredient,
+                  onEdit: _editIngredient,
                   onRemove: (i) => setState(() => _ingredients.removeAt(i)),
                 ),
                 const SizedBox(height: 16),
@@ -1076,6 +1107,7 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
                 RecipeInstructionsSection(
                   instructions: _instructions,
                   onAdd: _addInstruction,
+                  onEdit: _editInstruction,
                   onRemove: (i) => setState(() => _instructions.removeAt(i)),
                   onReorder: (int oldIdx, int newIdx) {
                     // onReorderItem (Flutter >=3.41) already adjusts the

@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../models/recipe.dart';
 
-/// Editable, reorderable list of a recipe's instruction steps with add and
-/// per-row remove.
+/// Editable, reorderable list of a recipe's instruction steps — tap a
+/// step to edit it in place, drag to reorder, or use the trailing
+/// button to remove it (BUG-0048).
 class RecipeInstructionsSection extends StatelessWidget {
   final List<RecipeInstruction> instructions;
   final VoidCallback onAdd;
+  final void Function(int index) onEdit;
   final void Function(int index) onRemove;
   final ReorderCallback onReorder;
 
@@ -14,6 +16,7 @@ class RecipeInstructionsSection extends StatelessWidget {
     super.key,
     required this.instructions,
     required this.onAdd,
+    required this.onEdit,
     required this.onRemove,
     required this.onReorder,
   });
@@ -61,6 +64,7 @@ class RecipeInstructionsSection extends StatelessWidget {
                     style: const TextStyle(fontSize: 11, color: Colors.grey),
                   )
                 : null,
+            onTap: () => onEdit(index),
             trailing: IconButton(
               icon: const Icon(Icons.remove_circle_outline, size: 20),
               onPressed: () => onRemove(index),

@@ -2,16 +2,19 @@ import 'package:flutter/material.dart';
 
 import '../models/recipe.dart';
 
-/// Editable list of a recipe's ingredients with add and per-row remove.
+/// Editable list of a recipe's ingredients — tap a row to edit it in
+/// place, or use the trailing button to remove it (BUG-0048).
 class RecipeIngredientsSection extends StatelessWidget {
   final List<Ingredient> ingredients;
   final VoidCallback onAdd;
+  final void Function(int index) onEdit;
   final void Function(int index) onRemove;
 
   const RecipeIngredientsSection({
     super.key,
     required this.ingredients,
     required this.onAdd,
+    required this.onEdit,
     required this.onRemove,
   });
 
@@ -43,6 +46,7 @@ class RecipeIngredientsSection extends StatelessWidget {
                 entry.value.name,
               ].join(' '),
             ),
+            onTap: () => onEdit(entry.key),
             trailing: IconButton(
               icon: const Icon(Icons.remove_circle_outline, size: 20),
               onPressed: () => onRemove(entry.key),
