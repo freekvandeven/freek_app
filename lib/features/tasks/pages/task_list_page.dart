@@ -9,6 +9,7 @@ import 'package:personal_app/presentation/widgets/responsive_center.dart';
 import '../../../presentation/widgets/pullable_center.dart';
 import '../models/task.dart';
 import '../providers/task_providers.dart';
+import '../utils/duration_format.dart';
 
 class TaskListPage extends ConsumerWidget {
   const TaskListPage({super.key});
@@ -34,6 +35,10 @@ class TaskListPage extends ConsumerWidget {
               PopupMenuItem(
                 value: TaskSort.createdDate,
                 child: Text('Created Date'),
+              ),
+              PopupMenuItem(
+                value: TaskSort.estimatedDuration,
+                child: Text('Estimated Duration'),
               ),
             ],
           ),
@@ -246,6 +251,34 @@ class _TaskTile extends ConsumerWidget {
           style: TextStyle(
             color: isOverdue ? colorScheme.error : null,
             fontWeight: isOverdue ? FontWeight.bold : null,
+          ),
+        ),
+      );
+    }
+    if (task.estimatedMinutes != null) {
+      parts.add(
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.schedule,
+                size: 12,
+                color: colorScheme.onPrimaryContainer,
+              ),
+              const SizedBox(width: 3),
+              Text(
+                formatTaskDuration(task.estimatedMinutes!),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onPrimaryContainer,
+                ),
+              ),
+            ],
           ),
         ),
       );

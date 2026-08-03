@@ -34,6 +34,8 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _categoryController = TextEditingController();
+  final _estimateHoursController = TextEditingController();
+  final _estimateMinutesController = TextEditingController();
   TaskPriority _priority = TaskPriority.medium;
   DateTime? _dueDate;
   TimeOfDay? _dueTime;
@@ -78,6 +80,8 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
     _titleController.text,
     _descriptionController.text,
     _categoryController.text,
+    _estimateHoursController.text,
+    _estimateMinutesController.text,
     _priority.name,
     _dueDate?.toIso8601String() ?? '',
     _hasDueTime,
@@ -101,6 +105,12 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
         _titleController.text = task.title;
         _descriptionController.text = task.description ?? '';
         _categoryController.text = task.category ?? '';
+        if (task.estimatedMinutes != null) {
+          _estimateHoursController.text = (task.estimatedMinutes! ~/ 60)
+              .toString();
+          _estimateMinutesController.text = (task.estimatedMinutes! % 60)
+              .toString();
+        }
         _priority = task.priority;
         _dueDate = task.dueDate;
         _hasDueTime = task.hasDueTime;
@@ -128,6 +138,8 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
     _titleController.dispose();
     _descriptionController.dispose();
     _categoryController.dispose();
+    _estimateHoursController.dispose();
+    _estimateMinutesController.dispose();
     super.dispose();
   }
 
@@ -154,6 +166,15 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
 
       final category = _categoryController.text.trim();
       final description = _descriptionController.text.trim();
+
+      final estimateHours =
+          int.tryParse(_estimateHoursController.text.trim()) ?? 0;
+      final estimateMinutesPart =
+          int.tryParse(_estimateMinutesController.text.trim()) ?? 0;
+      final totalEstimateMinutes = estimateHours * 60 + estimateMinutesPart;
+      final estimatedMinutes = totalEstimateMinutes > 0
+          ? totalEstimateMinutes
+          : null;
 
       // Build due date with optional time
       DateTime? dueDate = _dueDate;
@@ -188,6 +209,8 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
             repeatInterval: _isRepeatable ? _repeatInterval : 1,
             repeatEndDate: _isRepeatable ? _repeatEndDate : null,
             clearRepeatEndDate: !_isRepeatable,
+            estimatedMinutes: estimatedMinutes,
+            clearEstimatedMinutes: estimatedMinutes == null,
             parentTaskId: _parentTaskId,
             clearParentTaskId: _parentTaskId == null,
           );
@@ -206,6 +229,7 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
           repeatType: _isRepeatable ? _repeatType : null,
           repeatInterval: _isRepeatable ? _repeatInterval : 1,
           repeatEndDate: _isRepeatable ? _repeatEndDate : null,
+          estimatedMinutes: estimatedMinutes,
           parentTaskId: _parentTaskId,
         );
         await ref.read(taskListProvider.notifier).addTask(task);
@@ -301,6 +325,34 @@ class _TaskEditPageState extends ConsumerState<TaskEditPage> {
                   selected: {_priority},
                   onSelectionChanged: (s) =>
                       setState(() => _priority = s.first),
+                ),
+                const SizedBox(height: 16),
+
+                // Estimated duration — a rough time guess so tasks can be
+                // compared and quick wins spotted at a glance (WISH-0094).
+                Text(
+                  'Estimated duration',
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _estimateHoursController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(labelText: 'Hours'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _estimateMinutesController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(labelText: 'Minutes'),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
 

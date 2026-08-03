@@ -109,7 +109,7 @@ class TaskListNotifier extends StreamNotifier<List<Task>> {
 
 enum TaskFilter { all, pending, completed }
 
-enum TaskSort { dueDate, priority, createdDate }
+enum TaskSort { dueDate, priority, createdDate, estimatedDuration }
 
 final taskFilterProvider = StateProvider<TaskFilter>(
   (ref) => TaskFilter.pending,
@@ -139,6 +139,13 @@ final filteredTasksProvider = Provider<AsyncValue<List<Task>>>((ref) {
         TaskSort.dueDate => _compareDates(a.dueDate, b.dueDate),
         TaskSort.priority => b.priority.index.compareTo(a.priority.index),
         TaskSort.createdDate => b.createdAt.compareTo(a.createdAt),
+        // Quickest first, so quick wins float to the top (WISH-0094).
+        // Un-estimated tasks sink to the bottom, same nulls-last
+        // convention as _compareDates.
+        TaskSort.estimatedDuration => _compareEstimatedMinutes(
+          a.estimatedMinutes,
+          b.estimatedMinutes,
+        ),
       };
     });
 
@@ -147,6 +154,13 @@ final filteredTasksProvider = Provider<AsyncValue<List<Task>>>((ref) {
 });
 
 int _compareDates(DateTime? a, DateTime? b) {
+  if (a == null && b == null) return 0;
+  if (a == null) return 1;
+  if (b == null) return -1;
+  return a.compareTo(b);
+}
+
+int _compareEstimatedMinutes(int? a, int? b) {
   if (a == null && b == null) return 0;
   if (a == null) return 1;
   if (b == null) return -1;

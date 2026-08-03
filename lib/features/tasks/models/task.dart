@@ -22,6 +22,11 @@ class Task {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  /// Rough estimate of how long the task will take, in minutes — lets
+  /// the user compare tasks at a glance and sort quick wins first
+  /// (WISH-0094). `null` means "not estimated".
+  final int? estimatedMinutes;
+
   /// ID of the parent task this task is a subtask of, or null if it's a
   /// root task. Subtasks are limited to a single nesting level — a task
   /// with [parentTaskId] set cannot itself be picked as a parent — to
@@ -43,6 +48,7 @@ class Task {
     this.repeatType,
     this.repeatInterval = 1,
     this.repeatEndDate,
+    this.estimatedMinutes,
     this.parentTaskId,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -64,6 +70,7 @@ class Task {
     RepeatType? repeatType,
     int? repeatInterval,
     DateTime? repeatEndDate,
+    int? estimatedMinutes,
     String? parentTaskId,
     bool clearDueDate = false,
     bool clearCompletedAt = false,
@@ -71,6 +78,7 @@ class Task {
     bool clearCategory = false,
     bool clearRepeatType = false,
     bool clearRepeatEndDate = false,
+    bool clearEstimatedMinutes = false,
     bool clearParentTaskId = false,
   }) {
     return Task(
@@ -90,6 +98,9 @@ class Task {
       repeatEndDate: clearRepeatEndDate
           ? null
           : (repeatEndDate ?? this.repeatEndDate),
+      estimatedMinutes: clearEstimatedMinutes
+          ? null
+          : (estimatedMinutes ?? this.estimatedMinutes),
       parentTaskId: clearParentTaskId
           ? null
           : (parentTaskId ?? this.parentTaskId),
@@ -113,6 +124,7 @@ class Task {
     'repeatType': repeatType?.name,
     'repeatInterval': repeatInterval,
     'repeatEndDate': repeatEndDate?.toIso8601String(),
+    'estimatedMinutes': estimatedMinutes,
     'parentTaskId': parentTaskId,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
@@ -151,6 +163,7 @@ class Task {
       repeatEndDate: map['repeatEndDate'] != null
           ? DateTime.parse(map['repeatEndDate'] as String)
           : null,
+      estimatedMinutes: map['estimatedMinutes'] as int?,
       parentTaskId: map['parentTaskId'] as String?,
       createdAt: DateTime.parse(map['createdAt'] as String),
       updatedAt: DateTime.parse(map['updatedAt'] as String),
