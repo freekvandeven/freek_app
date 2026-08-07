@@ -789,6 +789,33 @@ class _MarkdownToolbarState extends State<_MarkdownToolbar> {
     _apply(insertAtLineStart(widget.controller.text, _lastSel, prefix));
   }
 
+  void _insertTable() {
+    _apply(insertTable(widget.controller.text, _lastSel));
+  }
+
+  void _addTableRow() =>
+      _applyTableEdit(addTableRow(widget.controller.text, _lastSel));
+
+  void _removeTableRow() =>
+      _applyTableEdit(removeTableRow(widget.controller.text, _lastSel));
+
+  void _addTableColumn() =>
+      _applyTableEdit(addTableColumn(widget.controller.text, _lastSel));
+
+  void _removeTableColumn() =>
+      _applyTableEdit(removeTableColumn(widget.controller.text, _lastSel));
+
+  /// Row/column edits are no-ops (return null) when the caret isn't
+  /// inside a table — surface that instead of silently doing nothing
+  /// (WISH-0095).
+  void _applyTableEdit(ToolbarEditResult? result) {
+    if (result == null) {
+      context.showSnackbar('Place your cursor inside a table first');
+      return;
+    }
+    _apply(result);
+  }
+
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme.onSurfaceVariant;
@@ -880,6 +907,34 @@ class _MarkdownToolbarState extends State<_MarkdownToolbar> {
               tooltip: 'Horizontal rule',
               active: false,
               onTap: () => _insertAtLineStart('---\n'),
+            ),
+            _divider(),
+            _ToolbarIconButton(
+              icon: Icons.table_chart_outlined,
+              color: color,
+              tooltip: 'Insert table',
+              active: false,
+              onTap: _insertTable,
+            ),
+            _ToolbarTextButton(
+              label: '+Row',
+              color: color,
+              onTap: _addTableRow,
+            ),
+            _ToolbarTextButton(
+              label: '-Row',
+              color: color,
+              onTap: _removeTableRow,
+            ),
+            _ToolbarTextButton(
+              label: '+Col',
+              color: color,
+              onTap: _addTableColumn,
+            ),
+            _ToolbarTextButton(
+              label: '-Col',
+              color: color,
+              onTap: _removeTableColumn,
             ),
           ],
         ),

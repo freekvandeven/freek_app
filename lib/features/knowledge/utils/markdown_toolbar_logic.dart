@@ -243,3 +243,188 @@ ToolbarEditResult removeNumberedPrefix(String text, TextSelection sel) {
   final caret = (start - removed).clamp(lineStart, newText.length);
   return ToolbarEditResult(newText, TextSelection.collapsed(offset: caret));
 }
+
+// --- Table editing (WISH-0095) ---
+//
+// Tables get their own small sub-model because, unlike the line/wrap
+// helpers above, row and column edits need to find the extent of the
+// table block the caret is sitting in first.
+
+/// The `[startLine, endLine]` (inclusive) range of lines making up a
+/// markdown table found around the caret.
+class _TableBlock {
+  final int startLine;
+  final int endLine;
+  const _TableBlock(this.startLine, this.endLine);
+}
+
+bool _looksLikeTableRow(String line) => line.trim().contains('|');
+
+/// A separator row (`| --- | :---: |`), once split into cells, is
+/// nothing but dashes with optional alignment colons.
+final _separatorCellRe = RegExp(r'^:?-+:?$');
+
+List<String> _splitTableRow(String line) {
+  var trimmed = line.trim();
+  if (trimmed.startsWith('|')) trimmed = trimmed.substring(1);
+  if (trimmed.endsWith('|')) {
+    trimmed = trimmed.substring(0, trimmed.length - 1);
+  }
+  return trimmed.split('|').map((c) => c.trim()).toList();
+}
+
+String _joinTableRow(List<String> cells) => '| ${cells.join(' | ')} |';
+
+bool _isSeparatorRow(String line) {
+  final cells = _splitTableRow(line);
+  return cells.isNotEmpty && cells.every(_separatorCellRe.hasMatch);
+}
+
+int _lineIndexForOffset(String text, int offset) {
+  final clamped = offset.clamp(0, text.length);
+  return '\n'.allMatches(text.substring(0, clamped)).length;
+}
+
+int _offsetForLineStart(List<String> lines, int lineIndex) {
+  var offset = 0;
+  for (var i = 0; i < lineIndex && i < lines.length; i++) {
+    offset += lines[i].length + 1;
+  }
+  return offset;
+}
+
+/// Finds the markdown table containing line [caretLine], expanding out
+/// while neighbouring lines still look like table rows. Requires at
+/// least a header + separator row, and the second line to actually be
+/// a valid separator (`| --- | --- |`) — otherwise a caret sitting on
+/// an unrelated line that happens to contain `|` won't be mistaken for
+/// a table.
+_TableBlock? _findTableBlock(List<String> lines, int caretLine) {
+  if (caretLine < 0 || caretLine >= lines.length) return null;
+  if (!_looksLikeTableRow(lines[caretLine])) return null;
+  var start = caretLine;
+  while (start > 0 && _looksLikeTableRow(lines[start - 1])) {
+    start--;
+  }
+  var end = caretLine;
+  while (end < lines.length - 1 && _looksLikeTableRow(lines[end + 1])) {
+    end++;
+  }
+  if (end - start < 1 || !_isSeparatorRow(lines[start + 1])) return null;
+  return _TableBlock(start, end);
+}
+
+/// Inserts a minimal 2-column table skeleton at the caret (or in place
+/// of the current selection) — one tap, no dialog, matching every
+/// other toolbar action. Grow it with [addTableRow]/[addTableColumn];
+/// cell placeholders are edited by typing over them directly.
+ToolbarEditResult insertTable(String text, TextSelection sel) {
+  const table = '| Header 1 | Header 2 |\n| --- | --- |\n| Cell | Cell |';
+  final start = sel.start.clamp(0, text.length);
+  final end = sel.end.clamp(0, text.length);
+  final before = text.substring(0, start);
+  final after = text.substring(end);
+  final leading = before.isNotEmpty && !before.endsWith('\n') ? '\n' : '';
+  final trailing = after.isNotEmpty && !after.startsWith('\n') ? '\n' : '';
+  final insertion = '$leading$table$trailing';
+  final newText = before + insertion + after;
+  return ToolbarEditResult(
+    newText,
+    TextSelection.collapsed(offset: before.length + insertion.length),
+  );
+}
+
+/// Appends a new data row to the table under the caret, matching its
+/// column count, and parks the caret in the new row's first cell.
+/// Returns null when the caret isn't inside a table.
+ToolbarEditResult? addTableRow(String text, TextSelection sel) {
+  final lines = text.split('\n');
+  final block = _findTableBlock(lines, _lineIndexForOffset(text, sel.start));
+  if (block == null) return null;
+  final columnCount = _splitTableRow(lines[block.startLine]).length;
+  final newRow = _joinTableRow(List.filled(columnCount, 'Cell'));
+  final insertAt = block.endLine + 1;
+  final newLines = [
+    ...lines.sublist(0, insertAt),
+    newRow,
+    ...lines.sublist(insertAt),
+  ];
+  return ToolbarEditResult(
+    newLines.join('\n'),
+    TextSelection.collapsed(
+      offset: _offsetForLineStart(newLines, insertAt) + 2,
+    ),
+  );
+}
+
+/// Removes the last data row of the table under the caret. Returns
+/// null when the caret isn't inside a table, or only the header +
+/// separator are left (nothing to remove).
+ToolbarEditResult? removeTableRow(String text, TextSelection sel) {
+  final lines = text.split('\n');
+  final block = _findTableBlock(lines, _lineIndexForOffset(text, sel.start));
+  if (block == null) return null;
+  final firstDataLine = block.startLine + 2;
+  if (block.endLine < firstDataLine) return null;
+  final newLines = [
+    ...lines.sublist(0, block.endLine),
+    ...lines.sublist(block.endLine + 1),
+  ];
+  return ToolbarEditResult(
+    newLines.join('\n'),
+    TextSelection.collapsed(
+      offset: _offsetForLineStart(newLines, block.startLine),
+    ),
+  );
+}
+
+/// Appends a new column to every row of the table under the caret
+/// (header, separator, and all data rows). Returns null when the
+/// caret isn't inside a table.
+ToolbarEditResult? addTableColumn(String text, TextSelection sel) {
+  final lines = text.split('\n');
+  final block = _findTableBlock(lines, _lineIndexForOffset(text, sel.start));
+  if (block == null) return null;
+  final newLines = List.of(lines);
+  for (var i = block.startLine; i <= block.endLine; i++) {
+    final cells = _splitTableRow(lines[i]);
+    final String newCell;
+    if (i == block.startLine) {
+      newCell = 'Header';
+    } else if (i == block.startLine + 1) {
+      newCell = '---';
+    } else {
+      newCell = 'Cell';
+    }
+    cells.add(newCell);
+    newLines[i] = _joinTableRow(cells);
+  }
+  return ToolbarEditResult(
+    newLines.join('\n'),
+    TextSelection.collapsed(
+      offset: _offsetForLineStart(newLines, block.startLine),
+    ),
+  );
+}
+
+/// Removes the last column from every row of the table under the
+/// caret. Returns null when the caret isn't inside a table, or the
+/// table only has one column left.
+ToolbarEditResult? removeTableColumn(String text, TextSelection sel) {
+  final lines = text.split('\n');
+  final block = _findTableBlock(lines, _lineIndexForOffset(text, sel.start));
+  if (block == null) return null;
+  if (_splitTableRow(lines[block.startLine]).length <= 1) return null;
+  final newLines = List.of(lines);
+  for (var i = block.startLine; i <= block.endLine; i++) {
+    final cells = _splitTableRow(lines[i]);
+    if (cells.length > 1) cells.removeLast();
+    newLines[i] = _joinTableRow(cells);
+  }
+  return ToolbarEditResult(
+    newLines.join('\n'),
+    TextSelection.collapsed(
+      offset: _offsetForLineStart(newLines, block.startLine),
+    ),
+  );
+}

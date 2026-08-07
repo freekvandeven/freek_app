@@ -288,4 +288,120 @@ void main() {
       expect(result.text, '- bullet');
     });
   });
+
+  group('insertTable (WISH-0095)', () {
+    test('inserts a 2-column skeleton at an empty caret', () {
+      final result = insertTable('', const TextSelection.collapsed(offset: 0));
+      expect(
+        result.text,
+        '| Header 1 | Header 2 |\n| --- | --- |\n| Cell | Cell |',
+      );
+      expect(result.selection.baseOffset, result.text.length);
+    });
+
+    test('adds surrounding newlines when inserted mid-paragraph', () {
+      const text = 'before|after';
+      final result = insertTable(
+        text,
+        TextSelection.collapsed(offset: text.indexOf('|')),
+      );
+      expect(result.text, startsWith('before\n| Header 1'));
+      expect(result.text, endsWith('| Cell | Cell |\n|after'));
+    });
+
+    test('does not add an extra blank line when already at a clean line '
+        'boundary', () {
+      const text = 'before\n\nafter';
+      final result = insertTable(
+        text,
+        TextSelection.collapsed(offset: text.indexOf('\n\n') + 1),
+      );
+      expect(
+        result.text,
+        'before\n| Header 1 | Header 2 |\n| --- | --- |\n'
+        '| Cell | Cell |\nafter',
+      );
+    });
+  });
+
+  group('table row/column edits (WISH-0095)', () {
+    const table = '| A | B |\n| --- | --- |\n| 1 | 2 |';
+
+    TextSelection caretIn(String text, String needle) =>
+        TextSelection.collapsed(offset: text.indexOf(needle));
+
+    test('addTableRow returns null outside a table', () {
+      expect(
+        addTableRow('plain text', const TextSelection.collapsed(offset: 2)),
+        isNull,
+      );
+    });
+
+    test('addTableRow appends a row matching the column count and parks '
+        'the caret in its first cell', () {
+      final result = addTableRow(table, caretIn(table, '1'));
+      expect(result, isNotNull);
+      expect(result!.text, '$table\n| Cell | Cell |');
+      final newRowStart = result.text.indexOf('| Cell | Cell |');
+      expect(result.selection.baseOffset, newRowStart + 2);
+    });
+
+    test('addTableRow works with the caret on the header row', () {
+      final result = addTableRow(table, caretIn(table, 'A'));
+      expect(result!.text, '$table\n| Cell | Cell |');
+    });
+
+    test('removeTableRow returns null outside a table', () {
+      expect(
+        removeTableRow('plain text', const TextSelection.collapsed(offset: 2)),
+        isNull,
+      );
+    });
+
+    test('removeTableRow returns null when only header + separator remain', () {
+      const headerOnly = '| A | B |\n| --- | --- |';
+      expect(removeTableRow(headerOnly, caretIn(headerOnly, 'A')), isNull);
+    });
+
+    test('removeTableRow removes the last data row', () {
+      const twoRows = '| A | B |\n| --- | --- |\n| 1 | 2 |\n| 3 | 4 |';
+      final result = removeTableRow(twoRows, caretIn(twoRows, '3'));
+      expect(result!.text, '| A | B |\n| --- | --- |\n| 1 | 2 |');
+    });
+
+    test('addTableColumn returns null outside a table', () {
+      expect(
+        addTableColumn('plain text', const TextSelection.collapsed(offset: 2)),
+        isNull,
+      );
+    });
+
+    test('addTableColumn appends a column to every row', () {
+      final result = addTableColumn(table, caretIn(table, '1'));
+      expect(
+        result!.text,
+        '| A | B | Header |\n| --- | --- | --- |\n| 1 | 2 | Cell |',
+      );
+    });
+
+    test('removeTableColumn returns null outside a table', () {
+      expect(
+        removeTableColumn(
+          'plain text',
+          const TextSelection.collapsed(offset: 2),
+        ),
+        isNull,
+      );
+    });
+
+    test('removeTableColumn returns null when only one column is left', () {
+      const oneColumn = '| A |\n| --- |\n| 1 |';
+      expect(removeTableColumn(oneColumn, caretIn(oneColumn, '1')), isNull);
+    });
+
+    test('removeTableColumn removes the last column from every row', () {
+      final result = removeTableColumn(table, caretIn(table, '1'));
+      expect(result!.text, '| A |\n| --- |\n| 1 |');
+    });
+  });
 }
