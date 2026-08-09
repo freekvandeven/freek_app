@@ -31,6 +31,11 @@ class RecipeListPage extends HookConsumerWidget {
         title: const QuickActionsTitle(child: Text('Recipes')),
         actions: [
           IconButton(
+            tooltip: 'Random recipe',
+            icon: const Icon(Icons.shuffle),
+            onPressed: () => context.push('/recipes/random'),
+          ),
+          IconButton(
             tooltip: 'WIP only',
             icon: Icon(
               Icons.construction,
