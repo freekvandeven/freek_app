@@ -294,6 +294,15 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
     final instruction = promptController.text.trim();
     if (instruction.isEmpty) return;
 
+    await _runAiAssist(instruction);
+  }
+
+  /// Runs the AI Assist request and handles the result — split out of
+  /// [_showAiAssist] so a failure's retry action can re-run this with the
+  /// same [instruction] instead of making the user reopen the dialog and
+  /// retype it (BUG-0049). Reads the content fresh (rather than a snapshot
+  /// from when the dialog was confirmed) since it isn't lost on failure.
+  Future<void> _runAiAssist(String instruction) async {
     // Show loading indicator
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -333,7 +342,13 @@ class _KnowledgeEditPageState extends ConsumerState<KnowledgeEditPage> {
       }
     } catch (e) {
       if (mounted) {
-        context.showErrorSnackbar('AI error: $e');
+        context.showErrorSnackbar(
+          'AI error: $e',
+          action: SnackBarAction(
+            label: 'Retry',
+            onPressed: () => _runAiAssist(instruction),
+          ),
+        );
       }
     }
   }

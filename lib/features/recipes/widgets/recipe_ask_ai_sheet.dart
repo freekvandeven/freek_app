@@ -42,22 +42,14 @@ class RecipeAskAiSheet extends HookConsumerWidget {
           });
         }
 
-        Future<void> send([String? suggested]) async {
-          final text = (suggested ?? inputController.text).trim();
-          if (text.isEmpty || isSending.value) return;
-          inputController.clear();
-
-          // Snapshot prior turns before appending the new question —
-          // that's the "history" the service replays; the question is
-          // passed separately.
-          final priorHistory = messages.value
-              .map((m) => (isUser: m.isUser, text: m.text))
-              .toList();
-
-          messages.value = [
-            ...messages.value,
-            ChatMessage(text: text, isUser: true),
-          ];
+        // Runs the actual request + appends the reply (or a retryable error
+        // bubble) without touching the user's question bubble — shared by
+        // [send] (fresh question) and [retry] (BUG-0049: resend the same
+        // question after a failure without retyping it).
+        Future<void> ask(
+          String text,
+          List<({bool isUser, String text})> priorHistory,
+        ) async {
           isSending.value = true;
           scrollToBottom();
 
@@ -90,17 +82,64 @@ class RecipeAskAiSheet extends HookConsumerWidget {
             ref.read(geminiOAuthConnectedProvider.notifier).state = false;
             messages.value = [
               ...messages.value,
-              ChatMessage(text: e.message, isUser: false),
+              ChatMessage(text: e.message, isUser: false, isError: true),
             ];
           } on GeminiRateLimitException catch (e) {
             messages.value = [
               ...messages.value,
-              ChatMessage(text: humanizeGeminiRateLimit(e), isUser: false),
+              ChatMessage(
+                text: humanizeGeminiRateLimit(e),
+                isUser: false,
+                isError: true,
+              ),
+            ];
+          } catch (e) {
+            messages.value = [
+              ...messages.value,
+              ChatMessage(
+                text: 'Something went wrong: $e',
+                isUser: false,
+                isError: true,
+              ),
             ];
           } finally {
             isSending.value = false;
             scrollToBottom();
           }
+        }
+
+        Future<void> send([String? suggested]) async {
+          final text = (suggested ?? inputController.text).trim();
+          if (text.isEmpty || isSending.value) return;
+          inputController.clear();
+
+          // Snapshot prior turns before appending the new question —
+          // that's the "history" the service replays; the question is
+          // passed separately.
+          final priorHistory = messages.value
+              .map((m) => (isUser: m.isUser, text: m.text))
+              .toList();
+
+          messages.value = [
+            ...messages.value,
+            ChatMessage(text: text, isUser: true),
+          ];
+          await ask(text, priorHistory);
+        }
+
+        Future<void> retry() async {
+          final current = messages.value;
+          if (current.isEmpty || !current.last.isError) return;
+          final withoutError = current.sublist(0, current.length - 1);
+          if (withoutError.isEmpty || !withoutError.last.isUser) return;
+
+          final priorHistory = withoutError
+              .sublist(0, withoutError.length - 1)
+              .map((m) => (isUser: m.isUser, text: m.text))
+              .toList();
+          final retryText = withoutError.last.text;
+          messages.value = withoutError;
+          await ask(retryText, priorHistory);
         }
 
         return Column(
@@ -146,8 +185,16 @@ class RecipeAskAiSheet extends HookConsumerWidget {
                       controller: sheetScrollController,
                       padding: const EdgeInsets.all(16),
                       itemCount: messages.value.length,
-                      itemBuilder: (context, index) =>
-                          _QaBubble(message: messages.value[index]),
+                      itemBuilder: (context, index) {
+                        final msg = messages.value[index];
+                        final isLast = index == messages.value.length - 1;
+                        return _QaBubble(
+                          message: msg,
+                          onRetry: msg.isError && isLast && !isSending.value
+                              ? retry
+                              : null,
+                        );
+                      },
                     ),
             ),
             if (isSending.value) const LinearProgressIndicator(),
@@ -278,12 +325,14 @@ class _Suggestions extends StatelessWidget {
 
 class _QaBubble extends StatelessWidget {
   final ChatMessage message;
-  const _QaBubble({required this.message});
+  final VoidCallback? onRetry;
+  const _QaBubble({required this.message, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isUser = message.isUser;
+    final isError = message.isError;
 
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
@@ -296,10 +345,44 @@ class _QaBubble extends StatelessWidget {
         decoration: BoxDecoration(
           color: isUser
               ? theme.colorScheme.primaryContainer
+              : isError
+              ? theme.colorScheme.errorContainer
               : theme.colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: isUser ? Text(message.text) : MarkdownBody(data: message.text),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isUser)
+              Text(message.text)
+            else if (isError)
+              Text(
+                message.text,
+                style: TextStyle(color: theme.colorScheme.onErrorContainer),
+              )
+            else
+              MarkdownBody(data: message.text),
+            if (onRetry != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: onRetry,
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('Retry'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: theme.colorScheme.onErrorContainer,
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

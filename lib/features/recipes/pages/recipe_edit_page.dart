@@ -723,6 +723,16 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     final prompt = promptCtrl.text.trim();
     if (prompt.isEmpty) return;
 
+    await _generateWithAi(geminiService, prompt);
+  }
+
+  /// Runs the "Create with AI" request and handles the result — split out
+  /// of [_createWithAi] so a failure's retry action can re-run this with
+  /// the same [prompt] instead of making the user retype it (BUG-0049).
+  Future<void> _generateWithAi(
+    GeminiService geminiService,
+    String prompt,
+  ) async {
     setState(() => _isUploading = true);
     try {
       final data = await geminiService.generateRecipe(prompt);
@@ -730,6 +740,10 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
       if (data == null) {
         context.showErrorSnackbar(
           'Failed to generate recipe. See Settings → Developer for details.',
+          action: SnackBarAction(
+            label: 'Retry',
+            onPressed: () => _generateWithAi(geminiService, prompt),
+          ),
         );
         return;
       }
@@ -752,7 +766,13 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     } catch (e, st) {
       LogService.instance.error('Recipe AI flow failed unexpectedly: $e\n$st');
       if (mounted) {
-        context.showErrorSnackbar('Recipe AI failed: $e');
+        context.showErrorSnackbar(
+          'Recipe AI failed: $e',
+          action: SnackBarAction(
+            label: 'Retry',
+            onPressed: () => _generateWithAi(geminiService, prompt),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isUploading = false);
@@ -804,6 +824,16 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     final instruction = promptCtrl.text.trim();
     if (instruction.isEmpty) return;
 
+    await _editRecipeWithAi(geminiService, instruction);
+  }
+
+  /// Runs the "Edit with AI" request and handles the result — split out of
+  /// [_editWithAi] so a failure's retry action can re-run this with the
+  /// same [instruction] instead of making the user retype it (BUG-0049).
+  Future<void> _editRecipeWithAi(
+    GeminiService geminiService,
+    String instruction,
+  ) async {
     setState(() => _isUploading = true);
     try {
       final existing = _currentRecipeAiData();
@@ -812,6 +842,10 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
       if (data == null) {
         context.showErrorSnackbar(
           'Failed to edit recipe with AI. See Settings → Developer for details.',
+          action: SnackBarAction(
+            label: 'Retry',
+            onPressed: () => _editRecipeWithAi(geminiService, instruction),
+          ),
         );
         return;
       }
@@ -834,7 +868,13 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     } catch (e, st) {
       LogService.instance.error('Recipe edit AI flow failed: $e\n$st');
       if (mounted) {
-        context.showErrorSnackbar('Recipe AI failed: $e');
+        context.showErrorSnackbar(
+          'Recipe AI failed: $e',
+          action: SnackBarAction(
+            label: 'Retry',
+            onPressed: () => _editRecipeWithAi(geminiService, instruction),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isUploading = false);

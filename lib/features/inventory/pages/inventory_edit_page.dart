@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,11 +15,13 @@ import '../../../presentation/widgets/image_attachment_strip.dart';
 import '../../../presentation/widgets/unsaved_changes_guard.dart';
 import '../../../services/image_attachment_controller.dart';
 import '../../../services/image_upload_service.dart';
+import '../../../services/log_service.dart';
 import '../../../utils/decimal_input.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../catalog/models/catalog_item.dart';
 import '../../catalog/providers/catalog_providers.dart';
 import '../../gemini/providers/gemini_providers.dart';
+import '../../gemini/services/gemini_service.dart';
 import '../../settings/providers/currency_providers.dart';
 import '../models/inventory_item.dart';
 import '../providers/inventory_providers.dart';
@@ -294,11 +298,19 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
     final image = await picker.pickImage(source: ImageSource.camera);
     if (image == null) return;
 
+    final bytes = await image.readAsBytes();
+    final mimeType = image.mimeType ?? 'image/jpeg';
+    await _analyzeImageWithAi(bytes, mimeType);
+  }
+
+  /// Runs the Gemini image analysis and applies the result — split out of
+  /// [_scanWithAi] so a failure's retry action can re-run this with the
+  /// already-captured [bytes] instead of making the user retake the photo
+  /// (BUG-0049).
+  Future<void> _analyzeImageWithAi(Uint8List bytes, String mimeType) async {
     setState(() => _isScanning = true);
     try {
       final service = ref.read(geminiServiceProvider);
-      final bytes = await image.readAsBytes();
-      final mimeType = image.mimeType ?? 'image/jpeg';
       final result = await service.analyzeInventoryImage(
         bytes,
         mimeType,
@@ -340,7 +352,31 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
         });
         context.showSuccessSnackbar('Fields filled from image analysis');
       } else if (mounted) {
-        context.showSnackbar('Could not extract item details from image');
+        context.showSnackbar(
+          'Could not extract item details from image',
+          action: SnackBarAction(
+            label: 'Retry',
+            onPressed: () => _analyzeImageWithAi(bytes, mimeType),
+          ),
+        );
+      }
+    } on GeminiRateLimitException catch (e) {
+      if (mounted) {
+        context.showSnackbar(
+          humanizeGeminiRateLimit(e),
+          duration: const Duration(seconds: 8),
+        );
+      }
+    } catch (e, st) {
+      LogService.instance.error('Inventory AI scan failed: $e\n$st');
+      if (mounted) {
+        context.showErrorSnackbar(
+          'AI scan failed: $e',
+          action: SnackBarAction(
+            label: 'Retry',
+            onPressed: () => _analyzeImageWithAi(bytes, mimeType),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isScanning = false);

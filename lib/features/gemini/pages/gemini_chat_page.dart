@@ -38,6 +38,13 @@ class _GeminiChatPageState extends ConsumerState<GeminiChatPage> {
     _scrollToBottom();
   }
 
+  Future<void> _retry() async {
+    setState(() => _isSending = true);
+    await ref.read(geminiChatProvider.notifier).retryLast();
+    setState(() => _isSending = false);
+    _scrollToBottom();
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -140,7 +147,13 @@ class _GeminiChatPageState extends ConsumerState<GeminiChatPage> {
                       itemCount: messages.length,
                       itemBuilder: (context, index) {
                         final msg = messages[index];
-                        return _ChatBubble(message: msg);
+                        final isLast = index == messages.length - 1;
+                        return _ChatBubble(
+                          message: msg,
+                          onRetry: msg.isError && isLast && !_isSending
+                              ? _retry
+                              : null,
+                        );
                       },
                     ),
             ),
@@ -185,12 +198,14 @@ class _GeminiChatPageState extends ConsumerState<GeminiChatPage> {
 
 class _ChatBubble extends StatelessWidget {
   final ChatMessage message;
-  const _ChatBubble({required this.message});
+  final VoidCallback? onRetry;
+  const _ChatBubble({required this.message, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isUser = message.isUser;
+    final isError = message.isError;
 
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
@@ -203,10 +218,44 @@ class _ChatBubble extends StatelessWidget {
         decoration: BoxDecoration(
           color: isUser
               ? theme.colorScheme.primaryContainer
+              : isError
+              ? theme.colorScheme.errorContainer
               : theme.colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: isUser ? Text(message.text) : MarkdownBody(data: message.text),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isUser)
+              Text(message.text)
+            else if (isError)
+              Text(
+                message.text,
+                style: TextStyle(color: theme.colorScheme.onErrorContainer),
+              )
+            else
+              MarkdownBody(data: message.text),
+            if (onRetry != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: onRetry,
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('Retry'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: theme.colorScheme.onErrorContainer,
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

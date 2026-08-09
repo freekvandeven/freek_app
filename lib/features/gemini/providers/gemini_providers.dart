@@ -77,9 +77,14 @@ Future<bool> configureGeminiForCurrentSettings(WidgetRef ref) async {
 class ChatMessage {
   final String text;
   final bool isUser;
+
+  /// True for a bot message that reports a failed request rather than an
+  /// actual reply — lets the UI offer a retry action (BUG-0049) instead of
+  /// treating it like a normal answer.
+  final bool isError;
   final DateTime timestamp;
 
-  ChatMessage({required this.text, required this.isUser})
+  ChatMessage({required this.text, required this.isUser, this.isError = false})
     : timestamp = DateTime.now();
 }
 
@@ -114,7 +119,21 @@ class GeminiChatNotifier extends Notifier<List<ChatMessage>> {
 
   Future<void> sendMessage(String message) async {
     state = [...state, ChatMessage(text: message, isUser: true)];
+    await _requestReply(message);
+  }
 
+  /// Re-sends the last user message after a failed reply, without the
+  /// caller having to retype it (BUG-0049). No-ops unless the very last
+  /// message is actually a retryable error.
+  Future<void> retryLast() async {
+    if (state.isEmpty || !state.last.isError) return;
+    final withoutError = state.sublist(0, state.length - 1);
+    if (withoutError.isEmpty || !withoutError.last.isUser) return;
+    state = withoutError;
+    await _requestReply(withoutError.last.text);
+  }
+
+  Future<void> _requestReply(String message) async {
     final ok = await _ensureConfigured();
     if (!ok) {
       state = [
@@ -135,14 +154,28 @@ class GeminiChatNotifier extends Notifier<List<ChatMessage>> {
       // accepts — the service auto-disconnected. Reflect that here and
       // tell the user how to fix it (BUG-0036).
       ref.read(geminiOAuthConnectedProvider.notifier).state = false;
-      state = [...state, ChatMessage(text: e.message, isUser: false)];
+      state = [
+        ...state,
+        ChatMessage(text: e.message, isUser: false, isError: true),
+      ];
     } on GeminiRateLimitException catch (e) {
       // 429 / quota / prepayment-depleted. Don't let it crash the chat;
       // surface the API message so the user knows what happened, plus a
       // hint to switch model in Settings → AI (some models still have
       // free-tier quota even when others are depleted).
       final msg = humanizeGeminiRateLimit(e);
-      state = [...state, ChatMessage(text: msg, isUser: false)];
+      state = [...state, ChatMessage(text: msg, isUser: false, isError: true)];
+    } catch (e) {
+      // Anything else (network blip, transient API error) — surface it as
+      // a retryable error instead of letting it crash the chat (BUG-0049).
+      state = [
+        ...state,
+        ChatMessage(
+          text: 'Something went wrong: $e',
+          isUser: false,
+          isError: true,
+        ),
+      ];
     }
   }
 
