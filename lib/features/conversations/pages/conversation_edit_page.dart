@@ -6,6 +6,7 @@ import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 
 import '../../../presentation/widgets/app_snackbar.dart';
 import '../../../presentation/widgets/fullscreen_image_viewer.dart';
+import '../../../presentation/widgets/image_attachment_picker.dart';
 import '../../../presentation/widgets/image_upload_preview_dialog.dart';
 import '../../../presentation/widgets/unsaved_changes_guard.dart';
 import '../../../services/image_upload_service.dart';
@@ -159,6 +160,34 @@ class _ConversationEditPageState extends ConsumerState<ConversationEditPage> {
     if (source == null || !mounted) return;
 
     final uploader = ref.read(imageUploadServiceProvider);
+
+    Future<void> uploadAndAppend(ImageUploadResult result) async {
+      final url = await uploader.uploadImageBytes(
+        result.bytes,
+        fileName: result.fileName,
+        folder: 'conversations',
+      );
+      if (mounted) setState(() => _imageUrls = [..._imageUrls, url]);
+    }
+
+    // Gallery goes through the multi-select flow so the user can pick
+    // and crop several photos in one visit to their gallery (WISH-0096).
+    if (source == 'gallery') {
+      setState(() => _isUploading = true);
+      try {
+        await pickAndConfirmMultipleFromGallery(
+          context,
+          uploader,
+          uploadAndAppend,
+        );
+      } catch (e) {
+        if (mounted) context.showErrorSnackbar('Image upload failed: $e');
+      } finally {
+        if (mounted) setState(() => _isUploading = false);
+      }
+      return;
+    }
+
     final picked = await resolveImageSource(context, source, uploader);
     if (picked == null || !mounted) return;
 
@@ -173,14 +202,7 @@ class _ConversationEditPageState extends ConsumerState<ConversationEditPage> {
 
     setState(() => _isUploading = true);
     try {
-      final url = await uploader.uploadImageBytes(
-        result.bytes,
-        fileName: result.fileName,
-        folder: 'conversations',
-      );
-      if (mounted) {
-        setState(() => _imageUrls = [..._imageUrls, url]);
-      }
+      await uploadAndAppend(result);
     } catch (e) {
       if (mounted) {
         context.showErrorSnackbar('Image upload failed: $e');

@@ -115,11 +115,17 @@ class PasteFromClipboardTile extends StatelessWidget {
 /// opt-in to delete the original from the device's photo library after a
 /// successful upload. Returns [ImageUploadResult] if the user proceeds, or
 /// null if cancelled.
+///
+/// [stepLabel], when set (e.g. `'2 of 5'`), is appended to the title as
+/// "Upload Image (2 of 5)" — used when this dialog is shown repeatedly
+/// for a multi-image gallery pick so the user can see how far through
+/// the batch they are (WISH-0096).
 Future<ImageUploadResult?> showImageUploadPreviewDialog({
   required BuildContext context,
   required Uint8List originalBytes,
   required String fileName,
   String? sourcePath,
+  String? stepLabel,
 }) {
   return showDialog<ImageUploadResult>(
     context: context,
@@ -127,6 +133,7 @@ Future<ImageUploadResult?> showImageUploadPreviewDialog({
       originalBytes: originalBytes,
       fileName: fileName,
       sourcePath: sourcePath,
+      stepLabel: stepLabel,
     ),
   );
 }
@@ -135,11 +142,13 @@ class _ImageUploadPreviewDialog extends StatefulWidget {
   final Uint8List originalBytes;
   final String fileName;
   final String? sourcePath;
+  final String? stepLabel;
 
   const _ImageUploadPreviewDialog({
     required this.originalBytes,
     required this.fileName,
     required this.sourcePath,
+    this.stepLabel,
   });
 
   @override
@@ -234,7 +243,11 @@ class _ImageUploadPreviewDialogState extends State<_ImageUploadPreviewDialog> {
     final saved = originalSize - currentSize;
 
     return AlertDialog(
-      title: const Text('Upload Image'),
+      title: Text(
+        widget.stepLabel == null
+            ? 'Upload Image'
+            : 'Upload Image (${widget.stepLabel})',
+      ),
       content: SizedBox(
         width: 300,
         child: Column(

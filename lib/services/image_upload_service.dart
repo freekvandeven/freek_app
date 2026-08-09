@@ -72,6 +72,13 @@ class ImageUploadService {
     );
   }
 
+  /// Pick any number of images from the gallery in one go, so the user
+  /// doesn't have to reopen the picker for each image (WISH-0096).
+  /// Returns an empty list if the user cancels or picks nothing.
+  Future<List<XFile>> pickMultiImage() async {
+    return _picker.pickMultiImage(maxWidth: 1920, maxHeight: 1920);
+  }
+
   /// Pick an image from camera. Returns the XFile or null.
   Future<XFile?> captureImage() async {
     if (kIsWeb) return null;

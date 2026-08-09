@@ -592,12 +592,15 @@ class _RecipeEditPageState extends ConsumerState<RecipeEditPage> {
     );
   }
 
-  Future<void> _addImageFrom(String source) => addImageFromSource(
-    context,
-    ref.read(imageUploadServiceProvider),
-    _images,
-    source,
-  );
+  Future<void> _addImageFrom(String source) {
+    final service = ref.read(imageUploadServiceProvider);
+    // Gallery goes through the multi-select flow so the user can pick and
+    // crop several photos in one visit to their gallery (WISH-0096).
+    if (source == 'gallery') {
+      return addImagesFromGallery(context, service, _images);
+    }
+    return addImageFromSource(context, service, _images, source);
+  }
 
   void _addImageByUrl() {
     final ctrl = TextEditingController();
