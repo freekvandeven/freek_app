@@ -352,19 +352,30 @@ class _StatusFilterBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(watchlistStatusFilterProvider);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: SegmentedButton<WatchStatusFilter>(
-        segments: [
+    // A scrolling chip row rather than a SegmentedButton: four labels of
+    // this length do not fit across a phone, and a segmented button wraps
+    // and clips them instead of scrolling. It also matches the platform
+    // filter row directly below.
+    return SizedBox(
+      height: 44,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: [
           for (final entry in _labels.entries)
-            ButtonSegment(value: entry.key, label: Text(entry.value)),
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilterChip(
+                label: Text(entry.value),
+                selected: selected == entry.key,
+                // Re-tapping the active chip falls back to All rather than
+                // leaving no status selected.
+                onSelected: (isSelected) =>
+                    ref.read(watchlistStatusFilterProvider.notifier).state =
+                        isSelected ? entry.key : WatchStatusFilter.all,
+              ),
+            ),
         ],
-        selected: {selected},
-        showSelectedIcon: false,
-        style: const ButtonStyle(visualDensity: VisualDensity.compact),
-        onSelectionChanged: (selection) =>
-            ref.read(watchlistStatusFilterProvider.notifier).state =
-                selection.first,
       ),
     );
   }

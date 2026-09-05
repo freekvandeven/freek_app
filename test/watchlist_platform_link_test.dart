@@ -62,7 +62,11 @@ void main() {
         platforms: [],
       );
 
-      expect(find.byType(FilterChip), findsNothing);
+      // Only the four status chips are present — no platform row was added.
+      expect(find.byType(FilterChip), findsNWidgets(4));
+      for (final status in ['All', 'Unwatched', 'In progress', 'Watched']) {
+        expect(find.widgetWithText(FilterChip, status), findsOneWidget);
+      }
     });
 
     testWidgets('offers a filter chip per configured platform', (tester) async {

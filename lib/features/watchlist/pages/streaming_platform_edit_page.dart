@@ -172,123 +172,126 @@ class _StreamingPlatformEditPageState
           child: Text(_isEditing ? 'Edit Platform' : 'New Platform'),
         ),
       ),
-      body: ResponsiveCenter(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Name *',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (v) =>
-                    v == null || v.trim().isEmpty ? 'Name is required' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _urlController,
-                decoration: const InputDecoration(
-                  labelText: 'URL',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.link),
-                ),
-                keyboardType: TextInputType.url,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _qualityController,
-                decoration: const InputDecoration(
-                  labelText: 'Streaming quality',
-                  hintText: '4K HDR, 1080p, Basic with ads…',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.high_quality_outlined),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              Text('Account', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              _VaultEntryPicker(
-                selectedId: _vaultEntryId,
-                onChanged: (id) => setState(() => _vaultEntryId = id),
-              ),
-              const SizedBox(height: 24),
-
-              Text(
-                'Subscription',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.play_circle_outline),
-                title: const Text('Started'),
-                subtitle: Text(
-                  _startedAt == null
-                      ? 'Not set'
-                      : dateFormat.format(_startedAt!),
-                ),
-                trailing: _startedAt == null
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () => setState(() => _startedAt = null),
-                      ),
-                onTap: () => _pickDate(start: true),
-              ),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.stop_circle_outlined),
-                title: const Text('Ended'),
-                subtitle: Text(
-                  _endedAt == null
-                      ? 'Still subscribed'
-                      : dateFormat.format(_endedAt!),
-                ),
-                trailing: _endedAt == null
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () => setState(() => _endedAt = null),
-                      ),
-                onTap: () => _pickDate(start: false),
-              ),
-              const SizedBox(height: 24),
-
-              Text('Icon', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              if (_icon.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Text(
-                    'No icon set',
-                    style: TextStyle(color: Colors.grey),
+      body: SafeArea(
+        top: false,
+        child: ResponsiveCenter(
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                TextFormField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Name *',
+                    border: OutlineInputBorder(),
                   ),
-                )
-              else
-                ImageAttachmentStrip(controller: _icon),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: _pickIcon,
-                icon: const Icon(Icons.add_a_photo),
-                label: Text(_icon.isEmpty ? 'Add Icon' : 'Replace Icon'),
-              ),
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? 'Name is required' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _urlController,
+                  decoration: const InputDecoration(
+                    labelText: 'URL',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.link),
+                  ),
+                  keyboardType: TextInputType.url,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _qualityController,
+                  decoration: const InputDecoration(
+                    labelText: 'Streaming quality',
+                    hintText: '4K HDR, 1080p, Basic with ads…',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.high_quality_outlined),
+                  ),
+                ),
+                const SizedBox(height: 24),
 
-              const SizedBox(height: 32),
-              FilledButton(
-                onPressed: _isSaving ? null : _save,
-                child: _isSaving
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(_isEditing ? 'Update' : 'Create'),
-              ),
-            ],
+                Text('Account', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                _VaultEntryPicker(
+                  selectedId: _vaultEntryId,
+                  onChanged: (id) => setState(() => _vaultEntryId = id),
+                ),
+                const SizedBox(height: 24),
+
+                Text(
+                  'Subscription',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.play_circle_outline),
+                  title: const Text('Started'),
+                  subtitle: Text(
+                    _startedAt == null
+                        ? 'Not set'
+                        : dateFormat.format(_startedAt!),
+                  ),
+                  trailing: _startedAt == null
+                      ? null
+                      : IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () => setState(() => _startedAt = null),
+                        ),
+                  onTap: () => _pickDate(start: true),
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.stop_circle_outlined),
+                  title: const Text('Ended'),
+                  subtitle: Text(
+                    _endedAt == null
+                        ? 'Still subscribed'
+                        : dateFormat.format(_endedAt!),
+                  ),
+                  trailing: _endedAt == null
+                      ? null
+                      : IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () => setState(() => _endedAt = null),
+                        ),
+                  onTap: () => _pickDate(start: false),
+                ),
+                const SizedBox(height: 24),
+
+                Text('Icon', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                if (_icon.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      'No icon set',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  )
+                else
+                  ImageAttachmentStrip(controller: _icon),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _pickIcon,
+                  icon: const Icon(Icons.add_a_photo),
+                  label: Text(_icon.isEmpty ? 'Add Icon' : 'Replace Icon'),
+                ),
+
+                const SizedBox(height: 32),
+                FilledButton(
+                  onPressed: _isSaving ? null : _save,
+                  child: _isSaving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(_isEditing ? 'Update' : 'Create'),
+                ),
+              ],
+            ),
           ),
         ),
       ),

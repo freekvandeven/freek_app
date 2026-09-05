@@ -250,200 +250,210 @@ class _WatchItemEditPageState extends ConsumerState<WatchItemEditPage> {
           child: Text(_isEditing ? 'Edit Entry' : 'New Entry'),
         ),
       ),
-      body: ResponsiveCenter(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              SegmentedButton<WatchItemType>(
-                segments: const [
-                  ButtonSegment(
-                    value: WatchItemType.movie,
-                    label: Text('Movie'),
-                    icon: Icon(Icons.movie),
-                  ),
-                  ButtonSegment(
-                    value: WatchItemType.series,
-                    label: Text('Series'),
-                    icon: Icon(Icons.tv),
-                  ),
-                ],
-                selected: {_type},
-                onSelectionChanged: (s) => setState(() => _type = s.first),
-              ),
-              const SizedBox(height: 16),
+      body: SafeArea(
+        top: false,
+        child: ResponsiveCenter(
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                SegmentedButton<WatchItemType>(
+                  segments: const [
+                    ButtonSegment(
+                      value: WatchItemType.movie,
+                      label: Text('Movie'),
+                      icon: Icon(Icons.movie),
+                    ),
+                    ButtonSegment(
+                      value: WatchItemType.series,
+                      label: Text('Series'),
+                      icon: Icon(Icons.tv),
+                    ),
+                  ],
+                  selected: {_type},
+                  onSelectionChanged: (s) => setState(() => _type = s.first),
+                ),
+                const SizedBox(height: 16),
 
-              TextFormField(
-                controller: _titleController,
-                decoration: InputDecoration(
-                  labelText: 'Title *',
-                  border: const OutlineInputBorder(),
-                  suffixIcon: ref.watch(tmdbAvailableProvider)
-                      ? IconButton(
-                          tooltip: 'Search TMDB by title',
-                          icon: const Icon(Icons.search),
-                          onPressed: _isFetching ? null : _searchByTitle,
-                        )
+                TextFormField(
+                  controller: _titleController,
+                  decoration: InputDecoration(
+                    labelText: 'Title *',
+                    border: const OutlineInputBorder(),
+                    suffixIcon: ref.watch(tmdbAvailableProvider)
+                        ? IconButton(
+                            tooltip: 'Search TMDB by title',
+                            icon: const Icon(Icons.search),
+                            onPressed: _isFetching ? null : _searchByTitle,
+                          )
+                        : null,
+                  ),
+                  validator: (v) => v == null || v.trim().isEmpty
+                      ? 'Title is required'
                       : null,
                 ),
-                validator: (v) =>
-                    v == null || v.trim().isEmpty ? 'Title is required' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 16),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _yearController,
-                      decoration: const InputDecoration(
-                        labelText: 'Year',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.number,
-                    ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    border: OutlineInputBorder(),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _runtimeController,
-                      decoration: InputDecoration(
-                        labelText: 'Runtime (min)',
-                        border: const OutlineInputBorder(),
-                        helperText: _type == WatchItemType.series
-                            ? 'Per episode'
-                            : null,
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 16),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _yearController,
+                        decoration: const InputDecoration(
+                          labelText: 'Year',
+                          border: OutlineInputBorder(),
+                        ),
+                        keyboardType: TextInputType.number,
                       ),
-                      keyboardType: TextInputType.number,
                     ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _runtimeController,
+                        decoration: InputDecoration(
+                          labelText: 'Runtime (min)',
+                          border: const OutlineInputBorder(),
+                          helperText: _type == WatchItemType.series
+                              ? 'Per episode'
+                              : null,
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                TextFormField(
+                  controller: _imdbIdController,
+                  decoration: InputDecoration(
+                    labelText: 'IMDb code',
+                    hintText: 'tt0111161',
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.movie_filter_outlined),
+                    suffixIcon: ref.watch(tmdbAvailableProvider)
+                        ? IconButton(
+                            tooltip: 'Fetch details from TMDB',
+                            icon: _isFetching
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.download_outlined),
+                            onPressed: _isFetching ? null : _fetchFromImdbId,
+                          )
+                        : null,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _posterUrlController,
+                  decoration: const InputDecoration(
+                    labelText: 'Poster URL',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.image_outlined),
+                  ),
+                  keyboardType: TextInputType.url,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _sourceUrlController,
+                  decoration: const InputDecoration(
+                    labelText: 'Source link',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.link),
+                    helperText: 'Anything — a streaming page, a file location…',
+                    helperMaxLines: 2,
+                  ),
+                  keyboardType: TextInputType.url,
+                ),
+                if (_type == WatchItemType.series) ...[
+                  const SizedBox(height: 24),
+                  Text(
+                    'Seasons',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  SeasonsEditor(
+                    seasons: _seasons,
+                    onChanged: (seasons) => setState(() => _seasons = seasons),
                   ),
                 ],
-              ),
-              const SizedBox(height: 16),
-
-              TextFormField(
-                controller: _imdbIdController,
-                decoration: InputDecoration(
-                  labelText: 'IMDb code',
-                  hintText: 'tt0111161',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.movie_filter_outlined),
-                  suffixIcon: ref.watch(tmdbAvailableProvider)
-                      ? IconButton(
-                          tooltip: 'Fetch details from TMDB',
-                          icon: _isFetching
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.download_outlined),
-                          onPressed: _isFetching ? null : _fetchFromImdbId,
-                        )
-                      : null,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _posterUrlController,
-                decoration: const InputDecoration(
-                  labelText: 'Poster URL',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.image_outlined),
-                ),
-                keyboardType: TextInputType.url,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _sourceUrlController,
-                decoration: const InputDecoration(
-                  labelText: 'Source link',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.link),
-                  helperText: 'Anything — a streaming page, a file location…',
-                  helperMaxLines: 2,
-                ),
-                keyboardType: TextInputType.url,
-              ),
-              if (_type == WatchItemType.series) ...[
                 const SizedBox(height: 24),
-                Text('Seasons', style: Theme.of(context).textTheme.titleMedium),
+
+                Text(
+                  'Streaming platforms',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(height: 8),
-                SeasonsEditor(
-                  seasons: _seasons,
-                  onChanged: (seasons) => setState(() => _seasons = seasons),
+                PlatformSelector(
+                  selectedIds: _platformIds,
+                  onChanged: (ids) => setState(() => _platformIds = ids),
+                ),
+                const SizedBox(height: 16),
+
+                CheckboxListTile(
+                  value: _watched,
+                  onChanged: (v) => setState(() => _watched = v ?? false),
+                  title: const Text('Watched'),
+                  subtitle: _type == WatchItemType.series
+                      ? const Text('Series with seasons track this per season')
+                      : null,
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                ),
+                const SizedBox(height: 8),
+
+                Row(
+                  children: [
+                    Text(
+                      'Rating',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const Spacer(),
+                    StarRating(
+                      value: _rating,
+                      onChanged: (v) => setState(() => _rating = v),
+                      size: 28,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _reviewController,
+                  decoration: const InputDecoration(
+                    labelText: 'Review',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 4,
+                ),
+
+                const SizedBox(height: 32),
+                FilledButton(
+                  onPressed: _isSaving ? null : _save,
+                  child: _isSaving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(_isEditing ? 'Update' : 'Create'),
                 ),
               ],
-              const SizedBox(height: 24),
-
-              Text(
-                'Streaming platforms',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              PlatformSelector(
-                selectedIds: _platformIds,
-                onChanged: (ids) => setState(() => _platformIds = ids),
-              ),
-              const SizedBox(height: 16),
-
-              CheckboxListTile(
-                value: _watched,
-                onChanged: (v) => setState(() => _watched = v ?? false),
-                title: const Text('Watched'),
-                subtitle: _type == WatchItemType.series
-                    ? const Text('Series with seasons track this per season')
-                    : null,
-                contentPadding: EdgeInsets.zero,
-                controlAffinity: ListTileControlAffinity.leading,
-              ),
-              const SizedBox(height: 8),
-
-              Row(
-                children: [
-                  Text('Rating', style: Theme.of(context).textTheme.titleSmall),
-                  const Spacer(),
-                  StarRating(
-                    value: _rating,
-                    onChanged: (v) => setState(() => _rating = v),
-                    size: 28,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _reviewController,
-                decoration: const InputDecoration(
-                  labelText: 'Review',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 4,
-              ),
-
-              const SizedBox(height: 32),
-              FilledButton(
-                onPressed: _isSaving ? null : _save,
-                child: _isSaving
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(_isEditing ? 'Update' : 'Create'),
-              ),
-            ],
+            ),
           ),
         ),
       ),

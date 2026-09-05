@@ -151,6 +151,47 @@ void main() {
       expect(find.text('Done'), findsNothing);
     });
 
+    testWidgets('the status filter scrolls rather than clipping its labels', (
+      tester,
+    ) async {
+      await pump(tester, [WatchItem(title: 'Heat')]);
+
+      // Four labels of this length do not fit across a phone, so they live
+      // in a horizontally scrolling row instead of a segmented button.
+      for (final label in ['All', 'Unwatched', 'In progress', 'Watched']) {
+        expect(find.widgetWithText(FilterChip, label), findsOneWidget);
+      }
+      final row = tester.widget<ListView>(
+        find
+            .ancestor(
+              of: find.widgetWithText(FilterChip, 'Unwatched'),
+              matching: find.byType(ListView),
+            )
+            .first,
+      );
+      expect(row.scrollDirection, Axis.horizontal);
+    });
+
+    testWidgets('re-tapping the active status chip falls back to All', (
+      tester,
+    ) async {
+      final container = await pump(tester, [WatchItem(title: 'Heat')]);
+
+      await tester.tap(find.widgetWithText(FilterChip, 'Unwatched'));
+      await tester.pumpAndSettle();
+      expect(
+        container.read(watchlistStatusFilterProvider),
+        WatchStatusFilter.unwatched,
+      );
+
+      await tester.tap(find.widgetWithText(FilterChip, 'Unwatched'));
+      await tester.pumpAndSettle();
+      expect(
+        container.read(watchlistStatusFilterProvider),
+        WatchStatusFilter.all,
+      );
+    });
+
     testWidgets('sorting by title reorders the visible list', (tester) async {
       final container = await pump(tester, [
         WatchItem(title: 'Zodiac', sortOrder: 0),
