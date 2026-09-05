@@ -35,13 +35,16 @@ class _VaultUnlockPageState extends ConsumerState<VaultUnlockPage> {
       appBar: AppBar(
         title: const QuickActionsTitle(child: Text('Password Vault')),
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32),
-          child: isSetup.when(
-            data: (setup) => setup ? _buildUnlockForm() : _buildSetupForm(),
-            loading: () => const CircularProgressIndicator(),
-            error: (e, _) => Text('Error: $e'),
+      body: SafeArea(
+        top: false,
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(32),
+            child: isSetup.when(
+              data: (setup) => setup ? _buildUnlockForm() : _buildSetupForm(),
+              loading: () => const CircularProgressIndicator(),
+              error: (e, _) => Text('Error: $e'),
+            ),
           ),
         ),
       ),

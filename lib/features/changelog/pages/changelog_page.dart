@@ -20,30 +20,34 @@ class ChangelogPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const QuickActionsTitle(child: Text('Changelog'))),
-      body: FutureBuilder<({List<ChangelogEntry> entries, String appVersion})>(
-        future: _loadChangelog(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError || !snapshot.hasData) {
-            return const Center(child: Text('Could not load changelog.'));
-          }
-          final entries = snapshot.data!.entries;
-          final appVersion = snapshot.data!.appVersion;
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: entries.length,
-            itemBuilder: (context, index) {
-              final entry = entries[index];
-              final isCurrentVersion = entry.version == appVersion;
-              return _VersionCard(
-                entry: entry,
-                isLatest: !entry.isUnreleased && isCurrentVersion,
-              );
-            },
-          );
-        },
+      body: SafeArea(
+        top: false,
+        child:
+            FutureBuilder<({List<ChangelogEntry> entries, String appVersion})>(
+              future: _loadChangelog(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError || !snapshot.hasData) {
+                  return const Center(child: Text('Could not load changelog.'));
+                }
+                final entries = snapshot.data!.entries;
+                final appVersion = snapshot.data!.appVersion;
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: entries.length,
+                  itemBuilder: (context, index) {
+                    final entry = entries[index];
+                    final isCurrentVersion = entry.version == appVersion;
+                    return _VersionCard(
+                      entry: entry,
+                      isLatest: !entry.isUnreleased && isCurrentVersion,
+                    );
+                  },
+                );
+              },
+            ),
       ),
     );
   }

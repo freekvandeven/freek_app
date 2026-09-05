@@ -142,123 +142,128 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         title: const QuickActionsTitle(child: Text('Profile')),
         actions: [TextButton(onPressed: _save, child: const Text('Save'))],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Center(
-              child: GestureDetector(
-                onTap: _uploadingPhoto ? null : _changePhoto,
-                child: Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 48,
-                      backgroundColor: colorScheme.primaryContainer,
-                      backgroundImage: user.photoUrl != null
-                          ? CachedNetworkImageProvider(user.photoUrl!)
-                          : null,
-                      child: user.photoUrl == null
-                          ? Text(
-                              _initials(user.displayName ?? user.email),
-                              style: Theme.of(context).textTheme.headlineMedium
-                                  ?.copyWith(
-                                    color: colorScheme.onPrimaryContainer,
-                                  ),
-                            )
-                          : null,
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: CircleAvatar(
-                        radius: 16,
-                        backgroundColor: colorScheme.primary,
-                        child: _uploadingPhoto
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
+      body: SafeArea(
+        top: false,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Center(
+                child: GestureDetector(
+                  onTap: _uploadingPhoto ? null : _changePhoto,
+                  child: Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 48,
+                        backgroundColor: colorScheme.primaryContainer,
+                        backgroundImage: user.photoUrl != null
+                            ? CachedNetworkImageProvider(user.photoUrl!)
+                            : null,
+                        child: user.photoUrl == null
+                            ? Text(
+                                _initials(user.displayName ?? user.email),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineMedium
+                                    ?.copyWith(
+                                      color: colorScheme.onPrimaryContainer,
+                                    ),
                               )
-                            : Icon(
-                                Icons.camera_alt,
-                                size: 16,
-                                color: colorScheme.onPrimary,
-                              ),
+                            : null,
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Center(
-              child: Text(
-                user.email,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Display Name',
-                prefixIcon: Icon(Icons.person),
-              ),
-              textCapitalization: TextCapitalization.words,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _phoneController,
-              decoration: const InputDecoration(
-                labelText: 'Phone',
-                prefixIcon: Icon(Icons.phone),
-              ),
-              keyboardType: TextInputType.phone,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _bioController,
-              decoration: const InputDecoration(
-                labelText: 'About me',
-                prefixIcon: Icon(Icons.info_outline),
-                alignLabelWithHint: true,
-              ),
-              maxLines: 4,
-              textCapitalization: TextCapitalization.sentences,
-            ),
-            const SizedBox(height: 24),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Account Info',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: colorScheme.primary,
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: CircleAvatar(
+                          radius: 16,
+                          backgroundColor: colorScheme.primary,
+                          child: _uploadingPhoto
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.camera_alt,
+                                  size: 16,
+                                  color: colorScheme.onPrimary,
+                                ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    _infoRow(
-                      'Member since',
-                      user.createdAt.toIso8601String().substring(0, 10),
-                    ),
-                    _infoRow(
-                      'Last updated',
-                      user.updatedAt.toIso8601String().substring(0, 10),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Center(
+                child: Text(
+                  user.email,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Display Name',
+                  prefixIcon: Icon(Icons.person),
+                ),
+                textCapitalization: TextCapitalization.words,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _phoneController,
+                decoration: const InputDecoration(
+                  labelText: 'Phone',
+                  prefixIcon: Icon(Icons.phone),
+                ),
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _bioController,
+                decoration: const InputDecoration(
+                  labelText: 'About me',
+                  prefixIcon: Icon(Icons.info_outline),
+                  alignLabelWithHint: true,
+                ),
+                maxLines: 4,
+                textCapitalization: TextCapitalization.sentences,
+              ),
+              const SizedBox(height: 24),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Account Info',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _infoRow(
+                        'Member since',
+                        user.createdAt.toIso8601String().substring(0, 10),
+                      ),
+                      _infoRow(
+                        'Last updated',
+                        user.updatedAt.toIso8601String().substring(0, 10),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

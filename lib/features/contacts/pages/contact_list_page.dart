@@ -37,61 +37,65 @@ class ContactListPage extends HookConsumerWidget {
         onPressed: () => context.push('/contacts/new'),
         child: const Icon(Icons.add),
       ),
-      body: ResponsiveCenter(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: TextField(
-                controller: searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search by name, email, phone…',
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+      body: SafeArea(
+        top: false,
+        child: ResponsiveCenter(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: TextField(
+                  controller: searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search by name, email, phone…',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    isDense: true,
+                    suffixIcon: search.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () =>
+                                ref.read(contactSearchProvider.notifier).state =
+                                    '',
+                          )
+                        : null,
                   ),
-                  isDense: true,
-                  suffixIcon: search.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () =>
-                              ref.read(contactSearchProvider.notifier).state =
-                                  '',
-                        )
-                      : null,
+                  onChanged: (v) =>
+                      ref.read(contactSearchProvider.notifier).state = v,
                 ),
-                onChanged: (v) =>
-                    ref.read(contactSearchProvider.notifier).state = v,
               ),
-            ),
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: () => ref.refresh(contactListProvider.future),
-                child: contacts.when(
-                  loading: () =>
-                      const PullableCenter(child: CircularProgressIndicator()),
-                  error: (e, _) => PullableCenter(child: Text('Error: $e')),
-                  data: (list) {
-                    if (list.isEmpty) {
-                      return PullableCenter(
-                        child: Text(
-                          search.isEmpty
-                              ? 'No contacts yet.\nTap + to add one.'
-                              : 'No contacts match "$search".',
-                          textAlign: TextAlign.center,
-                        ),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () => ref.refresh(contactListProvider.future),
+                  child: contacts.when(
+                    loading: () => const PullableCenter(
+                      child: CircularProgressIndicator(),
+                    ),
+                    error: (e, _) => PullableCenter(child: Text('Error: $e')),
+                    data: (list) {
+                      if (list.isEmpty) {
+                        return PullableCenter(
+                          child: Text(
+                            search.isEmpty
+                                ? 'No contacts yet.\nTap + to add one.'
+                                : 'No contacts match "$search".',
+                            textAlign: TextAlign.center,
+                          ),
+                        );
+                      }
+                      return ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount: list.length,
+                        itemBuilder: (_, i) => _ContactTile(contact: list[i]),
                       );
-                    }
-                    return ListView.builder(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      itemCount: list.length,
-                      itemBuilder: (_, i) => _ContactTile(contact: list[i]),
-                    );
-                  },
+                    },
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

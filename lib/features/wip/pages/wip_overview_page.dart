@@ -18,30 +18,33 @@ class WipOverviewPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Work in Progress')),
-      body: ResponsiveCenter(
-        child: items.isEmpty
-            ? const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child: Text(
-                    'Nothing in progress.\nMark recipes, knowledge pages, '
-                    'shopping items, or feedback entries as WIP to see them here.',
-                    textAlign: TextAlign.center,
+      body: SafeArea(
+        top: false,
+        child: ResponsiveCenter(
+          child: items.isEmpty
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Text(
+                      'Nothing in progress.\nMark recipes, knowledge pages, '
+                      'shopping items, or feedback entries as WIP to see them here.',
+                      textAlign: TextAlign.center,
+                    ),
                   ),
+                )
+              : ListView(
+                  children: [
+                    for (final source in WipSource.values)
+                      if (grouped[source]?.isNotEmpty ?? false) ...[
+                        _SectionHeader(
+                          source: source,
+                          count: grouped[source]!.length,
+                        ),
+                        ...grouped[source]!.map((item) => _WipTile(item: item)),
+                      ],
+                  ],
                 ),
-              )
-            : ListView(
-                children: [
-                  for (final source in WipSource.values)
-                    if (grouped[source]?.isNotEmpty ?? false) ...[
-                      _SectionHeader(
-                        source: source,
-                        count: grouped[source]!.length,
-                      ),
-                      ...grouped[source]!.map((item) => _WipTile(item: item)),
-                    ],
-                ],
-              ),
+        ),
       ),
     );
   }

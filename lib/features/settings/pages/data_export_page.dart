@@ -43,46 +43,49 @@ class _DataExportPageState extends ConsumerState<DataExportPage> {
       appBar: AppBar(
         title: const QuickActionsTitle(child: Text('Export Data')),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              children: [
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text('Select which data to export as CSV files:'),
-                ),
-                for (final entry in _selected.entries)
-                  CheckboxListTile(
-                    title: Text(
-                      entry.key[0].toUpperCase() + entry.key.substring(1),
-                    ),
-                    value: entry.value,
-                    onChanged: (v) {
-                      setState(() => _selected[entry.key] = v ?? false);
-                    },
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text('Select which data to export as CSV files:'),
                   ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: _exporting ? null : _export,
-                icon: _exporting
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.download),
-                label: Text(_exporting ? 'Exporting...' : 'Export'),
+                  for (final entry in _selected.entries)
+                    CheckboxListTile(
+                      title: Text(
+                        entry.key[0].toUpperCase() + entry.key.substring(1),
+                      ),
+                      value: entry.value,
+                      onChanged: (v) {
+                        setState(() => _selected[entry.key] = v ?? false);
+                      },
+                    ),
+                ],
               ),
             ),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _exporting ? null : _export,
+                  icon: _exporting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.download),
+                  label: Text(_exporting ? 'Exporting...' : 'Export'),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

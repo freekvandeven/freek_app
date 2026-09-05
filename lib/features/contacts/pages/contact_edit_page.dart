@@ -131,100 +131,103 @@ class ContactEditPage extends HookConsumerWidget {
           TextButton(onPressed: save, child: const Text('Save')),
         ],
       ),
-      body: ResponsiveCenter(
-        child: Form(
-          key: formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              SwitchListTile(
-                value: isGroup.value,
-                onChanged: (v) => isGroup.value = v,
-                title: const Text('Group'),
-                subtitle: const Text(
-                  'Toggle when this represents a family, team, or other '
-                  'collection rather than a single person.',
-                ),
-                secondary: Icon(
-                  isGroup.value ? Icons.groups_rounded : Icons.person_rounded,
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Name *',
-                  border: OutlineInputBorder(),
-                ),
-                textCapitalization: TextCapitalization.words,
-                validator: (v) =>
-                    v == null || v.trim().isEmpty ? 'Name is required' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.mail_outline),
-                ),
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: phoneController,
-                decoration: const InputDecoration(
-                  labelText: 'Phone',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.phone_outlined),
-                ),
-                keyboardType: TextInputType.phone,
-              ),
-              const SizedBox(height: 12),
-              ListTile(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4),
-                  side: BorderSide(
-                    color: Theme.of(context).colorScheme.outline,
+      body: SafeArea(
+        top: false,
+        child: ResponsiveCenter(
+          child: Form(
+            key: formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                SwitchListTile(
+                  value: isGroup.value,
+                  onChanged: (v) => isGroup.value = v,
+                  title: const Text('Group'),
+                  subtitle: const Text(
+                    'Toggle when this represents a family, team, or other '
+                    'collection rather than a single person.',
+                  ),
+                  secondary: Icon(
+                    isGroup.value ? Icons.groups_rounded : Icons.person_rounded,
                   ),
                 ),
-                leading: const Icon(Icons.cake_outlined),
-                title: const Text('Date of birth'),
-                subtitle: Text(
-                  dateOfBirth.value != null
-                      ? DateFormat.yMMMd().format(dateOfBirth.value!)
-                      : 'Not set',
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Name *',
+                    border: OutlineInputBorder(),
+                  ),
+                  textCapitalization: TextCapitalization.words,
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? 'Name is required' : null,
                 ),
-                trailing: dateOfBirth.value != null
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        tooltip: 'Clear',
-                        onPressed: () => dateOfBirth.value = null,
-                      )
-                    : const Icon(Icons.calendar_today, size: 18),
-                onTap: () async {
-                  final now = DateTime.now();
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate:
-                        dateOfBirth.value ?? DateTime(now.year - 30, 1, 1),
-                    firstDate: DateTime(1900),
-                    lastDate: now,
-                  );
-                  if (picked != null) dateOfBirth.value = picked;
-                },
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: notesController,
-                decoration: const InputDecoration(
-                  labelText: 'Notes',
-                  border: OutlineInputBorder(),
-                  alignLabelWithHint: true,
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: emailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.mail_outline),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
                 ),
-                maxLines: 6,
-              ),
-            ],
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: phoneController,
+                  decoration: const InputDecoration(
+                    labelText: 'Phone',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.phone_outlined),
+                  ),
+                  keyboardType: TextInputType.phone,
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
+                    side: BorderSide(
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                  ),
+                  leading: const Icon(Icons.cake_outlined),
+                  title: const Text('Date of birth'),
+                  subtitle: Text(
+                    dateOfBirth.value != null
+                        ? DateFormat.yMMMd().format(dateOfBirth.value!)
+                        : 'Not set',
+                  ),
+                  trailing: dateOfBirth.value != null
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          tooltip: 'Clear',
+                          onPressed: () => dateOfBirth.value = null,
+                        )
+                      : const Icon(Icons.calendar_today, size: 18),
+                  onTap: () async {
+                    final now = DateTime.now();
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate:
+                          dateOfBirth.value ?? DateTime(now.year - 30, 1, 1),
+                      firstDate: DateTime(1900),
+                      lastDate: now,
+                    );
+                    if (picked != null) dateOfBirth.value = picked;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: notesController,
+                  decoration: const InputDecoration(
+                    labelText: 'Notes',
+                    border: OutlineInputBorder(),
+                    alignLabelWithHint: true,
+                  ),
+                  maxLines: 6,
+                ),
+              ],
+            ),
           ),
         ),
       ),

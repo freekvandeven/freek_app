@@ -27,20 +27,23 @@ class SettingsPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const QuickActionsTitle(child: Text('Settings'))),
-      body: ResponsiveCenter(
-        child: ListView(
-          children: const [
-            ProfileSection(),
-            AppearanceSection(),
-            PreferencesSection(),
-            CalendarSection(),
-            DataSection(),
-            StorageSection(),
-            AiSection(),
-            WatchlistSection(),
-            WidgetsSection(),
-            AccountSection(),
-          ],
+      body: SafeArea(
+        top: false,
+        child: ResponsiveCenter(
+          child: ListView(
+            children: const [
+              ProfileSection(),
+              AppearanceSection(),
+              PreferencesSection(),
+              CalendarSection(),
+              DataSection(),
+              StorageSection(),
+              AiSection(),
+              WatchlistSection(),
+              WidgetsSection(),
+              AccountSection(),
+            ],
+          ),
         ),
       ),
     );

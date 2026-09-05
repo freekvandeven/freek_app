@@ -48,50 +48,53 @@ class ShoppingListPage extends ConsumerWidget {
           ),
         ],
       ),
-      body: ResponsiveCenter(
-        child: RefreshIndicator(
-          onRefresh: () => ref.refresh(shoppingListProvider.future),
-          child: items.when(
-            data: (list) {
-              if (list.isEmpty) {
-                return const PullableCenter(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.shopping_cart, size: 64, color: Colors.grey),
-                      SizedBox(height: 16),
-                      Text('Shopping list is empty'),
-                    ],
-                  ),
-                );
-              }
+      body: SafeArea(
+        top: false,
+        child: ResponsiveCenter(
+          child: RefreshIndicator(
+            onRefresh: () => ref.refresh(shoppingListProvider.future),
+            child: items.when(
+              data: (list) {
+                if (list.isEmpty) {
+                  return const PullableCenter(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.shopping_cart, size: 64, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text('Shopping list is empty'),
+                      ],
+                    ),
+                  );
+                }
 
-              final pending = list.where((i) => !i.isCompleted).toList();
-              final completed = list.where((i) => i.isCompleted).toList();
+                final pending = list.where((i) => !i.isCompleted).toList();
+                final completed = list.where((i) => i.isCompleted).toList();
 
-              return ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: [
-                  if (pending.isNotEmpty)
-                    ...pending.map((item) => _ShoppingTile(item: item)),
-                  if (completed.isNotEmpty) ...[
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: Text(
-                        'Completed (${completed.length})',
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                return ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
+                    if (pending.isNotEmpty)
+                      ...pending.map((item) => _ShoppingTile(item: item)),
+                    if (completed.isNotEmpty) ...[
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                        child: Text(
+                          'Completed (${completed.length})',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
-                    ),
-                    ...completed.map((item) => _ShoppingTile(item: item)),
+                      ...completed.map((item) => _ShoppingTile(item: item)),
+                    ],
                   ],
-                ],
-              );
-            },
-            loading: () =>
-                const PullableCenter(child: CircularProgressIndicator()),
-            error: (e, _) => PullableCenter(child: Text('Error: $e')),
+                );
+              },
+              loading: () =>
+                  const PullableCenter(child: CircularProgressIndicator()),
+              error: (e, _) => PullableCenter(child: Text('Error: $e')),
+            ),
           ),
         ),
       ),

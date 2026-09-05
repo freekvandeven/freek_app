@@ -114,6 +114,7 @@ After every creation or modification of `functions/`:
 - Run `flutter analyze` — zero warnings/errors required.
 - No dead code, no unused imports.
 - No comments unless the WHY is non-obvious (hidden constraint, workaround, subtle invariant).
+- **Full-screen pages need `body: SafeArea(top: false, child: …)`** (BUG-0050/0051/0052). Any page reached by a route *outside* the `StatefulShellRoute` branches — and `/recipes/*`, where `AppShell` hides the bottom nav — has no `NavigationBar` to absorb the system navigation-bar inset, so a scrolling body's last content stays stuck behind it. Pages inside a shell branch don't need it: the shell's `Scaffold` already removes the bottom padding for its `NavigationBar`, which makes a nested `SafeArea` a no-op there. A list page whose scroll padding already clears the inset (e.g. `EdgeInsets.only(bottom: 80)` for FAB clearance) is fine as-is.
 
 ## Testing
 

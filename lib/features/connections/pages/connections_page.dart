@@ -13,17 +13,23 @@ class ConnectionsPage extends StatelessWidget {
       appBar: AppBar(
         title: const QuickActionsTitle(child: Text('Connections')),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Text('Quick Links', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          ..._quickLinks.map((link) => _LinkTile(link: link)),
-          const SizedBox(height: 24),
-          Text('Integrations', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          ..._integrations.map((item) => _IntegrationTile(item: item)),
-        ],
+      body: SafeArea(
+        top: false,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Text('Quick Links', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            ..._quickLinks.map((link) => _LinkTile(link: link)),
+            const SizedBox(height: 24),
+            Text(
+              'Integrations',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            ..._integrations.map((item) => _IntegrationTile(item: item)),
+          ],
+        ),
       ),
     );
   }

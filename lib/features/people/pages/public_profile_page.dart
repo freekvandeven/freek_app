@@ -165,90 +165,93 @@ class _PublicProfilePageState extends ConsumerState<PublicProfilePage> {
 
     return Scaffold(
       appBar: AppBar(title: const QuickActionsTitle(child: Text('Profile'))),
-      body: FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        future: _profileFuture,
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: SafeArea(
+        top: false,
+        child: FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+          future: _profileFuture,
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Center(child: Text('Error: ${snapshot.error}'));
+            }
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          final data = snapshot.data!.data();
-          if (data == null) {
-            return const Center(child: Text('Profile not found'));
-          }
+            final data = snapshot.data!.data();
+            if (data == null) {
+              return const Center(child: Text('Profile not found'));
+            }
 
-          final displayName = data['displayName'] as String? ?? 'Anonymous';
-          final bio = data['bio'] as String?;
-          final photoUrl = data['photoUrl'] as String?;
-          final targetIsAdmin = _targetIsAdmin ?? false;
-          final createdAtStr = data['createdAt'] as String?;
-          final createdAt = createdAtStr != null
-              ? DateTime.tryParse(createdAtStr)
-              : null;
+            final displayName = data['displayName'] as String? ?? 'Anonymous';
+            final bio = data['bio'] as String?;
+            final photoUrl = data['photoUrl'] as String?;
+            final targetIsAdmin = _targetIsAdmin ?? false;
+            final createdAtStr = data['createdAt'] as String?;
+            final createdAt = createdAtStr != null
+                ? DateTime.tryParse(createdAtStr)
+                : null;
 
-          return ListView(
-            padding: const EdgeInsets.all(24),
-            children: [
-              Center(
-                child: GestureDetector(
-                  onTap: photoUrl == null
-                      ? null
-                      : () => showFullscreenNetworkImage(context, photoUrl),
-                  child: CircleAvatar(
-                    radius: 56,
-                    backgroundColor: colorScheme.primaryContainer,
-                    backgroundImage: photoUrl != null
-                        ? CachedNetworkImageProvider(photoUrl)
-                        : null,
-                    child: photoUrl == null
-                        ? Text(
-                            _initials(displayName),
-                            style: Theme.of(context).textTheme.headlineMedium
-                                ?.copyWith(
-                                  color: colorScheme.onPrimaryContainer,
-                                ),
-                          )
-                        : null,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Center(
-                child: Text(
-                  displayName,
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-              ),
-              if (bio != null) ...[
-                const SizedBox(height: 8),
+            return ListView(
+              padding: const EdgeInsets.all(24),
+              children: [
                 Center(
-                  child: Text(
-                    bio,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+                  child: GestureDetector(
+                    onTap: photoUrl == null
+                        ? null
+                        : () => showFullscreenNetworkImage(context, photoUrl),
+                    child: CircleAvatar(
+                      radius: 56,
+                      backgroundColor: colorScheme.primaryContainer,
+                      backgroundImage: photoUrl != null
+                          ? CachedNetworkImageProvider(photoUrl)
+                          : null,
+                      child: photoUrl == null
+                          ? Text(
+                              _initials(displayName),
+                              style: Theme.of(context).textTheme.headlineMedium
+                                  ?.copyWith(
+                                    color: colorScheme.onPrimaryContainer,
+                                  ),
+                            )
+                          : null,
                     ),
-                    textAlign: TextAlign.center,
                   ),
                 ),
-              ],
-              if (createdAt != null) ...[
                 const SizedBox(height: 16),
                 Center(
                   child: Text(
-                    'Member since ${DateFormat.yMMMM().format(createdAt)}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+                    displayName,
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
                 ),
+                if (bio != null) ...[
+                  const SizedBox(height: 8),
+                  Center(
+                    child: Text(
+                      bio,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+                if (createdAt != null) ...[
+                  const SizedBox(height: 16),
+                  Center(
+                    child: Text(
+                      'Member since ${DateFormat.yMMMM().format(createdAt)}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+                if (isAdmin) _buildAdminSection(context, targetIsAdmin),
               ],
-              if (isAdmin) _buildAdminSection(context, targetIsAdmin),
-            ],
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

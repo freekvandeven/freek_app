@@ -72,42 +72,45 @@ class FilesPage extends HookConsumerWidget {
               )
             : const Icon(Icons.upload_file),
       ),
-      body: FileDropTarget(
-        onFiles: (files) =>
-            _uploadDroppedFiles(context, ref, currentDir, files),
-        child: ResponsiveCenter(
-          child: Column(
-            children: [
-              _Breadcrumb(crumbs: crumbs),
-              const Divider(height: 1),
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: () => ref.refresh(fileListProvider.future),
-                  child: entries.when(
-                    loading: () => const PullableCenter(
-                      child: CircularProgressIndicator(),
-                    ),
-                    error: (e, _) => PullableCenter(child: Text('Error: $e')),
-                    data: (list) {
-                      if (list.isEmpty) {
-                        return const PullableCenter(
-                          child: Text(
-                            'No files here yet.\nUse + to upload, '
-                            'drag a file in, or create a folder.',
-                            textAlign: TextAlign.center,
-                          ),
+      body: SafeArea(
+        top: false,
+        child: FileDropTarget(
+          onFiles: (files) =>
+              _uploadDroppedFiles(context, ref, currentDir, files),
+          child: ResponsiveCenter(
+            child: Column(
+              children: [
+                _Breadcrumb(crumbs: crumbs),
+                const Divider(height: 1),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: () => ref.refresh(fileListProvider.future),
+                    child: entries.when(
+                      loading: () => const PullableCenter(
+                        child: CircularProgressIndicator(),
+                      ),
+                      error: (e, _) => PullableCenter(child: Text('Error: $e')),
+                      data: (list) {
+                        if (list.isEmpty) {
+                          return const PullableCenter(
+                            child: Text(
+                              'No files here yet.\nUse + to upload, '
+                              'drag a file in, or create a folder.',
+                              textAlign: TextAlign.center,
+                            ),
+                          );
+                        }
+                        return ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: list.length,
+                          itemBuilder: (_, i) => _EntryTile(entry: list[i]),
                         );
-                      }
-                      return ListView.builder(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        itemCount: list.length,
-                        itemBuilder: (_, i) => _EntryTile(entry: list[i]),
-                      );
-                    },
+                      },
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

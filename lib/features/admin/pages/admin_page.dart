@@ -207,7 +207,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Admin')),
-      body: _buildBody(),
+      body: SafeArea(top: false, child: _buildBody()),
       floatingActionButton: FloatingActionButton(
         onPressed: _createCode,
         child: const Icon(Icons.add),
