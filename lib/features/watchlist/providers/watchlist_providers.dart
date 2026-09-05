@@ -65,18 +65,31 @@ final watchlistProvider =
 
 final watchlistSearchProvider = StateProvider<String>((_) => '');
 
+/// Id of the streaming platform to narrow the list to, or null for all
+/// (WISH-0099).
+final watchlistPlatformFilterProvider = StateProvider<String?>((_) => null);
+
 final filteredWatchlistProvider = Provider<AsyncValue<List<WatchItem>>>((ref) {
   final items = ref.watch(watchlistProvider);
   final search = ref.watch(watchlistSearchProvider).toLowerCase();
+  final platformId = ref.watch(watchlistPlatformFilterProvider);
 
   return items.whenData((list) {
-    if (search.isEmpty) return list;
-    return list
-        .where(
-          (i) =>
-              i.title.toLowerCase().contains(search) ||
-              (i.description?.toLowerCase().contains(search) ?? false),
-        )
-        .toList();
+    var filtered = list;
+    if (search.isNotEmpty) {
+      filtered = filtered
+          .where(
+            (i) =>
+                i.title.toLowerCase().contains(search) ||
+                (i.description?.toLowerCase().contains(search) ?? false),
+          )
+          .toList();
+    }
+    if (platformId != null) {
+      filtered = filtered
+          .where((i) => i.platformIds.contains(platformId))
+          .toList();
+    }
+    return filtered;
   });
 });

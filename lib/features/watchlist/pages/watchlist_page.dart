@@ -11,7 +11,9 @@ import '../../../presentation/hooks/use_synced_search_controller.dart';
 import '../../../presentation/widgets/pullable_center.dart';
 import '../../../utils/duration_format.dart';
 import '../models/watch_item.dart';
+import '../providers/streaming_platform_providers.dart';
 import '../providers/watchlist_providers.dart';
+import '../widgets/platform_selector.dart';
 import '../widgets/watch_status_chip.dart';
 
 class WatchlistPage extends HookConsumerWidget {
@@ -71,6 +73,7 @@ class WatchlistPage extends HookConsumerWidget {
                     ref.read(watchlistSearchProvider.notifier).state = v,
               ),
             ),
+            const _PlatformFilterBar(),
             Expanded(
               child: RefreshIndicator(
                 onRefresh: () => ref.refresh(watchlistProvider.future),
@@ -176,6 +179,11 @@ class _WatchItemTile extends ConsumerWidget {
               ),
             if (item.rating != null)
               StarRating(value: item.rating, size: 14, showNumeric: false),
+            if (item.platformIds.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: PlatformIcons(platformIds: item.platformIds, size: 18),
+              ),
           ],
         ),
         trailing: IconButton(
@@ -216,6 +224,40 @@ class _Poster extends StatelessWidget {
         memCacheWidth: 120,
         fit: BoxFit.cover,
         errorWidget: (_, _, _) => fallback,
+      ),
+    );
+  }
+}
+
+/// Narrows the list to one streaming platform. Hidden entirely until at
+/// least one platform is configured (WISH-0099).
+class _PlatformFilterBar extends ConsumerWidget {
+  const _PlatformFilterBar();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final platforms = ref.watch(streamingPlatformsProvider).valueOrNull ?? [];
+    if (platforms.isEmpty) return const SizedBox.shrink();
+
+    final selected = ref.watch(watchlistPlatformFilterProvider);
+    return SizedBox(
+      height: 44,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: [
+          for (final platform in platforms)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilterChip(
+                label: Text(platform.name),
+                selected: selected == platform.id,
+                onSelected: (isSelected) =>
+                    ref.read(watchlistPlatformFilterProvider.notifier).state =
+                        isSelected ? platform.id : null,
+              ),
+            ),
+        ],
       ),
     );
   }

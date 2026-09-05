@@ -7,6 +7,7 @@ import 'package:personal_app/presentation/widgets/responsive_center.dart';
 import '../../../presentation/widgets/star_rating.dart';
 import '../models/watch_item.dart';
 import '../providers/watchlist_providers.dart';
+import '../widgets/platform_selector.dart';
 
 class WatchItemEditPage extends ConsumerStatefulWidget {
   final String? itemId;
@@ -28,6 +29,7 @@ class _WatchItemEditPageState extends ConsumerState<WatchItemEditPage> {
   final _reviewController = TextEditingController();
 
   WatchItemType _type = WatchItemType.movie;
+  List<String> _platformIds = const [];
   bool _watched = false;
   double? _rating;
   bool _isSaving = false;
@@ -65,6 +67,7 @@ class _WatchItemEditPageState extends ConsumerState<WatchItemEditPage> {
         _sourceUrlController.text = item.sourceUrl ?? '';
         _reviewController.text = item.review ?? '';
         _type = item.type;
+        _platformIds = item.platformIds;
         _watched = item.watched;
         _rating = item.rating;
       }
@@ -108,7 +111,7 @@ class _WatchItemEditPageState extends ConsumerState<WatchItemEditPage> {
         runtimeMinutes: int.tryParse(_runtimeController.text.trim()),
         posterUrl: _trimmedOrNull(_posterUrlController),
         sourceUrl: _trimmedOrNull(_sourceUrlController),
-        platformIds: existing?.platformIds ?? const [],
+        platformIds: _platformIds,
         watched: _watched,
         watchedAt: _watched ? (existing?.watchedAt ?? DateTime.now()) : null,
         rating: _rating,
@@ -250,6 +253,17 @@ class _WatchItemEditPageState extends ConsumerState<WatchItemEditPage> {
                   helperMaxLines: 2,
                 ),
                 keyboardType: TextInputType.url,
+              ),
+              const SizedBox(height: 24),
+
+              Text(
+                'Streaming platforms',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              PlatformSelector(
+                selectedIds: _platformIds,
+                onChanged: (ids) => setState(() => _platformIds = ids),
               ),
               const SizedBox(height: 16),
 

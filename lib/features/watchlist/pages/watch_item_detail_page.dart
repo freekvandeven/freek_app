@@ -12,6 +12,7 @@ import '../../../presentation/widgets/star_rating.dart';
 import '../../../utils/duration_format.dart';
 import '../models/watch_item.dart';
 import '../providers/watchlist_providers.dart';
+import '../widgets/platform_selector.dart';
 import '../widgets/watch_status_chip.dart';
 
 class WatchItemDetailPage extends ConsumerWidget {
@@ -114,6 +115,11 @@ class WatchItemDetailPage extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 16),
+
+            if (item.platformIds.isNotEmpty) ...[
+              PlatformIcons(platformIds: item.platformIds, size: 32),
+              const SizedBox(height: 16),
+            ],
 
             if (item.rating != null) ...[
               StarRating(value: item.rating, size: 24),
