@@ -148,117 +148,125 @@ class _CatalogEditPageState extends ConsumerState<CatalogEditPage> {
           child: Text(_isEditing ? 'Edit Catalog Item' : 'New Catalog Item'),
         ),
       ),
-      body: ResponsiveCenter(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Title *',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (v) =>
-                    v == null || v.trim().isEmpty ? 'Title is required' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _priceController,
-                decoration: InputDecoration(
-                  labelText: 'Price',
-                  border: const OutlineInputBorder(),
-                  prefixText: '${ref.watch(currencyConverterProvider).symbol} ',
-                ),
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _linkController,
-                decoration: const InputDecoration(
-                  labelText: 'Link (URL)',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.link),
-                ),
-                keyboardType: TextInputType.url,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _searchAliasesController,
-                decoration: const InputDecoration(
-                  labelText: 'Nicknames',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.sell_outlined),
-                  helperText:
-                      'Extra search words, separated by space, comma or '
-                      'period. Not shown in lists.',
-                  helperMaxLines: 2,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              Row(
-                children: [
-                  Text('Rating', style: Theme.of(context).textTheme.titleSmall),
-                  const Spacer(),
-                  StarRating(
-                    value: _rating,
-                    onChanged: (v) => setState(() => _rating = v),
-                    size: 28,
+      body: SafeArea(
+        top: false,
+        child: ResponsiveCenter(
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                TextFormField(
+                  controller: _titleController,
+                  decoration: const InputDecoration(
+                    labelText: 'Title *',
+                    border: OutlineInputBorder(),
                   ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Images section
-              Text('Images', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              if (_images.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Text(
-                    'No images added',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                )
-              else
-                ImageAttachmentStrip(controller: _images),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: () => pickImageInto(
-                  context,
-                  ref.read(imageUploadServiceProvider),
-                  _images,
-                  includeCamera: false,
+                  validator: (v) => v == null || v.trim().isEmpty
+                      ? 'Title is required'
+                      : null,
                 ),
-                icon: const Icon(Icons.add_a_photo),
-                label: const Text('Add Image'),
-              ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _priceController,
+                  decoration: InputDecoration(
+                    labelText: 'Price',
+                    border: const OutlineInputBorder(),
+                    prefixText:
+                        '${ref.watch(currencyConverterProvider).symbol} ',
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _linkController,
+                  decoration: const InputDecoration(
+                    labelText: 'Link (URL)',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.link),
+                  ),
+                  keyboardType: TextInputType.url,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _searchAliasesController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nicknames',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.sell_outlined),
+                    helperText:
+                        'Extra search words, separated by space, comma or '
+                        'period. Not shown in lists.',
+                    helperMaxLines: 2,
+                  ),
+                ),
+                const SizedBox(height: 16),
 
-              const SizedBox(height: 32),
-              FilledButton(
-                onPressed: _isUploading ? null : _save,
-                child: _isUploading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(_isEditing ? 'Update' : 'Create'),
-              ),
-            ],
+                Row(
+                  children: [
+                    Text(
+                      'Rating',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const Spacer(),
+                    StarRating(
+                      value: _rating,
+                      onChanged: (v) => setState(() => _rating = v),
+                      size: 28,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Images section
+                Text('Images', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                if (_images.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      'No images added',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  )
+                else
+                  ImageAttachmentStrip(controller: _images),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () => pickImageInto(
+                    context,
+                    ref.read(imageUploadServiceProvider),
+                    _images,
+                    includeCamera: false,
+                  ),
+                  icon: const Icon(Icons.add_a_photo),
+                  label: const Text('Add Image'),
+                ),
+
+                const SizedBox(height: 32),
+                FilledButton(
+                  onPressed: _isUploading ? null : _save,
+                  child: _isUploading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(_isEditing ? 'Update' : 'Create'),
+                ),
+              ],
+            ),
           ),
         ),
       ),

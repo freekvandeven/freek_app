@@ -105,129 +105,132 @@ class _CalendarEventEditPageState extends ConsumerState<CalendarEventEditPage> {
             ),
         ],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            TextFormField(
-              controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: 'Title',
-                border: OutlineInputBorder(),
+      body: SafeArea(
+        top: false,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              TextFormField(
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Title',
+                  border: OutlineInputBorder(),
+                ),
+                autofocus: !_isEditing,
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Title is required' : null,
               ),
-              autofocus: !_isEditing,
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Title is required' : null,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description (optional)',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description (optional)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
               ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // All-day toggle
-            SwitchListTile(
-              title: const Text('All-day event'),
-              value: _isAllDay,
-              contentPadding: EdgeInsets.zero,
-              onChanged: (v) => setState(() => _isAllDay = v),
-            ),
-            const Divider(),
-
-            // Start date
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.calendar_today),
-              title: const Text('Start date'),
-              subtitle: Text(DateFormat.yMMMEd().format(_startDate)),
-              onTap: () => _pickDate(isStart: true),
-            ),
-
-            // Start time (only when not all-day)
-            if (!_isAllDay)
-              ListTile(
+              // All-day toggle
+              SwitchListTile(
+                title: const Text('All-day event'),
+                value: _isAllDay,
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.access_time),
-                title: const Text('Start time'),
-                subtitle: Text(_startTime.format(context)),
-                onTap: () => _pickTime(isStart: true),
+                onChanged: (v) => setState(() => _isAllDay = v),
               ),
+              const Divider(),
 
-            const Divider(),
-
-            // End date toggle
-            SwitchListTile(
-              title: const Text('End date'),
-              value: _hasEndDate,
-              contentPadding: EdgeInsets.zero,
-              onChanged: (v) {
-                setState(() {
-                  _hasEndDate = v;
-                  if (v && _endDate == null) {
-                    _endDate = _startDate;
-                    _endTime = TimeOfDay(
-                      hour: _startTime.hour + 1,
-                      minute: _startTime.minute,
-                    );
-                  }
-                });
-              },
-            ),
-
-            if (_hasEndDate) ...[
+              // Start date
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.calendar_today),
-                title: const Text('End date'),
-                subtitle: Text(
-                  _endDate != null
-                      ? DateFormat.yMMMEd().format(_endDate!)
-                      : 'Not set',
-                ),
-                onTap: () => _pickDate(isStart: false),
+                title: const Text('Start date'),
+                subtitle: Text(DateFormat.yMMMEd().format(_startDate)),
+                onTap: () => _pickDate(isStart: true),
               ),
+
+              // Start time (only when not all-day)
               if (!_isAllDay)
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.access_time),
-                  title: const Text('End time'),
-                  subtitle: Text(
-                    _endTime != null ? _endTime!.format(context) : 'Not set',
-                  ),
-                  onTap: () => _pickTime(isStart: false),
+                  title: const Text('Start time'),
+                  subtitle: Text(_startTime.format(context)),
+                  onTap: () => _pickTime(isStart: true),
                 ),
-            ],
 
-            const SizedBox(height: 24),
+              const Divider(),
 
-            // Images
-            Text('Images', style: Theme.of(context).textTheme.labelLarge),
-            const SizedBox(height: 8),
-            ImageAttachmentStrip(controller: _images),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: () => pickImageInto(
-                context,
-                ref.read(imageUploadServiceProvider),
-                _images,
+              // End date toggle
+              SwitchListTile(
+                title: const Text('End date'),
+                value: _hasEndDate,
+                contentPadding: EdgeInsets.zero,
+                onChanged: (v) {
+                  setState(() {
+                    _hasEndDate = v;
+                    if (v && _endDate == null) {
+                      _endDate = _startDate;
+                      _endTime = TimeOfDay(
+                        hour: _startTime.hour + 1,
+                        minute: _startTime.minute,
+                      );
+                    }
+                  });
+                },
               ),
-              icon: const Icon(Icons.add_photo_alternate),
-              label: const Text('Add image'),
-            ),
 
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: _isUploading ? null : _save,
-              icon: const Icon(Icons.save),
-              label: Text(_isEditing ? 'Update' : 'Create'),
-            ),
-          ],
+              if (_hasEndDate) ...[
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.calendar_today),
+                  title: const Text('End date'),
+                  subtitle: Text(
+                    _endDate != null
+                        ? DateFormat.yMMMEd().format(_endDate!)
+                        : 'Not set',
+                  ),
+                  onTap: () => _pickDate(isStart: false),
+                ),
+                if (!_isAllDay)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.access_time),
+                    title: const Text('End time'),
+                    subtitle: Text(
+                      _endTime != null ? _endTime!.format(context) : 'Not set',
+                    ),
+                    onTap: () => _pickTime(isStart: false),
+                  ),
+              ],
+
+              const SizedBox(height: 24),
+
+              // Images
+              Text('Images', style: Theme.of(context).textTheme.labelLarge),
+              const SizedBox(height: 8),
+              ImageAttachmentStrip(controller: _images),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: () => pickImageInto(
+                  context,
+                  ref.read(imageUploadServiceProvider),
+                  _images,
+                ),
+                icon: const Icon(Icons.add_photo_alternate),
+                label: const Text('Add image'),
+              ),
+
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: _isUploading ? null : _save,
+                icon: const Icon(Icons.save),
+                label: Text(_isEditing ? 'Update' : 'Create'),
+              ),
+            ],
+          ),
         ),
       ),
     );

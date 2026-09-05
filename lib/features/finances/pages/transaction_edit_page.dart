@@ -129,163 +129,168 @@ class _TransactionEditPageState extends ConsumerState<TransactionEditPage> {
         ),
         actions: [TextButton(onPressed: _save, child: const Text('Save'))],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            // Type selector
-            SegmentedButton<TransactionType>(
-              segments: const [
-                ButtonSegment(
-                  value: TransactionType.expense,
-                  label: Text('Expense'),
-                  icon: Icon(Icons.arrow_upward),
-                ),
-                ButtonSegment(
-                  value: TransactionType.income,
-                  label: Text('Income'),
-                  icon: Icon(Icons.arrow_downward),
-                ),
-              ],
-              selected: {_type},
-              onSelectionChanged: (selection) {
-                setState(() {
-                  _type = selection.first;
-                  _categoryId = null;
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-
-            TextFormField(
-              controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: 'Title',
-                border: OutlineInputBorder(),
-              ),
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Required' : null,
-            ),
-            const SizedBox(height: 16),
-
-            TextFormField(
-              controller: _amountController,
-              decoration: InputDecoration(
-                labelText: 'Amount',
-                border: const OutlineInputBorder(),
-                prefixText: '${ref.watch(currencyConverterProvider).symbol} ',
-              ),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Required';
-                if (parseDecimal(v) == null) return 'Invalid number';
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // Category dropdown
-            categories.when(
-              data: (cats) {
-                final filtered = cats.where((c) => c.type == _type).toList();
-                return DropdownButtonFormField<String>(
-                  initialValue: filtered.any((c) => c.id == _categoryId)
-                      ? _categoryId
-                      : null,
-                  decoration: const InputDecoration(
-                    labelText: 'Category',
-                    border: OutlineInputBorder(),
+      body: SafeArea(
+        top: false,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              // Type selector
+              SegmentedButton<TransactionType>(
+                segments: const [
+                  ButtonSegment(
+                    value: TransactionType.expense,
+                    label: Text('Expense'),
+                    icon: Icon(Icons.arrow_upward),
                   ),
-                  items: filtered
-                      .map(
-                        (c) =>
-                            DropdownMenuItem(value: c.id, child: Text(c.name)),
-                      )
-                      .toList(),
-                  onChanged: (v) => setState(() => _categoryId = v),
-                );
-              },
-              loading: () => const LinearProgressIndicator(),
-              error: (_, _) => const Text('Failed to load categories'),
-            ),
-            const SizedBox(height: 16),
-
-            // Date picker
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.calendar_today),
-              title: Text(DateFormat.yMMMd().format(_date)),
-              subtitle: const Text('Date'),
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: _date,
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime(2100),
-                );
-                if (picked != null) setState(() => _date = picked);
-              },
-            ),
-            const SizedBox(height: 16),
-
-            TextFormField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description (optional)',
-                border: OutlineInputBorder(),
+                  ButtonSegment(
+                    value: TransactionType.income,
+                    label: Text('Income'),
+                    icon: Icon(Icons.arrow_downward),
+                  ),
+                ],
+                selected: {_type},
+                onSelectionChanged: (selection) {
+                  setState(() {
+                    _type = selection.first;
+                    _categoryId = null;
+                  });
+                },
               ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // Recurring toggle
-            SwitchListTile(
-              title: const Text('Recurring'),
-              value: _isRecurring,
-              onChanged: (v) => setState(() => _isRecurring = v),
-            ),
-            if (_isRecurring) ...[
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                initialValue: _recurringType,
+              TextFormField(
+                controller: _titleController,
                 decoration: const InputDecoration(
-                  labelText: 'Frequency',
+                  labelText: 'Title',
                   border: OutlineInputBorder(),
                 ),
-                items: const [
-                  DropdownMenuItem(value: 'daily', child: Text('Daily')),
-                  DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
-                  DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
-                  DropdownMenuItem(value: 'yearly', child: Text('Yearly')),
-                ],
-                onChanged: (v) => setState(() => _recurringType = v),
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Required' : null,
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Text('Every'),
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    width: 60,
-                    child: TextFormField(
-                      initialValue: _recurringInterval.toString(),
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.center,
-                      onChanged: (v) {
-                        final n = int.tryParse(v);
-                        if (n != null && n > 0) _recurringInterval = n;
-                      },
+              const SizedBox(height: 16),
+
+              TextFormField(
+                controller: _amountController,
+                decoration: InputDecoration(
+                  labelText: 'Amount',
+                  border: const OutlineInputBorder(),
+                  prefixText: '${ref.watch(currencyConverterProvider).symbol} ',
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return 'Required';
+                  if (parseDecimal(v) == null) return 'Invalid number';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // Category dropdown
+              categories.when(
+                data: (cats) {
+                  final filtered = cats.where((c) => c.type == _type).toList();
+                  return DropdownButtonFormField<String>(
+                    initialValue: filtered.any((c) => c.id == _categoryId)
+                        ? _categoryId
+                        : null,
+                    decoration: const InputDecoration(
+                      labelText: 'Category',
+                      border: OutlineInputBorder(),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(_recurringType ?? 'period(s)'),
-                ],
+                    items: filtered
+                        .map(
+                          (c) => DropdownMenuItem(
+                            value: c.id,
+                            child: Text(c.name),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (v) => setState(() => _categoryId = v),
+                  );
+                },
+                loading: () => const LinearProgressIndicator(),
+                error: (_, _) => const Text('Failed to load categories'),
               ),
+              const SizedBox(height: 16),
+
+              // Date picker
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.calendar_today),
+                title: Text(DateFormat.yMMMd().format(_date)),
+                subtitle: const Text('Date'),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _date,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked != null) setState(() => _date = picked);
+                },
+              ),
+              const SizedBox(height: 16),
+
+              TextFormField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description (optional)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+
+              // Recurring toggle
+              SwitchListTile(
+                title: const Text('Recurring'),
+                value: _isRecurring,
+                onChanged: (v) => setState(() => _isRecurring = v),
+              ),
+              if (_isRecurring) ...[
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  initialValue: _recurringType,
+                  decoration: const InputDecoration(
+                    labelText: 'Frequency',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'daily', child: Text('Daily')),
+                    DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
+                    DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
+                    DropdownMenuItem(value: 'yearly', child: Text('Yearly')),
+                  ],
+                  onChanged: (v) => setState(() => _recurringType = v),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Text('Every'),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 60,
+                      child: TextFormField(
+                        initialValue: _recurringInterval.toString(),
+                        keyboardType: TextInputType.number,
+                        textAlign: TextAlign.center,
+                        onChanged: (v) {
+                          final n = int.tryParse(v);
+                          if (n != null && n > 0) _recurringInterval = n;
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(_recurringType ?? 'period(s)'),
+                  ],
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

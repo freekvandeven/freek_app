@@ -111,71 +111,74 @@ class _AssetEditPageState extends ConsumerState<AssetEditPage> {
         ),
         actions: [TextButton(onPressed: _save, child: const Text('Save'))],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                border: OutlineInputBorder(),
+      body: SafeArea(
+        top: false,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Name',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Required' : null,
               ),
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Required' : null,
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            DropdownButtonFormField<AssetType>(
-              initialValue: _type,
-              decoration: const InputDecoration(
-                labelText: 'Type',
-                border: OutlineInputBorder(),
-              ),
-              items: AssetType.values
-                  .map(
-                    (t) => DropdownMenuItem(
-                      value: t,
-                      child: Text(
-                        t.name[0].toUpperCase() + t.name.substring(1),
+              DropdownButtonFormField<AssetType>(
+                initialValue: _type,
+                decoration: const InputDecoration(
+                  labelText: 'Type',
+                  border: OutlineInputBorder(),
+                ),
+                items: AssetType.values
+                    .map(
+                      (t) => DropdownMenuItem(
+                        value: t,
+                        child: Text(
+                          t.name[0].toUpperCase() + t.name.substring(1),
+                        ),
                       ),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (v) {
-                if (v != null) setState(() => _type = v);
-              },
-            ),
-            const SizedBox(height: 16),
+                    )
+                    .toList(),
+                onChanged: (v) {
+                  if (v != null) setState(() => _type = v);
+                },
+              ),
+              const SizedBox(height: 16),
 
-            TextFormField(
-              controller: _valueController,
-              decoration: InputDecoration(
-                labelText: 'Current Value',
-                border: const OutlineInputBorder(),
-                prefixText: '${ref.watch(currencyConverterProvider).symbol} ',
+              TextFormField(
+                controller: _valueController,
+                decoration: InputDecoration(
+                  labelText: 'Current Value',
+                  border: const OutlineInputBorder(),
+                  prefixText: '${ref.watch(currencyConverterProvider).symbol} ',
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return 'Required';
+                  if (parseDecimal(v) == null) return 'Invalid number';
+                  return null;
+                },
               ),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Required';
-                if (parseDecimal(v) == null) return 'Invalid number';
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            TextFormField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description (optional)',
-                border: OutlineInputBorder(),
+              TextFormField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description (optional)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
               ),
-              maxLines: 3,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

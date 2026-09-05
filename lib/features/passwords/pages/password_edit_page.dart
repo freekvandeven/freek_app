@@ -137,113 +137,118 @@ class _PasswordEditPageState extends ConsumerState<PasswordEditPage> {
         ),
         actions: [TextButton(onPressed: _save, child: const Text('Save'))],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            TextFormField(
-              controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: 'Title',
-                border: OutlineInputBorder(),
-                hintText: 'e.g. Google, GitHub',
+      body: SafeArea(
+        top: false,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              TextFormField(
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Title',
+                  border: OutlineInputBorder(),
+                  hintText: 'e.g. Google, GitHub',
+                ),
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Required' : null,
               ),
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Required' : null,
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            TextFormField(
-              controller: _usernameController,
-              decoration: const InputDecoration(
-                labelText: 'Username / Email',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            TextFormField(
-              controller: _passwordController,
-              obscureText: _obscurePassword,
-              decoration: InputDecoration(
-                labelText: 'Password',
-                border: const OutlineInputBorder(),
-                suffixIcon: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility
-                            : Icons.visibility_off,
-                      ),
-                      onPressed: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.auto_fix_high),
-                      tooltip: 'Generate password',
-                      onPressed: _generatePassword,
-                    ),
-                  ],
+              TextFormField(
+                controller: _usernameController,
+                decoration: const InputDecoration(
+                  labelText: 'Username / Email',
+                  border: OutlineInputBorder(),
                 ),
               ),
-              validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            TextFormField(
-              controller: _urlController,
-              decoration: const InputDecoration(
-                labelText: 'URL',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.url,
-            ),
-            const SizedBox(height: 16),
-
-            // Category with autocomplete from existing
-            Autocomplete<String>(
-              initialValue: TextEditingValue(text: _categoryController.text),
-              optionsBuilder: (textEditingValue) {
-                final cats = categories.valueOrNull ?? [];
-                if (textEditingValue.text.isEmpty) return cats;
-                return cats.where(
-                  (c) => c.toLowerCase().contains(
-                    textEditingValue.text.toLowerCase(),
+              TextFormField(
+                controller: _passwordController,
+                obscureText: _obscurePassword,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  border: const OutlineInputBorder(),
+                  suffixIcon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                        ),
+                        onPressed: () => setState(
+                          () => _obscurePassword = !_obscurePassword,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.auto_fix_high),
+                        tooltip: 'Generate password',
+                        onPressed: _generatePassword,
+                      ),
+                    ],
                   ),
-                );
-              },
-              fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
-                // Sync with our controller
-                controller.addListener(() {
-                  _categoryController.text = controller.text;
-                });
-                return TextFormField(
-                  controller: controller,
-                  focusNode: focusNode,
-                  decoration: const InputDecoration(
-                    labelText: 'Category',
-                    border: OutlineInputBorder(),
-                    hintText: 'e.g. Social, Finance, Work',
-                  ),
-                );
-              },
-              onSelected: (value) => _categoryController.text = value,
-            ),
-            const SizedBox(height: 16),
-
-            TextFormField(
-              controller: _notesController,
-              decoration: const InputDecoration(
-                labelText: 'Notes',
-                border: OutlineInputBorder(),
-                hintText: 'Additional info (encrypted)',
+                ),
+                validator: (v) => v == null || v.isEmpty ? 'Required' : null,
               ),
-              maxLines: 4,
-            ),
-          ],
+              const SizedBox(height: 16),
+
+              TextFormField(
+                controller: _urlController,
+                decoration: const InputDecoration(
+                  labelText: 'URL',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.url,
+              ),
+              const SizedBox(height: 16),
+
+              // Category with autocomplete from existing
+              Autocomplete<String>(
+                initialValue: TextEditingValue(text: _categoryController.text),
+                optionsBuilder: (textEditingValue) {
+                  final cats = categories.valueOrNull ?? [];
+                  if (textEditingValue.text.isEmpty) return cats;
+                  return cats.where(
+                    (c) => c.toLowerCase().contains(
+                      textEditingValue.text.toLowerCase(),
+                    ),
+                  );
+                },
+                fieldViewBuilder:
+                    (context, controller, focusNode, onSubmitted) {
+                      // Sync with our controller
+                      controller.addListener(() {
+                        _categoryController.text = controller.text;
+                      });
+                      return TextFormField(
+                        controller: controller,
+                        focusNode: focusNode,
+                        decoration: const InputDecoration(
+                          labelText: 'Category',
+                          border: OutlineInputBorder(),
+                          hintText: 'e.g. Social, Finance, Work',
+                        ),
+                      );
+                    },
+                onSelected: (value) => _categoryController.text = value,
+              ),
+              const SizedBox(height: 16),
+
+              TextFormField(
+                controller: _notesController,
+                decoration: const InputDecoration(
+                  labelText: 'Notes',
+                  border: OutlineInputBorder(),
+                  hintText: 'Additional info (encrypted)',
+                ),
+                maxLines: 4,
+              ),
+            ],
+          ),
         ),
       ),
     );

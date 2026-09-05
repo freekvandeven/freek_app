@@ -443,278 +443,283 @@ class _InventoryEditPageState extends ConsumerState<InventoryEditPage> {
             ),
           ],
         ),
-        body: ResponsiveCenter(
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Name',
-                    border: OutlineInputBorder(),
+        body: SafeArea(
+          top: false,
+          child: ResponsiveCenter(
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Name',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (v) =>
+                        v == null || v.trim().isEmpty ? 'Required' : null,
                   ),
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                TextFormField(
-                  controller: _descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Description',
-                    border: OutlineInputBorder(),
+                  TextFormField(
+                    controller: _descriptionController,
+                    decoration: const InputDecoration(
+                      labelText: 'Description',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 3,
                   ),
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                // Catalog item link
-                _buildCatalogLinkSection(),
-                const SizedBox(height: 16),
+                  // Catalog item link
+                  _buildCatalogLinkSection(),
+                  const SizedBox(height: 16),
 
-                // Category autocomplete
-                Autocomplete<String>(
-                  initialValue: TextEditingValue(
-                    text: _categoryController.text,
+                  // Category autocomplete
+                  Autocomplete<String>(
+                    initialValue: TextEditingValue(
+                      text: _categoryController.text,
+                    ),
+                    optionsBuilder: (textEditingValue) {
+                      if (textEditingValue.text.isEmpty) return categories;
+                      return categories.where(
+                        (c) => c.toLowerCase().contains(
+                          textEditingValue.text.toLowerCase(),
+                        ),
+                      );
+                    },
+                    fieldViewBuilder:
+                        (context, controller, focusNode, onSubmitted) {
+                          controller.addListener(
+                            () => _categoryController.text = controller.text,
+                          );
+                          return TextFormField(
+                            controller: controller,
+                            focusNode: focusNode,
+                            decoration: const InputDecoration(
+                              labelText: 'Category',
+                              border: OutlineInputBorder(),
+                            ),
+                          );
+                        },
+                    onSelected: (v) => _categoryController.text = v,
                   ),
-                  optionsBuilder: (textEditingValue) {
-                    if (textEditingValue.text.isEmpty) return categories;
-                    return categories.where(
-                      (c) => c.toLowerCase().contains(
-                        textEditingValue.text.toLowerCase(),
-                      ),
-                    );
-                  },
-                  fieldViewBuilder:
-                      (context, controller, focusNode, onSubmitted) {
-                        controller.addListener(
-                          () => _categoryController.text = controller.text,
-                        );
-                        return TextFormField(
-                          controller: controller,
-                          focusNode: focusNode,
+                  const SizedBox(height: 16),
+
+                  // Location autocomplete
+                  Autocomplete<String>(
+                    initialValue: TextEditingValue(
+                      text: _locationController.text,
+                    ),
+                    optionsBuilder: (textEditingValue) {
+                      if (textEditingValue.text.isEmpty) return locations;
+                      return locations.where(
+                        (l) => l.toLowerCase().contains(
+                          textEditingValue.text.toLowerCase(),
+                        ),
+                      );
+                    },
+                    fieldViewBuilder:
+                        (context, controller, focusNode, onSubmitted) {
+                          controller.addListener(
+                            () => _locationController.text = controller.text,
+                          );
+                          return TextFormField(
+                            controller: controller,
+                            focusNode: focusNode,
+                            decoration: const InputDecoration(
+                              labelText: 'Location',
+                              border: OutlineInputBorder(),
+                              hintText: 'e.g. Kitchen, Garage, Office',
+                            ),
+                          );
+                        },
+                    onSelected: (v) => _locationController.text = v,
+                  ),
+                  const SizedBox(height: 16),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _quantityController,
                           decoration: const InputDecoration(
-                            labelText: 'Category',
+                            labelText: 'Quantity',
                             border: OutlineInputBorder(),
                           ),
-                        );
-                      },
-                  onSelected: (v) => _categoryController.text = v,
-                ),
-                const SizedBox(height: 16),
-
-                // Location autocomplete
-                Autocomplete<String>(
-                  initialValue: TextEditingValue(
-                    text: _locationController.text,
-                  ),
-                  optionsBuilder: (textEditingValue) {
-                    if (textEditingValue.text.isEmpty) return locations;
-                    return locations.where(
-                      (l) => l.toLowerCase().contains(
-                        textEditingValue.text.toLowerCase(),
+                          keyboardType: TextInputType.number,
+                        ),
                       ),
-                    );
-                  },
-                  fieldViewBuilder:
-                      (context, controller, focusNode, onSubmitted) {
-                        controller.addListener(
-                          () => _locationController.text = controller.text,
-                        );
-                        return TextFormField(
-                          controller: controller,
-                          focusNode: focusNode,
-                          decoration: const InputDecoration(
-                            labelText: 'Location',
-                            border: OutlineInputBorder(),
-                            hintText: 'e.g. Kitchen, Garage, Office',
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _priceController,
+                          decoration: InputDecoration(
+                            labelText: 'Price',
+                            border: const OutlineInputBorder(),
+                            prefixText:
+                                '${ref.watch(currencyConverterProvider).symbol} ',
                           ),
-                        );
-                      },
-                  onSelected: (v) => _locationController.text = v,
-                ),
-                const SizedBox(height: 16),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _quantityController,
-                        decoration: const InputDecoration(
-                          labelText: 'Quantity',
-                          border: OutlineInputBorder(),
-                        ),
-                        keyboardType: TextInputType.number,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _priceController,
-                        decoration: InputDecoration(
-                          labelText: 'Price',
-                          border: const OutlineInputBorder(),
-                          prefixText:
-                              '${ref.watch(currencyConverterProvider).symbol} ',
-                        ),
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Fill % — optional indicator for half-empty bottles /
-                // bags / sauces without changing the integer quantity
-                // (WISH-0078). Off by default; turning the switch on
-                // reveals a slider that defaults to 100.
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Track fill percentage'),
-                  subtitle: Text(
-                    _fillPercent == null
-                        ? 'Off — useful for half-empty bags, almost-empty sauces'
-                        : 'Currently $_fillPercent% full',
-                  ),
-                  value: _fillPercent != null,
-                  onChanged: (on) {
-                    setState(() => _fillPercent = on ? 100 : null);
-                  },
-                ),
-                if (_fillPercent != null)
-                  Slider(
-                    value: _fillPercent!.toDouble(),
-                    min: 0,
-                    max: 100,
-                    divisions: 20,
-                    label: '$_fillPercent%',
-                    onChanged: (v) => setState(() => _fillPercent = v.round()),
-                  ),
-                if (_fillPercent != null) const SizedBox(height: 16),
-
-                // Opened status — independent of fill percentage, for when
-                // the user just wants a simple opened/unopened flag
-                // (WISH-0089).
-                CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  title: const Text('Opened'),
-                  subtitle: const Text('Mark as opened / in active use'),
-                  value: _isOpened,
-                  onChanged: (v) => setState(() => _isOpened = v ?? false),
-                ),
-                const SizedBox(height: 16),
-
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.calendar_today),
-                  title: Text(
-                    _purchaseDate != null
-                        ? DateFormat.yMMMd().format(_purchaseDate!)
-                        : 'No purchase date',
-                  ),
-                  subtitle: const Text('Purchase Date'),
-                  trailing: _purchaseDate != null
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () => setState(() => _purchaseDate = null),
-                        )
-                      : null,
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: _purchaseDate ?? DateTime.now(),
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime.now(),
-                    );
-                    if (picked != null) {
-                      setState(() => _purchaseDate = picked);
-                    }
-                  },
-                ),
-                const SizedBox(height: 8),
-
-                // Expiry date
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.event_busy),
-                  title: Text(
-                    _expiryDate != null
-                        ? DateFormat.yMMMd().format(_expiryDate!)
-                        : 'No expiry date',
-                  ),
-                  subtitle:
-                      _expiryDate != null &&
-                          _expiryDate!.isBefore(DateTime.now())
-                      ? Text(
-                          'Expired',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
                           ),
-                        )
-                      : const Text('Expiry Date'),
-                  trailing: _expiryDate != null
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () => setState(() => _expiryDate = null),
-                        )
-                      : null,
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: _expiryDate ?? DateTime.now(),
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime(2100),
-                    );
-                    if (picked != null) {
-                      setState(() => _expiryDate = picked);
-                    }
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Images
-                Text('Images', style: Theme.of(context).textTheme.labelLarge),
-                const SizedBox(height: 8),
-                ImageAttachmentStrip(controller: _images),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: () => pickImageInto(
-                    context,
-                    ref.read(imageUploadServiceProvider),
-                    _images,
+                        ),
+                      ),
+                    ],
                   ),
-                  icon: const Icon(Icons.add_photo_alternate),
-                  label: const Text('Add image'),
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                TextFormField(
-                  controller: _barcodeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Barcode / Serial Number',
-                    border: OutlineInputBorder(),
+                  // Fill % — optional indicator for half-empty bottles /
+                  // bags / sauces without changing the integer quantity
+                  // (WISH-0078). Off by default; turning the switch on
+                  // reveals a slider that defaults to 100.
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Track fill percentage'),
+                    subtitle: Text(
+                      _fillPercent == null
+                          ? 'Off — useful for half-empty bags, almost-empty sauces'
+                          : 'Currently $_fillPercent% full',
+                    ),
+                    value: _fillPercent != null,
+                    onChanged: (on) {
+                      setState(() => _fillPercent = on ? 100 : null);
+                    },
                   ),
-                ),
-                const SizedBox(height: 16),
+                  if (_fillPercent != null)
+                    Slider(
+                      value: _fillPercent!.toDouble(),
+                      min: 0,
+                      max: 100,
+                      divisions: 20,
+                      label: '$_fillPercent%',
+                      onChanged: (v) =>
+                          setState(() => _fillPercent = v.round()),
+                    ),
+                  if (_fillPercent != null) const SizedBox(height: 16),
 
-                TextFormField(
-                  controller: _searchAliasesController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nicknames',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.sell_outlined),
-                    helperText:
-                        'Extra search words, separated by space, comma or '
-                        'period. Not shown in lists.',
-                    helperMaxLines: 2,
+                  // Opened status — independent of fill percentage, for when
+                  // the user just wants a simple opened/unopened flag
+                  // (WISH-0089).
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    title: const Text('Opened'),
+                    subtitle: const Text('Mark as opened / in active use'),
+                    value: _isOpened,
+                    onChanged: (v) => setState(() => _isOpened = v ?? false),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.calendar_today),
+                    title: Text(
+                      _purchaseDate != null
+                          ? DateFormat.yMMMd().format(_purchaseDate!)
+                          : 'No purchase date',
+                    ),
+                    subtitle: const Text('Purchase Date'),
+                    trailing: _purchaseDate != null
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () =>
+                                setState(() => _purchaseDate = null),
+                          )
+                        : null,
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _purchaseDate ?? DateTime.now(),
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime.now(),
+                      );
+                      if (picked != null) {
+                        setState(() => _purchaseDate = picked);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Expiry date
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.event_busy),
+                    title: Text(
+                      _expiryDate != null
+                          ? DateFormat.yMMMd().format(_expiryDate!)
+                          : 'No expiry date',
+                    ),
+                    subtitle:
+                        _expiryDate != null &&
+                            _expiryDate!.isBefore(DateTime.now())
+                        ? Text(
+                            'Expired',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          )
+                        : const Text('Expiry Date'),
+                    trailing: _expiryDate != null
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () => setState(() => _expiryDate = null),
+                          )
+                        : null,
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _expiryDate ?? DateTime.now(),
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                      );
+                      if (picked != null) {
+                        setState(() => _expiryDate = picked);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Images
+                  Text('Images', style: Theme.of(context).textTheme.labelLarge),
+                  const SizedBox(height: 8),
+                  ImageAttachmentStrip(controller: _images),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () => pickImageInto(
+                      context,
+                      ref.read(imageUploadServiceProvider),
+                      _images,
+                    ),
+                    icon: const Icon(Icons.add_photo_alternate),
+                    label: const Text('Add image'),
+                  ),
+                  const SizedBox(height: 16),
+
+                  TextFormField(
+                    controller: _barcodeController,
+                    decoration: const InputDecoration(
+                      labelText: 'Barcode / Serial Number',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  TextFormField(
+                    controller: _searchAliasesController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nicknames',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.sell_outlined),
+                      helperText:
+                          'Extra search words, separated by space, comma or '
+                          'period. Not shown in lists.',
+                      helperMaxLines: 2,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
