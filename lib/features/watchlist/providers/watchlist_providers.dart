@@ -6,6 +6,7 @@ import '../../auth/providers/auth_providers.dart';
 import '../models/watch_item.dart';
 import '../services/firestore_watchlist_service.dart';
 import '../services/watchlist_service.dart';
+import '../utils/watchlist_order.dart';
 
 final watchlistServiceProvider = Provider<WatchlistService>((ref) {
   if (AppConfig.useFirebase) {
@@ -44,6 +45,19 @@ class WatchlistNotifier extends StreamNotifier<List<WatchItem>> {
   Future<void> deleteItem(String id) async {
     await ref.read(watchlistServiceProvider).deleteItem(id);
     LogService.instance.info('Watchlist item deleted: $id');
+  }
+
+  /// Moves the entry at [oldIndex] to [newIndex] in the priority order and
+  /// persists the renumbering. Only entries whose position actually changed
+  /// are written (WISH-0098).
+  Future<void> reorder(int oldIndex, int newIndex) async {
+    final current = state.valueOrNull;
+    if (current == null) return;
+    final changed = reorderWatchItems(current, oldIndex, newIndex);
+    final service = ref.read(watchlistServiceProvider);
+    for (final item in changed) {
+      await service.updateItem(item);
+    }
   }
 
   /// Ticks an entry off (or back on) from the list, stamping [watchedAt]

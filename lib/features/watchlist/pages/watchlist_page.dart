@@ -24,6 +24,14 @@ class WatchlistPage extends HookConsumerWidget {
     final items = ref.watch(filteredWatchlistProvider);
     final search = ref.watch(watchlistSearchProvider);
     final searchController = useSyncedSearchController(search);
+    final reordering = useState(false);
+
+    // Dragging only makes sense against the full list: with a search or
+    // platform filter applied, "above the third visible row" has no
+    // unambiguous meaning in the underlying priority order (WISH-0098).
+    final isFiltered =
+        search.isNotEmpty || ref.watch(watchlistPlatformFilterProvider) != null;
+    if (isFiltered && reordering.value) reordering.value = false;
 
     // Watchlist is a pushed route rather than a bottom-nav tab, so this
     // page is disposed when the user leaves for another feature — reset
@@ -40,6 +48,19 @@ class WatchlistPage extends HookConsumerWidget {
       appBar: AppBar(
         title: const QuickActionsTitle(child: Text('Watchlist')),
         actions: [
+          IconButton(
+            tooltip: isFiltered
+                ? 'Clear the search and filter to reorder'
+                : reordering.value
+                ? 'Done reordering'
+                : 'Reorder priority',
+            isSelected: reordering.value,
+            icon: const Icon(Icons.swap_vert),
+            selectedIcon: const Icon(Icons.check),
+            onPressed: isFiltered
+                ? null
+                : () => reordering.value = !reordering.value,
+          ),
           IconButton(
             tooltip: 'Streaming platforms',
             icon: const Icon(Icons.subscriptions_outlined),
@@ -93,6 +114,19 @@ class WatchlistPage extends HookConsumerWidget {
                             ],
                           ),
                         )
+                      : reordering.value
+                      ? ReorderableListView.builder(
+                          padding: const EdgeInsets.only(bottom: 80),
+                          itemCount: list.length,
+                          itemBuilder: (context, index) => _WatchItemTile(
+                            key: ValueKey(list[index].id),
+                            item: list[index],
+                            reordering: true,
+                          ),
+                          onReorderItem: (oldIndex, newIndex) => ref
+                              .read(watchlistProvider.notifier)
+                              .reorder(oldIndex, newIndex),
+                        )
                       : ListView.builder(
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.only(bottom: 80),
@@ -119,7 +153,16 @@ class WatchlistPage extends HookConsumerWidget {
 
 class _WatchItemTile extends ConsumerWidget {
   final WatchItem item;
-  const _WatchItemTile({required this.item});
+
+  /// While reordering the row loses swipe-to-remove and its watched
+  /// toggle, so a drag is never mistaken for either gesture.
+  final bool reordering;
+
+  const _WatchItemTile({
+    super.key,
+    required this.item,
+    this.reordering = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -129,6 +172,8 @@ class _WatchItemTile extends ConsumerWidget {
       if (item.year != null) '${item.year}',
       if (runtime != null) formatDuration(runtime),
     ];
+
+    if (reordering) return _buildTile(context, ref, theme, subtitleParts);
 
     return Dismissible(
       key: Key(item.id),
@@ -158,45 +203,56 @@ class _WatchItemTile extends ConsumerWidget {
       ),
       onDismissed: (_) =>
           ref.read(watchlistProvider.notifier).deleteItem(item.id),
-      child: ListTile(
-        leading: _Poster(item: item),
-        title: Row(
-          children: [
-            Expanded(child: Text(item.title)),
-            WatchStatusChip(status: item.status),
-          ],
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (subtitleParts.isNotEmpty)
-              Text(
-                subtitleParts.join(' • '),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall,
-              ),
-            if (item.rating != null)
-              StarRating(value: item.rating, size: 14, showNumeric: false),
-            if (item.platformIds.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: PlatformIcons(platformIds: item.platformIds, size: 18),
-              ),
-          ],
-        ),
-        trailing: IconButton(
-          tooltip: item.watched ? 'Mark as unwatched' : 'Mark as watched',
-          icon: Icon(
-            item.watched ? Icons.check_circle : Icons.check_circle_outline,
-            color: item.watched ? Colors.green : null,
-          ),
-          onPressed: () =>
-              ref.read(watchlistProvider.notifier).toggleWatched(item),
-        ),
-        onTap: () => context.push('/watchlist/${item.id}'),
+      child: _buildTile(context, ref, theme, subtitleParts),
+    );
+  }
+
+  Widget _buildTile(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeData theme,
+    List<String> subtitleParts,
+  ) {
+    return ListTile(
+      leading: _Poster(item: item),
+      title: Row(
+        children: [
+          Expanded(child: Text(item.title)),
+          WatchStatusChip(status: item.status),
+        ],
       ),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (subtitleParts.isNotEmpty)
+            Text(
+              subtitleParts.join(' • '),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall,
+            ),
+          if (item.rating != null)
+            StarRating(value: item.rating, size: 14, showNumeric: false),
+          if (item.platformIds.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: PlatformIcons(platformIds: item.platformIds, size: 18),
+            ),
+        ],
+      ),
+      trailing: reordering
+          ? const Icon(Icons.drag_handle)
+          : IconButton(
+              tooltip: item.watched ? 'Mark as unwatched' : 'Mark as watched',
+              icon: Icon(
+                item.watched ? Icons.check_circle : Icons.check_circle_outline,
+                color: item.watched ? Colors.green : null,
+              ),
+              onPressed: () =>
+                  ref.read(watchlistProvider.notifier).toggleWatched(item),
+            ),
+      onTap: reordering ? null : () => context.push('/watchlist/${item.id}'),
     );
   }
 }
