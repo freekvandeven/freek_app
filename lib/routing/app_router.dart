@@ -57,6 +57,8 @@ import '../features/settings/pages/settings_page.dart';
 import '../features/shopping/pages/shopping_list_page.dart';
 import '../features/tasks/pages/task_edit_page.dart';
 import '../features/tasks/pages/task_list_page.dart';
+import '../features/watchlist/pages/streaming_platform_edit_page.dart';
+import '../features/watchlist/pages/streaming_platform_list_page.dart';
 import '../features/watchlist/pages/watch_item_detail_page.dart';
 import '../features/watchlist/pages/watch_item_edit_page.dart';
 import '../features/watchlist/pages/watchlist_page.dart';
@@ -453,6 +455,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'new',
                 builder: (context, state) => const WatchItemEditPage(),
+              ),
+              GoRoute(
+                path: 'platforms',
+                builder: (context, state) => const StreamingPlatformListPage(),
+                routes: [
+                  GoRoute(
+                    path: 'new',
+                    builder: (context, state) =>
+                        const StreamingPlatformEditPage(),
+                  ),
+                  GoRoute(
+                    path: ':platformId',
+                    builder: (context, state) => StreamingPlatformEditPage(
+                      platformId: state.pathParameters['platformId'],
+                    ),
+                  ),
+                ],
               ),
               GoRoute(
                 path: ':itemId',

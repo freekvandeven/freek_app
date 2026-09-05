@@ -35,7 +35,16 @@ class WatchlistPage extends HookConsumerWidget {
     }, const []);
 
     return Scaffold(
-      appBar: AppBar(title: const QuickActionsTitle(child: Text('Watchlist'))),
+      appBar: AppBar(
+        title: const QuickActionsTitle(child: Text('Watchlist')),
+        actions: [
+          IconButton(
+            tooltip: 'Streaming platforms',
+            icon: const Icon(Icons.subscriptions_outlined),
+            onPressed: () => context.push('/watchlist/platforms'),
+          ),
+        ],
+      ),
       body: ResponsiveCenter(
         child: Column(
           children: [
