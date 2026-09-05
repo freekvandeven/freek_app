@@ -26,11 +26,15 @@ class WatchlistPage extends HookConsumerWidget {
     final searchController = useSyncedSearchController(search);
     final reordering = useState(false);
 
-    // Dragging only makes sense against the full list: with a search or
-    // platform filter applied, "above the third visible row" has no
-    // unambiguous meaning in the underlying priority order (WISH-0098).
+    // Dragging only makes sense against the full list in priority order:
+    // with a filter applied, or sorted by anything else, "above the third
+    // visible row" has no unambiguous meaning in the underlying priority
+    // order (WISH-0098).
     final isFiltered =
-        search.isNotEmpty || ref.watch(watchlistPlatformFilterProvider) != null;
+        search.isNotEmpty ||
+        ref.watch(watchlistPlatformFilterProvider) != null ||
+        ref.watch(watchlistStatusFilterProvider) != WatchStatusFilter.all ||
+        ref.watch(watchlistSortProvider) != WatchSort.priority;
     if (isFiltered && reordering.value) reordering.value = false;
 
     // Watchlist is a pushed route rather than a bottom-nav tab, so this
@@ -48,9 +52,23 @@ class WatchlistPage extends HookConsumerWidget {
       appBar: AppBar(
         title: const QuickActionsTitle(child: Text('Watchlist')),
         actions: [
+          PopupMenuButton<WatchSort>(
+            icon: const Icon(Icons.sort),
+            tooltip: 'Sort',
+            initialValue: ref.watch(watchlistSortProvider),
+            onSelected: (sort) =>
+                ref.read(watchlistSortProvider.notifier).state = sort,
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: WatchSort.priority, child: Text('Priority')),
+              PopupMenuItem(value: WatchSort.title, child: Text('Title')),
+              PopupMenuItem(value: WatchSort.year, child: Text('Year')),
+              PopupMenuItem(value: WatchSort.rating, child: Text('Rating')),
+              PopupMenuItem(value: WatchSort.runtime, child: Text('Runtime')),
+            ],
+          ),
           IconButton(
             tooltip: isFiltered
-                ? 'Clear the search and filter to reorder'
+                ? 'Clear the filters and sort by priority to reorder'
                 : reordering.value
                 ? 'Done reordering'
                 : 'Reorder priority',
@@ -94,6 +112,7 @@ class WatchlistPage extends HookConsumerWidget {
                     ref.read(watchlistSearchProvider.notifier).state = v,
               ),
             ),
+            const _StatusFilterBar(),
             const _PlatformFilterBar(),
             Expanded(
               child: RefreshIndicator(
@@ -314,6 +333,38 @@ class _PlatformFilterBar extends ConsumerWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// Narrows the list by watch progress (WISH-0098).
+class _StatusFilterBar extends ConsumerWidget {
+  const _StatusFilterBar();
+
+  static const _labels = {
+    WatchStatusFilter.all: 'All',
+    WatchStatusFilter.unwatched: 'Unwatched',
+    WatchStatusFilter.inProgress: 'In progress',
+    WatchStatusFilter.watched: 'Watched',
+  };
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selected = ref.watch(watchlistStatusFilterProvider);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: SegmentedButton<WatchStatusFilter>(
+        segments: [
+          for (final entry in _labels.entries)
+            ButtonSegment(value: entry.key, label: Text(entry.value)),
+        ],
+        selected: {selected},
+        showSelectedIcon: false,
+        style: const ButtonStyle(visualDensity: VisualDensity.compact),
+        onSelectionChanged: (selection) =>
+            ref.read(watchlistStatusFilterProvider.notifier).state =
+                selection.first,
       ),
     );
   }

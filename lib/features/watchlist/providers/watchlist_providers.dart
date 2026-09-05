@@ -94,10 +94,63 @@ final watchlistSearchProvider = StateProvider<String>((_) => '');
 /// (WISH-0099).
 final watchlistPlatformFilterProvider = StateProvider<String?>((_) => null);
 
+/// Watch-progress filter. [WatchStatusFilter.all] is the default so the
+/// list stays a complete queue until the user narrows it (WISH-0098).
+enum WatchStatusFilter { all, unwatched, inProgress, watched }
+
+enum WatchSort { priority, title, year, rating, runtime }
+
+final watchlistStatusFilterProvider = StateProvider<WatchStatusFilter>(
+  (_) => WatchStatusFilter.all,
+);
+
+final watchlistSortProvider = StateProvider<WatchSort>(
+  (_) => WatchSort.priority,
+);
+
+bool _matchesStatus(WatchItem item, WatchStatusFilter filter) =>
+    switch (filter) {
+      WatchStatusFilter.all => true,
+      WatchStatusFilter.unwatched => item.status == WatchStatus.unwatched,
+      WatchStatusFilter.inProgress =>
+        item.status == WatchStatus.partiallyWatched,
+      WatchStatusFilter.watched => item.status == WatchStatus.watched,
+    };
+
+/// Comparator for [sort]. Entries missing the sorted-on value sink to the
+/// bottom rather than sorting as zero, the same way the task list handles
+/// missing due dates.
+int compareWatchItems(WatchItem a, WatchItem b, WatchSort sort) {
+  int nullsLast(num? x, num? y, int Function(num, num) compare) {
+    if (x == null && y == null) return a.title.compareTo(b.title);
+    if (x == null) return 1;
+    if (y == null) return -1;
+    final result = compare(x, y);
+    return result != 0 ? result : a.title.compareTo(b.title);
+  }
+
+  return switch (sort) {
+    WatchSort.priority => compareByPriority(a, b),
+    WatchSort.title => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
+    // Newest first — a 2026 release is the interesting one.
+    WatchSort.year => nullsLast(a.year, b.year, (x, y) => y.compareTo(x)),
+    // Best first.
+    WatchSort.rating => nullsLast(a.rating, b.rating, (x, y) => y.compareTo(x)),
+    // Shortest first, for "what fits before bed".
+    WatchSort.runtime => nullsLast(
+      a.totalRuntimeMinutes,
+      b.totalRuntimeMinutes,
+      (x, y) => x.compareTo(y),
+    ),
+  };
+}
+
 final filteredWatchlistProvider = Provider<AsyncValue<List<WatchItem>>>((ref) {
   final items = ref.watch(watchlistProvider);
   final search = ref.watch(watchlistSearchProvider).toLowerCase();
   final platformId = ref.watch(watchlistPlatformFilterProvider);
+  final statusFilter = ref.watch(watchlistStatusFilterProvider);
+  final sort = ref.watch(watchlistSortProvider);
 
   return items.whenData((list) {
     var filtered = list;
@@ -115,6 +168,11 @@ final filteredWatchlistProvider = Provider<AsyncValue<List<WatchItem>>>((ref) {
           .where((i) => i.platformIds.contains(platformId))
           .toList();
     }
-    return filtered;
+    if (statusFilter != WatchStatusFilter.all) {
+      filtered = filtered
+          .where((i) => _matchesStatus(i, statusFilter))
+          .toList();
+    }
+    return List.of(filtered)..sort((a, b) => compareWatchItems(a, b, sort));
   });
 });

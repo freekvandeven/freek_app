@@ -31,7 +31,7 @@ Entries carry a manual `sortOrder` — the priority queue — maintained by drag
 - [x] Link entries to streaming platforms and filter by them (WISH-0099)
 - [x] Reorder entries by dragging to set watch priority
 - [x] Track watched state per season, reopening a series when a season is added
-- [ ] Filter and sort by watched state, rating, runtime and priority
+- [x] Filter and sort by watched state, rating, runtime and priority
 - [ ] Fetch details from an IMDb code and search by title (WISH-0100)
 
 ## Streaming platforms (WISH-0099)
