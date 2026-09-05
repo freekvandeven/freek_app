@@ -12,6 +12,7 @@ import '../widgets/data_section.dart';
 import '../widgets/preferences_section.dart';
 import '../widgets/profile_section.dart';
 import '../widgets/storage_section.dart';
+import '../widgets/watchlist_section.dart';
 import '../widgets/widgets_section.dart';
 
 /// Thin composition page — each section lives in its own widget under
@@ -36,6 +37,7 @@ class SettingsPage extends ConsumerWidget {
             DataSection(),
             StorageSection(),
             AiSection(),
+            WatchlistSection(),
             WidgetsSection(),
             AccountSection(),
           ],

@@ -4,9 +4,13 @@ import 'package:go_router/go_router.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
+import '../../../presentation/widgets/app_snackbar.dart';
 import '../../../presentation/widgets/star_rating.dart';
 import '../models/watch_item.dart';
+import '../providers/tmdb_providers.dart';
 import '../providers/watchlist_providers.dart';
+import '../services/tmdb_service.dart';
+import '../utils/season_merge.dart';
 import '../widgets/platform_selector.dart';
 import '../widgets/seasons_editor.dart';
 
@@ -36,6 +40,7 @@ class _WatchItemEditPageState extends ConsumerState<WatchItemEditPage> {
   double? _rating;
   bool _isSaving = false;
   bool _isLoading = true;
+  bool _isFetching = false;
 
   /// Fields the edit form does not own yet — carried through a save so
   /// editing an entry never drops its seasons or platform links (those
@@ -96,6 +101,65 @@ class _WatchItemEditPageState extends ConsumerState<WatchItemEditPage> {
   String? _trimmedOrNull(TextEditingController controller) {
     final value = controller.text.trim();
     return value.isEmpty ? null : value;
+  }
+
+  /// Applies TMDB metadata onto the form, leaving anything the user has
+  /// already typed that TMDB does not cover untouched (WISH-0100).
+  void _applyDetails(TmdbDetails details) {
+    setState(() {
+      _type = details.type;
+      if (details.title.isNotEmpty) _titleController.text = details.title;
+      if (details.description != null) {
+        _descriptionController.text = details.description!;
+      }
+      if (details.year != null) _yearController.text = '${details.year}';
+      if (details.runtimeMinutes != null) {
+        _runtimeController.text = '${details.runtimeMinutes}';
+      }
+      if (details.posterUrl != null) {
+        _posterUrlController.text = details.posterUrl!;
+      }
+      if (details.imdbId != null) _imdbIdController.text = details.imdbId!;
+      if (details.type == WatchItemType.series) {
+        // Merging rather than replacing is what keeps already-watched
+        // seasons ticked when a show gains a new one.
+        _seasons = mergeSeasons(_seasons, details.seasons);
+      }
+    });
+  }
+
+  Future<void> _fetchFromImdbId() async {
+    final imdbId = _imdbIdController.text.trim();
+    if (imdbId.isEmpty) {
+      context.showSnackbar('Enter an IMDb code first (e.g. tt0111161)');
+      return;
+    }
+
+    setState(() => _isFetching = true);
+    try {
+      final details = await ref.read(tmdbServiceProvider).fetchByImdbId(imdbId);
+      if (!mounted) return;
+      if (details == null) {
+        context.showErrorSnackbar(
+          'No title found for $imdbId',
+          action: SnackBarAction(label: 'Retry', onPressed: _fetchFromImdbId),
+        );
+        return;
+      }
+      _applyDetails(details);
+      context.showSuccessSnackbar('Details filled from TMDB');
+    } on TmdbAuthException catch (e) {
+      if (mounted) context.showErrorSnackbar(e.message);
+    } catch (e) {
+      if (mounted) {
+        context.showErrorSnackbar(
+          'Lookup failed: $e',
+          action: SnackBarAction(label: 'Retry', onPressed: _fetchFromImdbId),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isFetching = false);
+    }
   }
 
   Future<void> _save() async {
@@ -228,11 +292,26 @@ class _WatchItemEditPageState extends ConsumerState<WatchItemEditPage> {
 
               TextFormField(
                 controller: _imdbIdController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'IMDb code',
                   hintText: 'tt0111161',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.movie_filter_outlined),
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.movie_filter_outlined),
+                  suffixIcon: ref.watch(tmdbAvailableProvider)
+                      ? IconButton(
+                          tooltip: 'Fetch details from TMDB',
+                          icon: _isFetching
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.download_outlined),
+                          onPressed: _isFetching ? null : _fetchFromImdbId,
+                        )
+                      : null,
                 ),
               ),
               const SizedBox(height: 16),
