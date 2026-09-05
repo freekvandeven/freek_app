@@ -146,6 +146,25 @@ class WatchItemDetailPage extends ConsumerWidget {
                 url: item.sourceUrl!,
               ),
 
+            if (item.seasons.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text('Seasons', style: theme.textTheme.titleMedium),
+              for (final season in item.seasons)
+                CheckboxListTile(
+                  value: season.watched,
+                  onChanged: (value) => ref
+                      .read(watchlistProvider.notifier)
+                      .setSeasonWatched(item, season.number, value ?? false),
+                  title: Text(season.title ?? 'Season ${season.number}'),
+                  subtitle: season.episodeCount == null
+                      ? null
+                      : Text('${season.episodeCount} episodes'),
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  dense: true,
+                ),
+            ],
+
             if (item.review != null) ...[
               const SizedBox(height: 16),
               Text('Review', style: theme.textTheme.titleMedium),

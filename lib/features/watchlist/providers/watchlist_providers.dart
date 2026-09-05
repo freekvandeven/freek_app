@@ -60,6 +60,17 @@ class WatchlistNotifier extends StreamNotifier<List<WatchItem>> {
     }
   }
 
+  /// Marks one season of a series watched or unwatched. The entry's own
+  /// status follows from its seasons, so this is all that is needed to
+  /// move a show between unwatched, partially watched and watched.
+  Future<void> setSeasonWatched(
+    WatchItem item,
+    int seasonNumber,
+    bool watched,
+  ) async {
+    await updateItem(item.withSeasonWatched(seasonNumber, watched));
+  }
+
   /// Ticks an entry off (or back on) from the list, stamping [watchedAt]
   /// so "when did I see this" survives the toggle.
   Future<void> toggleWatched(WatchItem item) async {

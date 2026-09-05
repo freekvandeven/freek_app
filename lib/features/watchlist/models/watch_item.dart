@@ -169,6 +169,25 @@ class WatchItem {
   String? get imdbUrl =>
       imdbId == null ? null : 'https://www.imdb.com/title/$imdbId/';
 
+  /// Returns a copy with the season numbered [number] marked as [watched],
+  /// stamping (or clearing) its watch date. Unknown season numbers are
+  /// left alone rather than added (WISH-0098).
+  WatchItem withSeasonWatched(int number, bool watched) {
+    return copyWith(
+      seasons: [
+        for (final season in seasons)
+          if (season.number == number)
+            season.copyWith(
+              watched: watched,
+              watchedAt: watched ? DateTime.now() : null,
+              clearWatchedAt: !watched,
+            )
+          else
+            season,
+      ],
+    );
+  }
+
   WatchItem copyWith({
     WatchItemType? type,
     String? title,

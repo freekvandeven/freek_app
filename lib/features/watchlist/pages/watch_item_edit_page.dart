@@ -8,6 +8,7 @@ import '../../../presentation/widgets/star_rating.dart';
 import '../models/watch_item.dart';
 import '../providers/watchlist_providers.dart';
 import '../widgets/platform_selector.dart';
+import '../widgets/seasons_editor.dart';
 
 class WatchItemEditPage extends ConsumerStatefulWidget {
   final String? itemId;
@@ -30,6 +31,7 @@ class _WatchItemEditPageState extends ConsumerState<WatchItemEditPage> {
 
   WatchItemType _type = WatchItemType.movie;
   List<String> _platformIds = const [];
+  List<Season> _seasons = const [];
   bool _watched = false;
   double? _rating;
   bool _isSaving = false;
@@ -68,6 +70,7 @@ class _WatchItemEditPageState extends ConsumerState<WatchItemEditPage> {
         _reviewController.text = item.review ?? '';
         _type = item.type;
         _platformIds = item.platformIds;
+        _seasons = item.seasons;
         _watched = item.watched;
         _rating = item.rating;
       }
@@ -116,7 +119,7 @@ class _WatchItemEditPageState extends ConsumerState<WatchItemEditPage> {
         watchedAt: _watched ? (existing?.watchedAt ?? DateTime.now()) : null,
         rating: _rating,
         review: _trimmedOrNull(_reviewController),
-        seasons: existing?.seasons ?? const [],
+        seasons: _type == WatchItemType.series ? _seasons : const [],
         sortOrder: existing?.sortOrder ?? 0,
         createdAt: existing?.createdAt,
       );
@@ -254,6 +257,15 @@ class _WatchItemEditPageState extends ConsumerState<WatchItemEditPage> {
                 ),
                 keyboardType: TextInputType.url,
               ),
+              if (_type == WatchItemType.series) ...[
+                const SizedBox(height: 24),
+                Text('Seasons', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                SeasonsEditor(
+                  seasons: _seasons,
+                  onChanged: (seasons) => setState(() => _seasons = seasons),
+                ),
+              ],
               const SizedBox(height: 24),
 
               Text(
