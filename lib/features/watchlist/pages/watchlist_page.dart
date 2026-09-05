@@ -13,6 +13,7 @@ import '../../../utils/duration_format.dart';
 import '../models/watch_item.dart';
 import '../providers/streaming_platform_providers.dart';
 import '../providers/watchlist_providers.dart';
+import '../widgets/external_rating_badge.dart';
 import '../widgets/platform_selector.dart';
 import '../widgets/watch_status_chip.dart';
 
@@ -62,7 +63,11 @@ class WatchlistPage extends HookConsumerWidget {
               PopupMenuItem(value: WatchSort.priority, child: Text('Priority')),
               PopupMenuItem(value: WatchSort.title, child: Text('Title')),
               PopupMenuItem(value: WatchSort.year, child: Text('Year')),
-              PopupMenuItem(value: WatchSort.rating, child: Text('Rating')),
+              PopupMenuItem(value: WatchSort.rating, child: Text('My rating')),
+              PopupMenuItem(
+                value: WatchSort.externalRating,
+                child: Text('Public rating'),
+              ),
               PopupMenuItem(value: WatchSort.runtime, child: Text('Runtime')),
             ],
           ),
@@ -251,8 +256,19 @@ class _WatchItemTile extends ConsumerWidget {
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodySmall,
             ),
-          if (item.rating != null)
-            StarRating(value: item.rating, size: 14, showNumeric: false),
+          if (item.rating != null || item.externalRating != null)
+            Row(
+              children: [
+                if (item.rating != null)
+                  StarRating(value: item.rating, size: 14, showNumeric: false),
+                if (item.rating != null && item.externalRating != null)
+                  const SizedBox(width: 8),
+                ExternalRatingBadge(
+                  rating: item.externalRating,
+                  source: item.externalRatingSource,
+                ),
+              ],
+            ),
           if (item.platformIds.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 4),

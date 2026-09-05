@@ -27,6 +27,18 @@ int? _yearOf(String? date) {
   return int.tryParse(date.substring(0, 4));
 }
 
+/// TMDB reports 0 for a title nobody has voted on, which would read as
+/// "rated zero" rather than "unrated" (WISH-0101).
+double? _voteAverage(Object? value) {
+  final rating = (value as num?)?.toDouble();
+  return rating == null || rating <= 0 ? null : rating;
+}
+
+/// Source label stored alongside a fetched rating. TMDB's API does not
+/// expose IMDb's rating — `vote_average` is TMDB's own score — so the
+/// number is labelled with where it actually came from.
+const tmdbRatingSource = 'TMDB';
+
 /// One hit from a title search, enough to show a pick-list row.
 class TmdbSearchResult {
   final int tmdbId;
@@ -77,6 +89,10 @@ class TmdbDetails {
   final int? runtimeMinutes;
   final String? posterUrl;
   final String? imdbId;
+
+  /// TMDB's own average vote out of 10, or null when nobody has voted.
+  final double? externalRating;
+
   final List<Season> seasons;
 
   const TmdbDetails({
@@ -87,6 +103,7 @@ class TmdbDetails {
     this.runtimeMinutes,
     this.posterUrl,
     this.imdbId,
+    this.externalRating,
     this.seasons = const [],
   });
 
@@ -101,6 +118,7 @@ class TmdbDetails {
       runtimeMinutes: (json['runtime'] as num?)?.toInt(),
       posterUrl: _posterUrl(json['poster_path'] as String?),
       imdbId: json['imdb_id'] as String?,
+      externalRating: _voteAverage(json['vote_average']),
     );
   }
 
@@ -134,6 +152,7 @@ class TmdbDetails {
       runtimeMinutes: runTimes.isEmpty ? null : (runTimes.first as num).toInt(),
       posterUrl: _posterUrl(json['poster_path'] as String?),
       imdbId: imdbId,
+      externalRating: _voteAverage(json['vote_average']),
       seasons: seasons,
     );
   }

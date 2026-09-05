@@ -32,6 +32,7 @@ Entries carry a manual `sortOrder` — the priority queue — maintained by drag
 - [x] Reorder entries by dragging to set watch priority
 - [x] Track watched state per season, reopening a series when a season is added
 - [x] Filter and sort by watched state, rating, runtime and priority
+- [x] Show a public rating alongside the personal one, both sortable (WISH-0101)
 - [x] Fetch details from an IMDb code and search by title (WISH-0100)
 
 ## Streaming platforms (WISH-0099)
@@ -41,6 +42,12 @@ Platforms are managed separately at `/watchlist/platforms`: name, URL, streaming
 **Credentials are never stored on the platform.** It keeps only `vaultEntryId`, the id of an entry in the encrypted password vault. The picker needs the vault unlocked to browse entries and otherwise shows an Unlock prompt; an already-linked entry stays linked either way, and a link to a deleted vault entry falls back to "None" rather than dangling.
 
 Entries hold `platformIds` and show the matching icons on the list and detail pages; a filter chip row narrows the list to one platform. Ids whose platform has been deleted are skipped silently.
+
+## Ratings (WISH-0101)
+
+Entries carry two independent ratings: the personal `rating` (0–5 stars) and `externalRating` (0–10), shown side by side on the list and detail pages and each sortable on its own.
+
+`externalRatingSource` records where the number came from. **It is not IMDb's rating:** IMDb has no free public API and TMDB does not expose IMDb's score, so a fetch stores TMDB's own `vote_average` labelled `TMDB`. The field is also editable by hand — typing a number clears the source, since a hand-entered value is not TMDB's. TMDB reports `0` for titles nobody has voted on, which is mapped to "unrated" rather than a zero score.
 
 ## Metadata lookup (WISH-0100)
 

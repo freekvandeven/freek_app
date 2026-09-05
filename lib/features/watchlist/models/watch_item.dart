@@ -107,6 +107,16 @@ class WatchItem {
   /// `Recipe.rating` and `CatalogItem.rating`. `null` means "not rated".
   final double? rating;
 
+  /// Public rating out of 10, shown next to the personal [rating] so the
+  /// quality of a title is visible at a glance (WISH-0101). Filled from
+  /// TMDB on a lookup, and editable by hand for entries added without one.
+  final double? externalRating;
+
+  /// Where [externalRating] came from (e.g. `TMDB`). Null when the user
+  /// typed the number in themselves — TMDB's API does not expose IMDb's
+  /// rating, so the source is labelled rather than assumed.
+  final String? externalRatingSource;
+
   final String? review;
   final List<Season> seasons;
 
@@ -131,6 +141,8 @@ class WatchItem {
     this.watched = false,
     this.watchedAt,
     this.rating,
+    this.externalRating,
+    this.externalRatingSource,
     this.review,
     this.seasons = const [],
     this.sortOrder = 0,
@@ -201,6 +213,8 @@ class WatchItem {
     bool? watched,
     DateTime? watchedAt,
     double? rating,
+    double? externalRating,
+    String? externalRatingSource,
     String? review,
     List<Season>? seasons,
     int? sortOrder,
@@ -212,6 +226,7 @@ class WatchItem {
     bool clearSourceUrl = false,
     bool clearWatchedAt = false,
     bool clearRating = false,
+    bool clearExternalRating = false,
     bool clearReview = false,
   }) {
     return WatchItem(
@@ -230,6 +245,12 @@ class WatchItem {
       watched: watched ?? this.watched,
       watchedAt: clearWatchedAt ? null : (watchedAt ?? this.watchedAt),
       rating: clearRating ? null : (rating ?? this.rating),
+      externalRating: clearExternalRating
+          ? null
+          : (externalRating ?? this.externalRating),
+      externalRatingSource: clearExternalRating
+          ? null
+          : (externalRatingSource ?? this.externalRatingSource),
       review: clearReview ? null : (review ?? this.review),
       seasons: seasons ?? this.seasons,
       sortOrder: sortOrder ?? this.sortOrder,
@@ -252,6 +273,8 @@ class WatchItem {
     'watched': watched,
     'watchedAt': watchedAt?.toIso8601String(),
     'rating': rating,
+    'externalRating': externalRating,
+    'externalRatingSource': externalRatingSource,
     'review': review,
     'seasons': seasons.map((s) => s.toMap()).toList(),
     'sortOrder': sortOrder,
@@ -280,6 +303,8 @@ class WatchItem {
           ? null
           : DateTime.parse(map['watchedAt'] as String),
       rating: (map['rating'] as num?)?.toDouble(),
+      externalRating: (map['externalRating'] as num?)?.toDouble(),
+      externalRatingSource: map['externalRatingSource'] as String?,
       review: map['review'] as String?,
       seasons:
           (map['seasons'] as List<dynamic>?)

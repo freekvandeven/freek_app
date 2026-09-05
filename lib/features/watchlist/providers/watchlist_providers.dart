@@ -98,7 +98,7 @@ final watchlistPlatformFilterProvider = StateProvider<String?>((_) => null);
 /// list stays a complete queue until the user narrows it (WISH-0098).
 enum WatchStatusFilter { all, unwatched, inProgress, watched }
 
-enum WatchSort { priority, title, year, rating, runtime }
+enum WatchSort { priority, title, year, rating, externalRating, runtime }
 
 final watchlistStatusFilterProvider = StateProvider<WatchStatusFilter>(
   (_) => WatchStatusFilter.all,
@@ -134,8 +134,13 @@ int compareWatchItems(WatchItem a, WatchItem b, WatchSort sort) {
     WatchSort.title => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
     // Newest first — a 2026 release is the interesting one.
     WatchSort.year => nullsLast(a.year, b.year, (x, y) => y.compareTo(x)),
-    // Best first.
+    // Best first, for both the personal and the public rating.
     WatchSort.rating => nullsLast(a.rating, b.rating, (x, y) => y.compareTo(x)),
+    WatchSort.externalRating => nullsLast(
+      a.externalRating,
+      b.externalRating,
+      (x, y) => y.compareTo(x),
+    ),
     // Shortest first, for "what fits before bed".
     WatchSort.runtime => nullsLast(
       a.totalRuntimeMinutes,

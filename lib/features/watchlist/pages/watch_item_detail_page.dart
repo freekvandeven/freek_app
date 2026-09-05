@@ -12,6 +12,7 @@ import '../../../presentation/widgets/star_rating.dart';
 import '../../../utils/duration_format.dart';
 import '../models/watch_item.dart';
 import '../providers/watchlist_providers.dart';
+import '../widgets/external_rating_badge.dart';
 import '../widgets/platform_selector.dart';
 import '../widgets/watch_status_chip.dart';
 
@@ -121,8 +122,20 @@ class WatchItemDetailPage extends ConsumerWidget {
               const SizedBox(height: 16),
             ],
 
-            if (item.rating != null) ...[
-              StarRating(value: item.rating, size: 24),
+            if (item.rating != null || item.externalRating != null) ...[
+              Row(
+                children: [
+                  if (item.rating != null)
+                    StarRating(value: item.rating, size: 24),
+                  if (item.rating != null && item.externalRating != null)
+                    const SizedBox(width: 12),
+                  ExternalRatingBadge(
+                    rating: item.externalRating,
+                    source: item.externalRatingSource,
+                    size: 18,
+                  ),
+                ],
+              ),
               const SizedBox(height: 16),
             ],
 

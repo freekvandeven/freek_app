@@ -6,10 +6,12 @@ import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
 import '../../../presentation/widgets/app_snackbar.dart';
 import '../../../presentation/widgets/star_rating.dart';
+import '../../../utils/decimal_input.dart';
 import '../models/watch_item.dart';
 import '../providers/tmdb_providers.dart';
 import '../providers/watchlist_providers.dart';
 import '../services/tmdb_service.dart';
+import '../utils/external_rating.dart';
 import '../utils/season_merge.dart';
 import '../widgets/platform_selector.dart';
 import '../widgets/seasons_editor.dart';
@@ -33,12 +35,14 @@ class _WatchItemEditPageState extends ConsumerState<WatchItemEditPage> {
   final _posterUrlController = TextEditingController();
   final _sourceUrlController = TextEditingController();
   final _reviewController = TextEditingController();
+  final _externalRatingController = TextEditingController();
 
   WatchItemType _type = WatchItemType.movie;
   List<String> _platformIds = const [];
   List<Season> _seasons = const [];
   bool _watched = false;
   double? _rating;
+  String? _externalRatingSource;
   bool _isSaving = false;
   bool _isLoading = true;
   bool _isFetching = false;
@@ -79,6 +83,10 @@ class _WatchItemEditPageState extends ConsumerState<WatchItemEditPage> {
         _seasons = item.seasons;
         _watched = item.watched;
         _rating = item.rating;
+        _externalRatingController.text = item.externalRating == null
+            ? ''
+            : formatDecimal(item.externalRating!);
+        _externalRatingSource = item.externalRatingSource;
       }
       _isLoading = false;
     });
@@ -94,6 +102,7 @@ class _WatchItemEditPageState extends ConsumerState<WatchItemEditPage> {
     _posterUrlController.dispose();
     _sourceUrlController.dispose();
     _reviewController.dispose();
+    _externalRatingController.dispose();
     super.dispose();
   }
 
@@ -121,6 +130,10 @@ class _WatchItemEditPageState extends ConsumerState<WatchItemEditPage> {
         _posterUrlController.text = details.posterUrl!;
       }
       if (details.imdbId != null) _imdbIdController.text = details.imdbId!;
+      if (details.externalRating != null) {
+        _externalRatingController.text = formatDecimal(details.externalRating!);
+        _externalRatingSource = tmdbRatingSource;
+      }
       if (details.type == WatchItemType.series) {
         // Merging rather than replacing is what keeps already-watched
         // seasons ticked when a show gains a new one.
@@ -216,6 +229,8 @@ class _WatchItemEditPageState extends ConsumerState<WatchItemEditPage> {
         watched: _watched,
         watchedAt: _watched ? (existing?.watchedAt ?? DateTime.now()) : null,
         rating: _rating,
+        externalRating: parseDecimal(_externalRatingController.text),
+        externalRatingSource: _externalRatingSource,
         review: _trimmedOrNull(_reviewController),
         seasons: _type == WatchItemType.series ? _seasons : const [],
         sortOrder: existing?.sortOrder ?? 0,
@@ -430,6 +445,32 @@ class _WatchItemEditPageState extends ConsumerState<WatchItemEditPage> {
                       size: 28,
                     ),
                   ],
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _externalRatingController,
+                  decoration: InputDecoration(
+                    labelText: 'Public rating',
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.star_rate_rounded),
+                    suffixText: '/ 10',
+                    helperText: _externalRatingSource == null
+                        ? 'Out of 10 — filled from TMDB, or type one in'
+                        : 'From $_externalRatingSource — editing clears the '
+                              'source',
+                    helperMaxLines: 2,
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  validator: validateExternalRating,
+                  // A hand-typed number is not TMDB's, so it stops
+                  // claiming to be (WISH-0101).
+                  onChanged: (_) {
+                    if (_externalRatingSource != null) {
+                      setState(() => _externalRatingSource = null);
+                    }
+                  },
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
