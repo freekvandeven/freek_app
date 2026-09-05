@@ -1,0 +1,275 @@
+import 'package:uuid/uuid.dart';
+
+/// Whether a watchlist entry is a single film or a multi-season show.
+enum WatchItemType { movie, series }
+
+/// How far through an entry the user is. Always derived from the entry's
+/// seasons (or its [WatchItem.watched] flag), never stored — so adding a
+/// newly-released season to a finished series automatically drops it back
+/// to [partiallyWatched] instead of silently staying "watched"
+/// (WISH-0098).
+enum WatchStatus { unwatched, partiallyWatched, watched }
+
+/// One season of a series, tracked individually so a show that gained a
+/// season still reads as unfinished (WISH-0098).
+class Season {
+  final int number;
+  final String? title;
+  final int? episodeCount;
+  final bool watched;
+  final DateTime? watchedAt;
+
+  const Season({
+    required this.number,
+    this.title,
+    this.episodeCount,
+    this.watched = false,
+    this.watchedAt,
+  });
+
+  Season copyWith({
+    int? number,
+    String? title,
+    int? episodeCount,
+    bool? watched,
+    DateTime? watchedAt,
+    bool clearTitle = false,
+    bool clearEpisodeCount = false,
+    bool clearWatchedAt = false,
+  }) {
+    return Season(
+      number: number ?? this.number,
+      title: clearTitle ? null : (title ?? this.title),
+      episodeCount: clearEpisodeCount
+          ? null
+          : (episodeCount ?? this.episodeCount),
+      watched: watched ?? this.watched,
+      watchedAt: clearWatchedAt ? null : (watchedAt ?? this.watchedAt),
+    );
+  }
+
+  Map<String, dynamic> toMap() => {
+    'number': number,
+    'title': title,
+    'episodeCount': episodeCount,
+    'watched': watched,
+    'watchedAt': watchedAt?.toIso8601String(),
+  };
+
+  factory Season.fromMap(Map<String, dynamic> map) {
+    return Season(
+      number: (map['number'] as num).toInt(),
+      title: map['title'] as String?,
+      episodeCount: (map['episodeCount'] as num?)?.toInt(),
+      watched: map['watched'] as bool? ?? false,
+      watchedAt: map['watchedAt'] == null
+          ? null
+          : DateTime.parse(map['watchedAt'] as String),
+    );
+  }
+}
+
+/// A movie or series on the watchlist (WISH-0098).
+class WatchItem {
+  final String id;
+  final WatchItemType type;
+  final String title;
+  final String? description;
+
+  /// IMDb title id (e.g. `tt0111161`). Stored on its own so the entry can
+  /// link out to IMDb and later have its details fetched (WISH-0100).
+  final String? imdbId;
+
+  final int? year;
+
+  /// Movie length, or the length of a single episode for a series — see
+  /// [totalRuntimeMinutes] for the whole-series figure.
+  final int? runtimeMinutes;
+
+  final String? posterUrl;
+
+  /// Free-form link to wherever the entry can be watched or obtained.
+  /// Deliberately unvalidated: the user wants to point it at anything,
+  /// including the location of a torrent file.
+  final String? sourceUrl;
+
+  /// Ids of the streaming platforms this is available on (WISH-0099).
+  final List<String> platformIds;
+
+  /// Whole-entry watched flag. Authoritative for movies, and for series
+  /// the user ticks off without tracking seasons; once [seasons] is
+  /// non-empty the per-season flags win — see [status].
+  final bool watched;
+
+  final DateTime? watchedAt;
+
+  /// Optional user rating, 0.0 – 5.0 in 0.5 increments, matching
+  /// `Recipe.rating` and `CatalogItem.rating`. `null` means "not rated".
+  final double? rating;
+
+  final String? review;
+  final List<Season> seasons;
+
+  /// Manual priority order — lower sorts first, so the top of the list is
+  /// "watch this next". Maintained by drag-to-reorder on the list page.
+  final int sortOrder;
+
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  WatchItem({
+    String? id,
+    this.type = WatchItemType.movie,
+    required this.title,
+    this.description,
+    this.imdbId,
+    this.year,
+    this.runtimeMinutes,
+    this.posterUrl,
+    this.sourceUrl,
+    this.platformIds = const [],
+    this.watched = false,
+    this.watchedAt,
+    this.rating,
+    this.review,
+    this.seasons = const [],
+    this.sortOrder = 0,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) : id = id ?? const Uuid().v4(),
+       createdAt = createdAt ?? DateTime.now(),
+       updatedAt = updatedAt ?? DateTime.now();
+
+  /// Watch progress, derived rather than stored. A series with seasons is
+  /// judged purely on those seasons, so adding an unwatched season to a
+  /// finished show reopens it (WISH-0098).
+  WatchStatus get status {
+    if (seasons.isEmpty) {
+      return watched ? WatchStatus.watched : WatchStatus.unwatched;
+    }
+    final watchedCount = seasons.where((s) => s.watched).length;
+    if (watchedCount == 0) return WatchStatus.unwatched;
+    if (watchedCount == seasons.length) return WatchStatus.watched;
+    return WatchStatus.partiallyWatched;
+  }
+
+  bool get isFullyWatched => status == WatchStatus.watched;
+
+  /// Total viewing time, for deciding what fits into an evening: the
+  /// runtime itself for a movie, and runtime × total episodes for a
+  /// series. Null when there is not enough information to compute it.
+  int? get totalRuntimeMinutes {
+    if (runtimeMinutes == null) return null;
+    if (type == WatchItemType.movie || seasons.isEmpty) return runtimeMinutes;
+    if (seasons.any((s) => s.episodeCount == null)) return null;
+    final episodes = seasons.fold<int>(0, (sum, s) => sum + s.episodeCount!);
+    return runtimeMinutes! * episodes;
+  }
+
+  String? get imdbUrl =>
+      imdbId == null ? null : 'https://www.imdb.com/title/$imdbId/';
+
+  WatchItem copyWith({
+    WatchItemType? type,
+    String? title,
+    String? description,
+    String? imdbId,
+    int? year,
+    int? runtimeMinutes,
+    String? posterUrl,
+    String? sourceUrl,
+    List<String>? platformIds,
+    bool? watched,
+    DateTime? watchedAt,
+    double? rating,
+    String? review,
+    List<Season>? seasons,
+    int? sortOrder,
+    bool clearDescription = false,
+    bool clearImdbId = false,
+    bool clearYear = false,
+    bool clearRuntimeMinutes = false,
+    bool clearPosterUrl = false,
+    bool clearSourceUrl = false,
+    bool clearWatchedAt = false,
+    bool clearRating = false,
+    bool clearReview = false,
+  }) {
+    return WatchItem(
+      id: id,
+      type: type ?? this.type,
+      title: title ?? this.title,
+      description: clearDescription ? null : (description ?? this.description),
+      imdbId: clearImdbId ? null : (imdbId ?? this.imdbId),
+      year: clearYear ? null : (year ?? this.year),
+      runtimeMinutes: clearRuntimeMinutes
+          ? null
+          : (runtimeMinutes ?? this.runtimeMinutes),
+      posterUrl: clearPosterUrl ? null : (posterUrl ?? this.posterUrl),
+      sourceUrl: clearSourceUrl ? null : (sourceUrl ?? this.sourceUrl),
+      platformIds: platformIds ?? this.platformIds,
+      watched: watched ?? this.watched,
+      watchedAt: clearWatchedAt ? null : (watchedAt ?? this.watchedAt),
+      rating: clearRating ? null : (rating ?? this.rating),
+      review: clearReview ? null : (review ?? this.review),
+      seasons: seasons ?? this.seasons,
+      sortOrder: sortOrder ?? this.sortOrder,
+      createdAt: createdAt,
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toMap() => {
+    'id': id,
+    'type': type.name,
+    'title': title,
+    'description': description,
+    'imdbId': imdbId,
+    'year': year,
+    'runtimeMinutes': runtimeMinutes,
+    'posterUrl': posterUrl,
+    'sourceUrl': sourceUrl,
+    'platformIds': platformIds,
+    'watched': watched,
+    'watchedAt': watchedAt?.toIso8601String(),
+    'rating': rating,
+    'review': review,
+    'seasons': seasons.map((s) => s.toMap()).toList(),
+    'sortOrder': sortOrder,
+    'createdAt': createdAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
+  };
+
+  factory WatchItem.fromMap(Map<String, dynamic> map) {
+    return WatchItem(
+      id: map['id'] as String,
+      type: WatchItemType.values.byName(map['type'] as String? ?? 'movie'),
+      title: map['title'] as String,
+      description: map['description'] as String?,
+      imdbId: map['imdbId'] as String?,
+      year: (map['year'] as num?)?.toInt(),
+      runtimeMinutes: (map['runtimeMinutes'] as num?)?.toInt(),
+      posterUrl: map['posterUrl'] as String?,
+      sourceUrl: map['sourceUrl'] as String?,
+      platformIds:
+          (map['platformIds'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
+      watched: map['watched'] as bool? ?? false,
+      watchedAt: map['watchedAt'] == null
+          ? null
+          : DateTime.parse(map['watchedAt'] as String),
+      rating: (map['rating'] as num?)?.toDouble(),
+      review: map['review'] as String?,
+      seasons:
+          (map['seasons'] as List<dynamic>?)
+              ?.map((e) => Season.fromMap(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+      sortOrder: (map['sortOrder'] as num?)?.toInt() ?? 0,
+      createdAt: DateTime.parse(map['createdAt'] as String),
+      updatedAt: DateTime.parse(map['updatedAt'] as String),
+    );
+  }
+}
