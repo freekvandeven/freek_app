@@ -51,70 +51,73 @@ class _PasswordDetailPageState extends ConsumerState<PasswordDetailPage> {
               ),
             ],
           ),
-          body: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              if (entry.category != null) Chip(label: Text(entry.category!)),
-              const SizedBox(height: 16),
+          body: SafeArea(
+            top: false,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                if (entry.category != null) Chip(label: Text(entry.category!)),
+                const SizedBox(height: 16),
 
-              // Username
-              if (entry.username != null) ...[
-                _FieldTile(
-                  label: 'Username',
-                  value: entry.username!,
-                  icon: Icons.person,
-                  copyable: true,
-                ),
-                const Divider(),
-              ],
-
-              // Password
-              _FieldTile(
-                label: 'Password',
-                value: _showPassword ? entry.password : '\u2022' * 12,
-                icon: Icons.lock,
-                copyable: true,
-                onCopy: () => _copyPassword(context, entry.password),
-                trailing: IconButton(
-                  icon: Icon(
-                    _showPassword ? Icons.visibility_off : Icons.visibility,
+                // Username
+                if (entry.username != null) ...[
+                  _FieldTile(
+                    label: 'Username',
+                    value: entry.username!,
+                    icon: Icons.person,
+                    copyable: true,
                   ),
-                  onPressed: () =>
-                      setState(() => _showPassword = !_showPassword),
-                ),
-              ),
-              const Divider(),
+                  const Divider(),
+                ],
 
-              // URL
-              if (entry.url != null) ...[
+                // Password
                 _FieldTile(
-                  label: 'URL',
-                  value: entry.url!,
-                  icon: Icons.link,
+                  label: 'Password',
+                  value: _showPassword ? entry.password : '\u2022' * 12,
+                  icon: Icons.lock,
                   copyable: true,
-                ),
-                const Divider(),
-              ],
-
-              // Notes
-              if (entry.notes != null) ...[
-                const SizedBox(height: 8),
-                Text('Notes', style: theme.textTheme.titleSmall),
-                const SizedBox(height: 4),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(entry.notes!),
+                  onCopy: () => _copyPassword(context, entry.password),
+                  trailing: IconButton(
+                    icon: Icon(
+                      _showPassword ? Icons.visibility_off : Icons.visibility,
+                    ),
+                    onPressed: () =>
+                        setState(() => _showPassword = !_showPassword),
                   ),
                 ),
-              ],
+                const Divider(),
 
-              const SizedBox(height: 16),
-              Text(
-                'Updated: ${entry.updatedAt.toString().split('.').first}',
-                style: theme.textTheme.bodySmall,
-              ),
-            ],
+                // URL
+                if (entry.url != null) ...[
+                  _FieldTile(
+                    label: 'URL',
+                    value: entry.url!,
+                    icon: Icons.link,
+                    copyable: true,
+                  ),
+                  const Divider(),
+                ],
+
+                // Notes
+                if (entry.notes != null) ...[
+                  const SizedBox(height: 8),
+                  Text('Notes', style: theme.textTheme.titleSmall),
+                  const SizedBox(height: 4),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(entry.notes!),
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 16),
+                Text(
+                  'Updated: ${entry.updatedAt.toString().split('.').first}',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+            ),
           ),
         );
       },

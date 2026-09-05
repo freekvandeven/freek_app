@@ -41,105 +41,108 @@ class CatalogDetailPage extends ConsumerWidget {
               ),
             ],
           ),
-          body: ResponsiveCenter(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                // Image gallery
-                if (item.imageUrls.isNotEmpty) ...[
-                  SizedBox(
-                    height: 250,
-                    child: PageView.builder(
-                      itemCount: item.imageUrls.length,
-                      itemBuilder: (context, index) => GestureDetector(
-                        onTap: () => showFullscreenNetworkImage(
-                          context,
-                          item.imageUrls[index],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: CachedNetworkImage(
-                            imageUrl: item.imageUrls[index],
-                            fit: BoxFit.cover,
-                            errorWidget: (_, __, ___) => const Center(
-                              child: Icon(Icons.broken_image, size: 64),
+          body: SafeArea(
+            top: false,
+            child: ResponsiveCenter(
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  // Image gallery
+                  if (item.imageUrls.isNotEmpty) ...[
+                    SizedBox(
+                      height: 250,
+                      child: PageView.builder(
+                        itemCount: item.imageUrls.length,
+                        itemBuilder: (context, index) => GestureDetector(
+                          onTap: () => showFullscreenNetworkImage(
+                            context,
+                            item.imageUrls[index],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: CachedNetworkImage(
+                              imageUrl: item.imageUrls[index],
+                              fit: BoxFit.cover,
+                              errorWidget: (_, __, ___) => const Center(
+                                child: Icon(Icons.broken_image, size: 64),
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  if (item.imageUrls.length > 1)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        '${item.imageUrls.length} images \u2022 swipe to browse',
-                        style: theme.textTheme.bodySmall,
-                        textAlign: TextAlign.center,
+                    if (item.imageUrls.length > 1)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          '${item.imageUrls.length} images \u2022 swipe to browse',
+                          style: theme.textTheme.bodySmall,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Price
+                  if (item.price != null) ...[
+                    Text(
+                      converter.format(item.price!),
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  const SizedBox(height: 16),
-                ],
+                    const SizedBox(height: 12),
+                  ],
 
-                // Price
-                if (item.price != null) ...[
+                  if (item.rating != null) ...[
+                    StarRating(value: item.rating, size: 22),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // Description
+                  if (item.description != null &&
+                      item.description!.isNotEmpty) ...[
+                    Text(item.description!, style: theme.textTheme.bodyLarge),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Link
+                  if (item.link != null && item.link!.isNotEmpty) ...[
+                    InkWell(
+                      onTap: () => _openLink(item.link!),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.link, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              item.link!,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.primary,
+                                decoration: TextDecoration.underline,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Metadata
+                  const Divider(),
                   Text(
-                    converter.format(item.price!),
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    item.updatedAt.isAfter(
+                          item.createdAt.add(const Duration(minutes: 1)),
+                        )
+                        ? 'Updated ${DateFormat.yMMMd().format(item.updatedAt)} · created ${DateFormat.yMMMd().format(item.createdAt)}'
+                        : 'Created ${DateFormat.yMMMd().format(item.createdAt)}',
+                    style: theme.textTheme.bodySmall,
                   ),
-                  const SizedBox(height: 12),
                 ],
-
-                if (item.rating != null) ...[
-                  StarRating(value: item.rating, size: 22),
-                  const SizedBox(height: 12),
-                ],
-
-                // Description
-                if (item.description != null &&
-                    item.description!.isNotEmpty) ...[
-                  Text(item.description!, style: theme.textTheme.bodyLarge),
-                  const SizedBox(height: 16),
-                ],
-
-                // Link
-                if (item.link != null && item.link!.isNotEmpty) ...[
-                  InkWell(
-                    onTap: () => _openLink(item.link!),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.link, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            item.link!,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.primary,
-                              decoration: TextDecoration.underline,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-
-                // Metadata
-                const Divider(),
-                Text(
-                  item.updatedAt.isAfter(
-                        item.createdAt.add(const Duration(minutes: 1)),
-                      )
-                      ? 'Updated ${DateFormat.yMMMd().format(item.updatedAt)} · created ${DateFormat.yMMMd().format(item.createdAt)}'
-                      : 'Created ${DateFormat.yMMMd().format(item.createdAt)}',
-                  style: theme.textTheme.bodySmall,
-                ),
-              ],
+              ),
             ),
           ),
         );

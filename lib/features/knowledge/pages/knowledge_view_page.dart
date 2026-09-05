@@ -169,7 +169,10 @@ class _KnowledgeViewPageState extends ConsumerState<KnowledgeViewPage> {
               ),
             ],
           ),
-          body: _buildBody(context, page, breadcrumbs, children),
+          body: SafeArea(
+            top: false,
+            child: _buildBody(context, page, breadcrumbs, children),
+          ),
         );
       },
     );

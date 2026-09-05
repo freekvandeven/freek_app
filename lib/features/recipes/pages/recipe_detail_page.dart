@@ -140,41 +140,44 @@ class _RecipeDetailPageState extends ConsumerState<RecipeDetailPage> {
             ],
           ),
         ),
-        body: Column(
-          children: [
-            ResponsiveCenter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: Wrap(
-                  spacing: 16,
-                  runSpacing: 8,
+        body: SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              ResponsiveCenter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  child: Wrap(
+                    spacing: 16,
+                    runSpacing: 8,
+                    children: [
+                      if (recipe.servings != null) _servingsAdjuster(recipe),
+                      if (recipe.prepTimeMinutes != null)
+                        _infoChip(
+                          Icons.timer_outlined,
+                          '${recipe.prepTimeMinutes} min prep',
+                        ),
+                      if (recipe.cookTimeMinutes != null)
+                        _infoChip(
+                          Icons.local_fire_department,
+                          '${recipe.cookTimeMinutes} min cook',
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: TabBarView(
                   children: [
-                    if (recipe.servings != null) _servingsAdjuster(recipe),
-                    if (recipe.prepTimeMinutes != null)
-                      _infoChip(
-                        Icons.timer_outlined,
-                        '${recipe.prepTimeMinutes} min prep',
-                      ),
-                    if (recipe.cookTimeMinutes != null)
-                      _infoChip(
-                        Icons.local_fire_department,
-                        '${recipe.cookTimeMinutes} min cook',
-                      ),
+                    _generalTab(context, recipe, colorScheme, allRecipes),
+                    _ingredientsTab(context, recipe),
+                    _instructionsTab(context, recipe),
                   ],
                 ),
               ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  _generalTab(context, recipe, colorScheme, allRecipes),
-                  _ingredientsTab(context, recipe),
-                  _instructionsTab(context, recipe),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

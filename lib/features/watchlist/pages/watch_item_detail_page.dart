@@ -67,124 +67,129 @@ class WatchItemDetailPage extends ConsumerWidget {
           ),
         ],
       ),
-      body: ResponsiveCenter(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            if (item.posterUrl != null) ...[
-              Center(
-                child: GestureDetector(
-                  onTap: () =>
-                      showFullscreenNetworkImage(context, item.posterUrl!),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: CachedNetworkImage(
-                      imageUrl: item.posterUrl!,
-                      height: 260,
-                      memCacheWidth: 600,
-                      fit: BoxFit.contain,
-                      errorWidget: (_, _, _) =>
-                          const Icon(Icons.broken_image, size: 48),
+      body: SafeArea(
+        top: false,
+        child: ResponsiveCenter(
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              if (item.posterUrl != null) ...[
+                Center(
+                  child: GestureDetector(
+                    onTap: () =>
+                        showFullscreenNetworkImage(context, item.posterUrl!),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: CachedNetworkImage(
+                        imageUrl: item.posterUrl!,
+                        height: 260,
+                        memCacheWidth: 600,
+                        fit: BoxFit.contain,
+                        errorWidget: (_, _, _) =>
+                            const Icon(Icons.broken_image, size: 48),
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Chip(
-                  avatar: Icon(
-                    item.type == WatchItemType.series ? Icons.tv : Icons.movie,
-                    size: 18,
-                  ),
-                  label: Text(
-                    item.type == WatchItemType.series ? 'Series' : 'Movie',
-                  ),
-                ),
-                if (item.year != null) Chip(label: Text('${item.year}')),
-                if (runtime != null)
-                  Chip(
-                    avatar: const Icon(Icons.timer_outlined, size: 18),
-                    label: Text(formatDuration(runtime)),
-                  ),
-                WatchStatusChip(status: item.status),
+                const SizedBox(height: 16),
               ],
-            ),
-            const SizedBox(height: 16),
 
-            if (item.platformIds.isNotEmpty) ...[
-              PlatformIcons(platformIds: item.platformIds, size: 32),
-              const SizedBox(height: 16),
-            ],
-
-            if (item.rating != null || item.externalRating != null) ...[
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  if (item.rating != null)
-                    StarRating(value: item.rating, size: 24),
-                  if (item.rating != null && item.externalRating != null)
-                    const SizedBox(width: 12),
-                  ExternalRatingBadge(
-                    rating: item.externalRating,
-                    source: item.externalRatingSource,
-                    size: 18,
+                  Chip(
+                    avatar: Icon(
+                      item.type == WatchItemType.series
+                          ? Icons.tv
+                          : Icons.movie,
+                      size: 18,
+                    ),
+                    label: Text(
+                      item.type == WatchItemType.series ? 'Series' : 'Movie',
+                    ),
                   ),
+                  if (item.year != null) Chip(label: Text('${item.year}')),
+                  if (runtime != null)
+                    Chip(
+                      avatar: const Icon(Icons.timer_outlined, size: 18),
+                      label: Text(formatDuration(runtime)),
+                    ),
+                  WatchStatusChip(status: item.status),
                 ],
               ),
               const SizedBox(height: 16),
-            ],
 
-            if (item.description != null) ...[
-              Text(item.description!, style: theme.textTheme.bodyMedium),
-              const SizedBox(height: 16),
-            ],
+              if (item.platformIds.isNotEmpty) ...[
+                PlatformIcons(platformIds: item.platformIds, size: 32),
+                const SizedBox(height: 16),
+              ],
 
-            if (item.imdbUrl != null)
-              _LinkTile(
-                icon: Icons.movie_filter_outlined,
-                label: 'View on IMDb',
-                subtitle: item.imdbId!,
-                url: item.imdbUrl!,
-              ),
-            if (item.sourceUrl != null)
-              _LinkTile(
-                icon: Icons.link,
-                label: 'Source link',
-                subtitle: item.sourceUrl!,
-                url: item.sourceUrl!,
-              ),
-
-            if (item.seasons.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text('Seasons', style: theme.textTheme.titleMedium),
-              for (final season in item.seasons)
-                CheckboxListTile(
-                  value: season.watched,
-                  onChanged: (value) => ref
-                      .read(watchlistProvider.notifier)
-                      .setSeasonWatched(item, season.number, value ?? false),
-                  title: Text(season.title ?? 'Season ${season.number}'),
-                  subtitle: season.episodeCount == null
-                      ? null
-                      : Text('${season.episodeCount} episodes'),
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  dense: true,
+              if (item.rating != null || item.externalRating != null) ...[
+                Row(
+                  children: [
+                    if (item.rating != null)
+                      StarRating(value: item.rating, size: 24),
+                    if (item.rating != null && item.externalRating != null)
+                      const SizedBox(width: 12),
+                    ExternalRatingBadge(
+                      rating: item.externalRating,
+                      source: item.externalRatingSource,
+                      size: 18,
+                    ),
+                  ],
                 ),
-            ],
+                const SizedBox(height: 16),
+              ],
 
-            if (item.review != null) ...[
-              const SizedBox(height: 16),
-              Text('Review', style: theme.textTheme.titleMedium),
-              const SizedBox(height: 8),
-              Text(item.review!, style: theme.textTheme.bodyMedium),
+              if (item.description != null) ...[
+                Text(item.description!, style: theme.textTheme.bodyMedium),
+                const SizedBox(height: 16),
+              ],
+
+              if (item.imdbUrl != null)
+                _LinkTile(
+                  icon: Icons.movie_filter_outlined,
+                  label: 'View on IMDb',
+                  subtitle: item.imdbId!,
+                  url: item.imdbUrl!,
+                ),
+              if (item.sourceUrl != null)
+                _LinkTile(
+                  icon: Icons.link,
+                  label: 'Source link',
+                  subtitle: item.sourceUrl!,
+                  url: item.sourceUrl!,
+                ),
+
+              if (item.seasons.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text('Seasons', style: theme.textTheme.titleMedium),
+                for (final season in item.seasons)
+                  CheckboxListTile(
+                    value: season.watched,
+                    onChanged: (value) => ref
+                        .read(watchlistProvider.notifier)
+                        .setSeasonWatched(item, season.number, value ?? false),
+                    title: Text(season.title ?? 'Season ${season.number}'),
+                    subtitle: season.episodeCount == null
+                        ? null
+                        : Text('${season.episodeCount} episodes'),
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    dense: true,
+                  ),
+              ],
+
+              if (item.review != null) ...[
+                const SizedBox(height: 16),
+                Text('Review', style: theme.textTheme.titleMedium),
+                const SizedBox(height: 8),
+                Text(item.review!, style: theme.textTheme.bodyMedium),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
