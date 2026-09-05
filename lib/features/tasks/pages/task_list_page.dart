@@ -7,9 +7,9 @@ import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
 import 'package:personal_app/presentation/widgets/responsive_center.dart';
 
 import '../../../presentation/widgets/pullable_center.dart';
+import '../../../utils/duration_format.dart';
 import '../models/task.dart';
 import '../providers/task_providers.dart';
-import '../utils/duration_format.dart';
 
 class TaskListPage extends ConsumerWidget {
   const TaskListPage({super.key});
@@ -273,7 +273,7 @@ class _TaskTile extends ConsumerWidget {
               ),
               const SizedBox(width: 3),
               Text(
-                formatTaskDuration(task.estimatedMinutes!),
+                formatDuration(task.estimatedMinutes!),
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: colorScheme.onPrimaryContainer,
                 ),

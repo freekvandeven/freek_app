@@ -57,6 +57,9 @@ import '../features/settings/pages/settings_page.dart';
 import '../features/shopping/pages/shopping_list_page.dart';
 import '../features/tasks/pages/task_edit_page.dart';
 import '../features/tasks/pages/task_list_page.dart';
+import '../features/watchlist/pages/watch_item_detail_page.dart';
+import '../features/watchlist/pages/watch_item_edit_page.dart';
+import '../features/watchlist/pages/watchlist_page.dart';
 import '../features/wip/pages/wip_overview_page.dart';
 import '../presentation/shell/app_shell.dart';
 
@@ -438,6 +441,30 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     path: 'edit',
                     builder: (context, state) =>
                         CatalogEditPage(itemId: state.pathParameters['itemId']),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          GoRoute(
+            path: '/watchlist',
+            builder: (context, state) => const WatchlistPage(),
+            routes: [
+              GoRoute(
+                path: 'new',
+                builder: (context, state) => const WatchItemEditPage(),
+              ),
+              GoRoute(
+                path: ':itemId',
+                builder: (context, state) => WatchItemDetailPage(
+                  itemId: state.pathParameters['itemId']!,
+                ),
+                routes: [
+                  GoRoute(
+                    path: 'edit',
+                    builder: (context, state) => WatchItemEditPage(
+                      itemId: state.pathParameters['itemId'],
+                    ),
                   ),
                 ],
               ),

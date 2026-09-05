@@ -296,6 +296,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         route: '/inventory',
       ),
       const _FeatureTile(
+        icon: Icons.movie_rounded,
+        label: 'Watchlist',
+        color: Colors.indigo,
+        route: '/watchlist',
+      ),
+      const _FeatureTile(
         icon: Icons.menu_book_rounded,
         label: 'Knowledge',
         color: Colors.indigo,
