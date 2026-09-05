@@ -32,7 +32,7 @@ Entries carry a manual `sortOrder` — the priority queue — maintained by drag
 - [x] Reorder entries by dragging to set watch priority
 - [x] Track watched state per season, reopening a series when a season is added
 - [x] Filter and sort by watched state, rating, runtime and priority
-- [ ] Fetch details from an IMDb code and search by title (WISH-0100)
+- [x] Fetch details from an IMDb code and search by title (WISH-0100)
 
 ## Streaming platforms (WISH-0099)
 
@@ -41,6 +41,14 @@ Platforms are managed separately at `/watchlist/platforms`: name, URL, streaming
 **Credentials are never stored on the platform.** It keeps only `vaultEntryId`, the id of an entry in the encrypted password vault. The picker needs the vault unlocked to browse entries and otherwise shows an Unlock prompt; an already-linked entry stays linked either way, and a link to a deleted vault entry falls back to "None" rather than dangling.
 
 Entries hold `platformIds` and show the matching icons on the list and detail pages; a filter chip row narrows the list to one platform. Ids whose platform has been deleted are skipped silently.
+
+## Metadata lookup (WISH-0100)
+
+IMDb has no free public API, so TMDB provides the data while the IMDb code stays the thing the app stores and links to: `find/{imdb_id}?external_source=imdb_id` resolves a pasted code, and `search/multi` powers a debounced type-ahead on the title field. Both fill title, description, year, runtime, poster, the IMDb code and — for series — the season list.
+
+The API key lives in secure storage (like the Gemini key) and is managed from Settings → Watchlist; the fetch and search affordances stay hidden until one is configured, and a rejected key is reported in plain language rather than as an HTTP error.
+
+Refreshing a series **merges** seasons rather than replacing them (`utils/season_merge.dart`): already-watched seasons stay ticked, a newly released season arrives unwatched — reopening the show as partially watched — hand-added seasons TMDB does not know about are kept, and TMDB's season 0 "Specials" bucket is dropped.
 
 ## UI / Screens
 
@@ -62,7 +70,7 @@ Reachable from the More page and the dashboard feature grid.
 
 - F001 Authentication (per-user collection)
 - WISH-0099 streaming platforms — entries hold `platformIds`
-- WISH-0100 TMDB metadata — populates the IMDb-linked fields
+- WISH-0100 TMDB metadata — populates the IMDb-linked fields (needs a TMDB API key in Settings)
 
 ## Open Questions
 

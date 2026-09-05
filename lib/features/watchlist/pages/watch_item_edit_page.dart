@@ -13,6 +13,7 @@ import '../services/tmdb_service.dart';
 import '../utils/season_merge.dart';
 import '../widgets/platform_selector.dart';
 import '../widgets/seasons_editor.dart';
+import '../widgets/tmdb_search_sheet.dart';
 
 class WatchItemEditPage extends ConsumerStatefulWidget {
   final String? itemId;
@@ -126,6 +127,39 @@ class _WatchItemEditPageState extends ConsumerState<WatchItemEditPage> {
         _seasons = mergeSeasons(_seasons, details.seasons);
       }
     });
+  }
+
+  /// Type part of a title, pick the match, and fill the whole form from
+  /// it — including the IMDb code, so the entry still links to IMDb
+  /// (WISH-0100).
+  Future<void> _searchByTitle() async {
+    final result = await showTmdbSearchSheet(context);
+    if (result == null || !mounted) return;
+
+    setState(() => _isFetching = true);
+    try {
+      final details = await ref
+          .read(tmdbServiceProvider)
+          .fetchDetails(result.tmdbId, result.type);
+      if (!mounted) return;
+      if (details == null) {
+        context.showErrorSnackbar('Could not load "${result.title}"');
+        return;
+      }
+      _applyDetails(details);
+      context.showSuccessSnackbar('Details filled from TMDB');
+    } on TmdbAuthException catch (e) {
+      if (mounted) context.showErrorSnackbar(e.message);
+    } catch (e) {
+      if (mounted) {
+        context.showErrorSnackbar(
+          'Lookup failed: $e',
+          action: SnackBarAction(label: 'Retry', onPressed: _searchByTitle),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isFetching = false);
+    }
   }
 
   Future<void> _fetchFromImdbId() async {
@@ -242,9 +276,16 @@ class _WatchItemEditPageState extends ConsumerState<WatchItemEditPage> {
 
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Title *',
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
+                  suffixIcon: ref.watch(tmdbAvailableProvider)
+                      ? IconButton(
+                          tooltip: 'Search TMDB by title',
+                          icon: const Icon(Icons.search),
+                          onPressed: _isFetching ? null : _searchByTitle,
+                        )
+                      : null,
                 ),
                 validator: (v) =>
                     v == null || v.trim().isEmpty ? 'Title is required' : null,
