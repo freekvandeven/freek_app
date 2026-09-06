@@ -10,6 +10,11 @@ class StreamingPlatform {
   final String name;
   final String? url;
 
+  /// Deep link that opens the platform's own app, e.g. `nflx://`
+  /// (WISH-0105). Custom schemes cannot be launched from a browser, so
+  /// this is only used on a device; the web [url] is the fallback.
+  final String? appUrl;
+
   /// Id of the `PasswordEntry` holding the login for this platform.
   final String? vaultEntryId;
 
@@ -27,6 +32,7 @@ class StreamingPlatform {
     String? id,
     required this.name,
     this.url,
+    this.appUrl,
     this.vaultEntryId,
     this.quality,
     this.iconUrl,
@@ -45,15 +51,22 @@ class StreamingPlatform {
   bool get isSubscribed =>
       subscriptionStartedAt != null && subscriptionEndedAt == null;
 
+  /// Whether there is anywhere to send the user when they tap this
+  /// platform on an entry.
+  bool get hasLink =>
+      (url?.trim().isNotEmpty ?? false) || (appUrl?.trim().isNotEmpty ?? false);
+
   StreamingPlatform copyWith({
     String? name,
     String? url,
+    String? appUrl,
     String? vaultEntryId,
     String? quality,
     String? iconUrl,
     DateTime? subscriptionStartedAt,
     DateTime? subscriptionEndedAt,
     bool clearUrl = false,
+    bool clearAppUrl = false,
     bool clearVaultEntryId = false,
     bool clearQuality = false,
     bool clearIconUrl = false,
@@ -64,6 +77,7 @@ class StreamingPlatform {
       id: id,
       name: name ?? this.name,
       url: clearUrl ? null : (url ?? this.url),
+      appUrl: clearAppUrl ? null : (appUrl ?? this.appUrl),
       vaultEntryId: clearVaultEntryId
           ? null
           : (vaultEntryId ?? this.vaultEntryId),
@@ -84,6 +98,7 @@ class StreamingPlatform {
     'id': id,
     'name': name,
     'url': url,
+    'appUrl': appUrl,
     'vaultEntryId': vaultEntryId,
     'quality': quality,
     'iconUrl': iconUrl,
@@ -98,6 +113,7 @@ class StreamingPlatform {
       id: map['id'] as String,
       name: map['name'] as String,
       url: map['url'] as String?,
+      appUrl: map['appUrl'] as String?,
       vaultEntryId: map['vaultEntryId'] as String?,
       quality: map['quality'] as String?,
       iconUrl: map['iconUrl'] as String?,

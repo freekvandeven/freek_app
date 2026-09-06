@@ -44,6 +44,8 @@ Platforms are managed separately at `/watchlist/platforms`: name, URL, streaming
 
 Entries hold `platformIds` and show the matching icons on the list and detail pages; a filter chip row narrows the list to one platform. Ids whose platform has been deleted are skipped silently.
 
+Platforms also carry an optional `appUrl` deep link (e.g. `nflx://`) alongside the web `url`. Tapping a platform icon **on the detail page** opens it — the app on a device, the website otherwise (WISH-0105), via the shared `openAppOrWebsite` helper that the Connections page also uses. Custom schemes cannot be launched from a browser, so web goes straight to the URL, and an uninstalled app falls back the same way. Icons on the *list* stay decorative, since tapping a row there opens the entry.
+
 ## Episode tracking (WISH-0104)
 
 A season can optionally be tracked episode by episode: `Season.watchedEpisodes` holds the watched episode numbers, and the detail page expands a season into a numbered chip per episode. Episode *titles* are deliberately not fetched — that would cost a TMDB request per season and inflate every watchlist read for something a numbered grid already conveys.

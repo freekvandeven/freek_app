@@ -1,8 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:personal_app/presentation/widgets/app_snackbar.dart';
 import 'package:personal_app/presentation/widgets/quick_actions_title.dart';
-import 'package:url_launcher/url_launcher.dart';
+
+import '../../../utils/app_link_launcher.dart';
 
 class ConnectionsPage extends StatelessWidget {
   const ConnectionsPage({super.key});
@@ -129,10 +129,6 @@ class _LinkTile extends StatelessWidget {
   final _QuickLink link;
   const _LinkTile({required this.link});
 
-  Future<void> _launch(String url) async {
-    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -140,18 +136,7 @@ class _LinkTile extends StatelessWidget {
         leading: Icon(link.icon, color: link.color),
         title: Text(link.label),
         trailing: const Icon(Icons.open_in_new, size: 18),
-        onTap: () async {
-          if (!kIsWeb && link.appUrl != null) {
-            try {
-              final launched = await launchUrl(
-                Uri.parse(link.appUrl!),
-                mode: LaunchMode.externalApplication,
-              );
-              if (launched) return;
-            } catch (_) {}
-          }
-          await _launch(link.url);
-        },
+        onTap: () => openAppOrWebsite(appUrl: link.appUrl, webUrl: link.url),
       ),
     );
   }

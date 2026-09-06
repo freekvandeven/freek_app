@@ -28,6 +28,7 @@ class _StreamingPlatformEditPageState
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _urlController = TextEditingController();
+  final _appUrlController = TextEditingController();
   final _qualityController = TextEditingController();
 
   final _icon = ImageAttachmentController(folder: 'streaming_platforms');
@@ -63,6 +64,7 @@ class _StreamingPlatformEditPageState
         _existing = platform;
         _nameController.text = platform.name;
         _urlController.text = platform.url ?? '';
+        _appUrlController.text = platform.appUrl ?? '';
         _qualityController.text = platform.quality ?? '';
         _vaultEntryId = platform.vaultEntryId;
         _startedAt = platform.subscriptionStartedAt;
@@ -79,6 +81,7 @@ class _StreamingPlatformEditPageState
     _icon.dispose();
     _nameController.dispose();
     _urlController.dispose();
+    _appUrlController.dispose();
     _qualityController.dispose();
     super.dispose();
   }
@@ -134,6 +137,7 @@ class _StreamingPlatformEditPageState
         id: widget.platformId,
         name: _nameController.text.trim(),
         url: _trimmedOrNull(_urlController),
+        appUrl: _trimmedOrNull(_appUrlController),
         vaultEntryId: _vaultEntryId,
         quality: _trimmedOrNull(_qualityController),
         iconUrl: _icon.savedUrls.isNotEmpty ? _icon.savedUrls.first : null,
@@ -196,6 +200,21 @@ class _StreamingPlatformEditPageState
                     labelText: 'URL',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.link),
+                  ),
+                  keyboardType: TextInputType.url,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _appUrlController,
+                  decoration: const InputDecoration(
+                    labelText: 'App link',
+                    hintText: 'nflx://',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.open_in_new),
+                    helperText:
+                        'Opens the platform app on a device. Browsers fall '
+                        'back to the URL above.',
+                    helperMaxLines: 2,
                   ),
                   keyboardType: TextInputType.url,
                 ),

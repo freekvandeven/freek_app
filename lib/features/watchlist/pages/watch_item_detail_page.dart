@@ -128,7 +128,11 @@ class WatchItemDetailPage extends ConsumerWidget {
               const SizedBox(height: 16),
 
               if (item.platformIds.isNotEmpty) ...[
-                PlatformIcons(platformIds: item.platformIds, size: 32),
+                PlatformIcons(
+                  platformIds: item.platformIds,
+                  size: 32,
+                  openable: true,
+                ),
                 const SizedBox(height: 16),
               ],
 

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../presentation/widgets/app_snackbar.dart';
+import '../../../utils/app_link_launcher.dart';
+
 import '../pages/streaming_platform_list_page.dart' show PlatformIcon;
 import '../providers/streaming_platform_providers.dart';
 
@@ -57,11 +60,20 @@ class PlatformSelector extends ConsumerWidget {
 
 /// Row of platform icons for an entry, resolving ids through the platform
 /// map. Silently skips ids whose platform has been deleted.
+///
+/// With [openable] set, tapping one opens that platform — its app where
+/// there is one, otherwise its website (WISH-0105).
 class PlatformIcons extends ConsumerWidget {
   final List<String> platformIds;
   final double size;
+  final bool openable;
 
-  const PlatformIcons({super.key, required this.platformIds, this.size = 20});
+  const PlatformIcons({
+    super.key,
+    required this.platformIds,
+    this.size = 20,
+    this.openable = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -74,9 +86,31 @@ class PlatformIcons extends ConsumerWidget {
       spacing: 4,
       children: [
         for (final platform in platforms)
-          Tooltip(
-            message: platform.name,
-            child: PlatformIcon(platform: platform, size: size),
+          Builder(
+            builder: (context) {
+              final canOpen = openable && platform.hasLink;
+              final icon = PlatformIcon(platform: platform, size: size);
+              return Tooltip(
+                message: canOpen ? 'Open ${platform.name}' : platform.name,
+                child: canOpen
+                    ? InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () async {
+                          final opened = await openAppOrWebsite(
+                            appUrl: platform.appUrl,
+                            webUrl: platform.url,
+                          );
+                          if (!opened && context.mounted) {
+                            context.showErrorSnackbar(
+                              'Could not open ${platform.name}',
+                            );
+                          }
+                        },
+                        child: icon,
+                      )
+                    : icon,
+              );
+            },
           ),
       ],
     );
