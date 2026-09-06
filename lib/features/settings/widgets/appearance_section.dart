@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../presentation/theme/app_theme.dart';
 import '../../auth/providers/auth_providers.dart';
@@ -19,6 +20,14 @@ class AppearanceSection extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SettingsSectionHeader('Appearance'),
+        ListTile(
+          leading: const Icon(Icons.reorder),
+          title: const Text('Navigation order'),
+          subtitle: const Text(
+            'Choose which features sit in the navigation bar',
+          ),
+          onTap: () => context.push('/settings/navigation'),
+        ),
         ListTile(
           leading: const Icon(Icons.palette),
           title: const Text('Theme'),

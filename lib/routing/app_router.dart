@@ -52,6 +52,7 @@ import '../features/recipes/pages/recipe_list_page.dart';
 import '../features/recipes/pages/recipe_random_page.dart';
 import '../features/settings/pages/data_export_page.dart';
 import '../features/settings/pages/developer_page.dart';
+import '../features/settings/pages/navigation_order_page.dart';
 import '../features/settings/pages/profile_page.dart';
 import '../features/settings/pages/settings_page.dart';
 import '../features/shopping/pages/shopping_list_page.dart';
@@ -540,6 +541,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'profile',
                 builder: (context, state) => const ProfilePage(),
+              ),
+              GoRoute(
+                path: 'navigation',
+                builder: (context, state) => const NavigationOrderPage(),
               ),
               GoRoute(
                 path: 'changelog',
