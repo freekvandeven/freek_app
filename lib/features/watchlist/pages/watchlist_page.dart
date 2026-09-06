@@ -50,6 +50,13 @@ class WatchlistPage extends HookConsumerWidget {
       return null;
     }, const []);
 
+    // Pull-to-refresh everywhere except while reordering, where the drag
+    // belongs to the item being moved (BUG-0053).
+    Widget refreshable(Widget child) => RefreshIndicator(
+      onRefresh: () => ref.refresh(watchlistProvider.future),
+      child: child,
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: const QuickActionsTitle(child: Text('Watchlist')),
@@ -121,11 +128,10 @@ class WatchlistPage extends HookConsumerWidget {
             const _StatusFilterBar(),
             const _PlatformFilterBar(),
             Expanded(
-              child: RefreshIndicator(
-                onRefresh: () => ref.refresh(watchlistProvider.future),
-                child: items.when(
-                  data: (list) => list.isEmpty
-                      ? const PullableCenter(
+              child: items.when(
+                data: (list) => list.isEmpty
+                    ? refreshable(
+                        const PullableCenter(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -138,31 +144,40 @@ class WatchlistPage extends HookConsumerWidget {
                               Text('Nothing on the watchlist yet'),
                             ],
                           ),
-                        )
-                      : reordering.value
-                      ? ReorderableListView.builder(
-                          padding: const EdgeInsets.only(bottom: 80),
-                          itemCount: list.length,
-                          itemBuilder: (context, index) => _WatchItemTile(
-                            key: ValueKey(list[index].id),
-                            item: list[index],
-                            reordering: true,
-                          ),
-                          onReorderItem: (oldIndex, newIndex) => ref
-                              .read(watchlistProvider.notifier)
-                              .reorder(oldIndex, newIndex),
-                        )
-                      : ListView.builder(
+                        ),
+                      )
+                    : reordering.value
+                    ? ReorderableListView.builder(
+                        padding: const EdgeInsets.only(bottom: 80),
+                        itemCount: list.length,
+                        // The framework's own handles are suppressed in
+                        // favour of the one on the tile, so there is a
+                        // single affordance rather than a real handle
+                        // sitting under a look-alike icon (BUG-0053).
+                        buildDefaultDragHandles: false,
+                        itemBuilder: (context, index) => _WatchItemTile(
+                          key: ValueKey(list[index].id),
+                          item: list[index],
+                          dragIndex: index,
+                        ),
+                        onReorderItem: (oldIndex, newIndex) => ref
+                            .read(watchlistProvider.notifier)
+                            .reorder(oldIndex, newIndex),
+                      )
+                    : refreshable(
+                        ListView.builder(
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.only(bottom: 80),
                           itemCount: list.length,
                           itemBuilder: (context, index) =>
                               _WatchItemTile(item: list[index]),
                         ),
-                  loading: () =>
-                      const PullableCenter(child: CircularProgressIndicator()),
-                  error: (e, _) => PullableCenter(child: Text('Error: $e')),
+                      ),
+                loading: () => refreshable(
+                  const PullableCenter(child: CircularProgressIndicator()),
                 ),
+                error: (e, _) =>
+                    refreshable(PullableCenter(child: Text('Error: $e'))),
               ),
             ),
           ],
@@ -179,15 +194,14 @@ class WatchlistPage extends HookConsumerWidget {
 class _WatchItemTile extends ConsumerWidget {
   final WatchItem item;
 
+  /// Position in the reorderable list, or null outside reorder mode.
   /// While reordering the row loses swipe-to-remove and its watched
   /// toggle, so a drag is never mistaken for either gesture.
-  final bool reordering;
+  final int? dragIndex;
 
-  const _WatchItemTile({
-    super.key,
-    required this.item,
-    this.reordering = false,
-  });
+  const _WatchItemTile({super.key, required this.item, this.dragIndex});
+
+  bool get reordering => dragIndex != null;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -281,7 +295,16 @@ class _WatchItemTile extends ConsumerWidget {
         ],
       ),
       trailing: reordering
-          ? const Icon(Icons.drag_handle)
+          // A plain icon here looked draggable but was not, so the drag
+          // fell through to the scrollable and became a pull-to-refresh
+          // (BUG-0053). It is now the listener that starts the drag.
+          ? ReorderableDragStartListener(
+              index: dragIndex!,
+              child: const MouseRegion(
+                cursor: SystemMouseCursors.grab,
+                child: Icon(Icons.drag_handle),
+              ),
+            )
           : IconButton(
               tooltip: item.watched ? 'Mark as unwatched' : 'Mark as watched',
               icon: Icon(
