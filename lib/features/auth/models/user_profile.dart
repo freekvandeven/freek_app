@@ -32,6 +32,9 @@ class UserSettings {
   // Order of the home screen tiles, by tile key (WISH-0106). Healed on
   // read the same way navOrder is.
   final List<String> dashboardOrder;
+  // User-defined home screen tiles pointing anywhere in the app
+  // (WISH-0107), stored as maps so they sync with the rest of settings.
+  final List<Map<String, dynamic>> customShortcuts;
 
   const UserSettings({
     this.themeMode = 'system',
@@ -50,6 +53,7 @@ class UserSettings {
     this.defaultInventoryLocation,
     this.navOrder = const [],
     this.dashboardOrder = const [],
+    this.customShortcuts = const [],
   });
 
   UserSettings copyWith({
@@ -72,6 +76,7 @@ class UserSettings {
     String? defaultInventoryLocation,
     List<String>? navOrder,
     List<String>? dashboardOrder,
+    List<Map<String, dynamic>>? customShortcuts,
     bool clearDefaultInventoryLocation = false,
   }) {
     return UserSettings(
@@ -98,6 +103,7 @@ class UserSettings {
           : (defaultInventoryLocation ?? this.defaultInventoryLocation),
       navOrder: navOrder ?? this.navOrder,
       dashboardOrder: dashboardOrder ?? this.dashboardOrder,
+      customShortcuts: customShortcuts ?? this.customShortcuts,
     );
   }
 
@@ -118,6 +124,7 @@ class UserSettings {
     'defaultInventoryLocation': defaultInventoryLocation,
     'navOrder': navOrder,
     'dashboardOrder': dashboardOrder,
+    'customShortcuts': customShortcuts,
   };
 
   factory UserSettings.fromMap(Map<String, dynamic> map) {
@@ -148,6 +155,11 @@ class UserSettings {
       dashboardOrder:
           (map['dashboardOrder'] as List<dynamic>?)
               ?.map((e) => e as String)
+              .toList() ??
+          const [],
+      customShortcuts:
+          (map['customShortcuts'] as List<dynamic>?)
+              ?.map((e) => Map<String, dynamic>.from(e as Map))
               .toList() ??
           const [],
     );

@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../services/version_check_service.dart';
 import '../../calendar/models/calendar_event.dart';
 import '../../calendar/providers/calendar_providers.dart';
+import '../custom_shortcut.dart';
 import '../dashboard_tiles.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
@@ -260,8 +261,14 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     WidgetRef ref,
     ColorScheme colorScheme,
   ) {
+    final settings = ref.watch(currentUserProvider)?.settings;
     final tiles = resolveDashboardOrder(
-      ref.watch(currentUserProvider)?.settings.dashboardOrder ?? const [],
+      settings?.dashboardOrder ?? const [],
+      shortcuts: [
+        for (final map
+            in settings?.customShortcuts ?? const <Map<String, dynamic>>[])
+          CustomShortcut.fromMap(map),
+      ],
     );
 
     return GridView.builder(

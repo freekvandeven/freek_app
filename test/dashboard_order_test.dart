@@ -147,7 +147,7 @@ void main() {
     testWidgets('Reset clears the saved order', (tester) async {
       final auth = await pump(tester, dashboardOrder: ['people']);
 
-      await tester.tap(find.text('Reset'));
+      await tester.tap(find.text('Reset order'));
       await tester.pumpAndSettle();
 
       expect(auth.saved.single, isEmpty);

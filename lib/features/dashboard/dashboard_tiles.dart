@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'custom_shortcut.dart';
+
 /// One tile on the home screen grid.
 ///
 /// [key] is the stable identifier stored in account settings so the
@@ -139,19 +141,35 @@ DashboardTile? _byKey(String key) {
 /// Self-healing on the same terms as the navigation order: unknown keys
 /// are dropped, tiles the saved order does not mention are appended in
 /// default order so a newly added feature still appears, and duplicates
-/// are ignored (WISH-0106).
-List<DashboardTile> resolveDashboardOrder(List<String> saved) {
+/// are ignored (WISH-0106). [shortcuts] are the user's own tiles, which
+/// take part in the same single order (WISH-0107).
+List<DashboardTile> resolveDashboardOrder(
+  List<String> saved, {
+  List<CustomShortcut> shortcuts = const [],
+}) {
+  final custom = {
+    for (final shortcut in shortcuts) shortcut.orderKey: shortcut.asTile(),
+  };
+
+  DashboardTile? lookup(String key) => _byKey(key) ?? custom[key];
+
   final resolved = <DashboardTile>[];
   final seen = <String>{};
 
   for (final key in saved) {
     if (!seen.add(key)) continue;
-    final tile = _byKey(key);
+    final tile = lookup(key);
     if (tile != null) resolved.add(tile);
   }
   for (final tile in kDashboardTiles) {
     if (!seen.add(tile.key)) continue;
     resolved.add(tile);
+  }
+  // A shortcut the saved order does not mention yet — just created —
+  // goes to the end rather than disappearing.
+  for (final shortcut in shortcuts) {
+    if (!seen.add(shortcut.orderKey)) continue;
+    resolved.add(shortcut.asTile());
   }
   return resolved;
 }
