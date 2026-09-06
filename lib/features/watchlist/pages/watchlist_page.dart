@@ -39,17 +39,6 @@ class WatchlistPage extends HookConsumerWidget {
         ref.watch(watchlistSortProvider) != WatchSort.priority;
     if (isFiltered && reordering.value) reordering.value = false;
 
-    // Watchlist is a pushed route rather than a bottom-nav tab, so this
-    // page is disposed when the user leaves for another feature — reset
-    // the search then, but not when coming back from a detail/edit push
-    // within the watchlist itself (BUG-0047).
-    useEffect(() {
-      if (ref.read(watchlistSearchProvider).isNotEmpty) {
-        ref.read(watchlistSearchProvider.notifier).state = '';
-      }
-      return null;
-    }, const []);
-
     // Pull-to-refresh everywhere except while reordering, where the drag
     // belongs to the item being moved (BUG-0053).
     Widget refreshable(Widget child) => RefreshIndicator(

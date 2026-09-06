@@ -25,6 +25,10 @@ class UserSettings {
   // same kitchen/storage room over and over. `null` = no default
   // (WISH-0084).
   final String? defaultInventoryLocation;
+  // Order of the bottom-navigation destinations, by destination key
+  // (WISH-0106). Empty means the default order; unknown or missing keys
+  // are healed on read, so this never has to be migrated.
+  final List<String> navOrder;
 
   const UserSettings({
     this.themeMode = 'system',
@@ -41,6 +45,7 @@ class UserSettings {
     this.fullscreenMode = false,
     this.dateFormatLocale,
     this.defaultInventoryLocation,
+    this.navOrder = const [],
   });
 
   UserSettings copyWith({
@@ -61,6 +66,7 @@ class UserSettings {
     String? dateFormatLocale,
     bool clearDateFormatLocale = false,
     String? defaultInventoryLocation,
+    List<String>? navOrder,
     bool clearDefaultInventoryLocation = false,
   }) {
     return UserSettings(
@@ -85,6 +91,7 @@ class UserSettings {
       defaultInventoryLocation: clearDefaultInventoryLocation
           ? null
           : (defaultInventoryLocation ?? this.defaultInventoryLocation),
+      navOrder: navOrder ?? this.navOrder,
     );
   }
 
@@ -103,6 +110,7 @@ class UserSettings {
     'fullscreenMode': fullscreenMode,
     'dateFormatLocale': dateFormatLocale,
     'defaultInventoryLocation': defaultInventoryLocation,
+    'navOrder': navOrder,
   };
 
   factory UserSettings.fromMap(Map<String, dynamic> map) {
@@ -125,6 +133,11 @@ class UserSettings {
       fullscreenMode: map['fullscreenMode'] as bool? ?? false,
       dateFormatLocale: map['dateFormatLocale'] as String?,
       defaultInventoryLocation: map['defaultInventoryLocation'] as String?,
+      navOrder:
+          (map['navOrder'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
     );
   }
 }

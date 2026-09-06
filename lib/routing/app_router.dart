@@ -329,6 +329,55 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   ),
                 ],
               ),
+              // Tab 9: Watchlist
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: '/watchlist',
+                    builder: (context, state) => const WatchlistPage(),
+                    routes: [
+                      GoRoute(
+                        path: 'new',
+                        builder: (context, state) => const WatchItemEditPage(),
+                      ),
+                      GoRoute(
+                        path: 'platforms',
+                        builder: (context, state) =>
+                            const StreamingPlatformListPage(),
+                        routes: [
+                          GoRoute(
+                            path: 'new',
+                            builder: (context, state) =>
+                                const StreamingPlatformEditPage(),
+                          ),
+                          GoRoute(
+                            path: ':platformId',
+                            builder: (context, state) =>
+                                StreamingPlatformEditPage(
+                                  platformId:
+                                      state.pathParameters['platformId'],
+                                ),
+                          ),
+                        ],
+                      ),
+                      GoRoute(
+                        path: ':itemId',
+                        builder: (context, state) => WatchItemDetailPage(
+                          itemId: state.pathParameters['itemId']!,
+                        ),
+                        routes: [
+                          GoRoute(
+                            path: 'edit',
+                            builder: (context, state) => WatchItemEditPage(
+                              itemId: state.pathParameters['itemId'],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ],
           ),
 
@@ -443,47 +492,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     path: 'edit',
                     builder: (context, state) =>
                         CatalogEditPage(itemId: state.pathParameters['itemId']),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          GoRoute(
-            path: '/watchlist',
-            builder: (context, state) => const WatchlistPage(),
-            routes: [
-              GoRoute(
-                path: 'new',
-                builder: (context, state) => const WatchItemEditPage(),
-              ),
-              GoRoute(
-                path: 'platforms',
-                builder: (context, state) => const StreamingPlatformListPage(),
-                routes: [
-                  GoRoute(
-                    path: 'new',
-                    builder: (context, state) =>
-                        const StreamingPlatformEditPage(),
-                  ),
-                  GoRoute(
-                    path: ':platformId',
-                    builder: (context, state) => StreamingPlatformEditPage(
-                      platformId: state.pathParameters['platformId'],
-                    ),
-                  ),
-                ],
-              ),
-              GoRoute(
-                path: ':itemId',
-                builder: (context, state) => WatchItemDetailPage(
-                  itemId: state.pathParameters['itemId']!,
-                ),
-                routes: [
-                  GoRoute(
-                    path: 'edit',
-                    builder: (context, state) => WatchItemEditPage(
-                      itemId: state.pathParameters['itemId'],
-                    ),
                   ),
                 ],
               ),
