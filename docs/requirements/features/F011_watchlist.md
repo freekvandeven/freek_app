@@ -53,7 +53,7 @@ Entries carry two independent ratings: the personal `rating` (0–5 stars) and `
 
 IMDb has no free public API, so TMDB provides the data while the IMDb code stays the thing the app stores and links to: `find/{imdb_id}?external_source=imdb_id` resolves a pasted code, and `search/multi` powers a debounced type-ahead on the title field. Both fill title, description, year, runtime, poster, the IMDb code and — for series — the season list.
 
-The API key lives in secure storage (like the Gemini key) and is managed from Settings → Watchlist; the fetch and search affordances stay hidden until one is configured, and a rejected key is reported in plain language rather than as an HTTP error.
+The API key lives in secure storage (like the Gemini key) and is managed from Settings → Watchlist, where it can also be loaded from — or saved to — the encrypted password vault, so a new device only needs the vault (WISH-0102); the fetch and search affordances stay hidden until one is configured, and a rejected key is reported in plain language rather than as an HTTP error.
 
 Refreshing a series **merges** seasons rather than replacing them (`utils/season_merge.dart`): already-watched seasons stay ticked, a newly released season arrives unwatched — reopening the show as partially watched — hand-added seasons TMDB does not know about are kept, and TMDB's season 0 "Specials" bucket is dropped.
 

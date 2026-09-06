@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../presentation/widgets/api_key_vault_dialog.dart';
 import '../../../presentation/widgets/app_snackbar.dart';
 import '../../watchlist/providers/tmdb_providers.dart';
 import 'section_header.dart';
@@ -53,53 +54,27 @@ class _TmdbApiKeyTile extends ConsumerWidget {
     }
   }
 
-  Future<void> _edit(BuildContext context, WidgetRef ref) async {
-    final controller = TextEditingController(
-      text: ref.read(tmdbApiKeyProvider).valueOrNull ?? '',
-    );
-
-    final saved = await showDialog<bool>(
+  Future<void> _edit(BuildContext context, WidgetRef ref) {
+    return showApiKeyVaultDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('TMDB API key'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'IMDb has no free public API, so the watchlist uses TMDB to '
-              'look titles up — including by their IMDb code. Create a free '
-              'API key at themoviedb.org under Settings → API.',
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                labelText: 'API key (v3 auth)',
-                border: OutlineInputBorder(),
-              ),
-              autofocus: true,
-              obscureText: true,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Save'),
-          ),
-        ],
+      ref: ref,
+      initialValue: ref.read(tmdbApiKeyProvider).valueOrNull ?? '',
+      spec: const ApiKeyVaultSpec(
+        serviceName: 'TMDB',
+        dialogTitle: 'TMDB API key',
+        fieldLabel: 'API key (v3 auth)',
+        vaultEntryTitle: 'TMDB API Key',
+        vaultMatch: 'tmdb',
+        vaultEntryUrl: 'https://www.themoviedb.org/settings/api',
+        description:
+            'IMDb has no free public API, so the watchlist uses TMDB to '
+            'look titles up — including by their IMDb code. Create a free '
+            'API key at themoviedb.org under Settings → API.',
       ),
+      onSaved: (key) async {
+        await ref.read(tmdbApiKeyServiceProvider).setApiKey(key);
+        ref.invalidate(tmdbApiKeyProvider);
+      },
     );
-
-    if (saved != true) return;
-    await ref.read(tmdbApiKeyServiceProvider).setApiKey(controller.text.trim());
-    ref.invalidate(tmdbApiKeyProvider);
-    if (context.mounted) {
-      context.showSuccessSnackbar('TMDB API key saved');
-    }
   }
 }
