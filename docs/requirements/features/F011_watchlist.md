@@ -18,7 +18,7 @@ Entries are either a **movie** or a **series**. Every entry can carry an IMDb co
 
 Series additionally track **individual seasons**. Watch status is *derived*, never stored: an entry with no seasons follows its own watched flag, while a series with seasons is unwatched / partially watched / watched based on those seasons. Adding a newly-released season to a finished series therefore reopens it automatically, which is the behaviour the wish asked for.
 
-Runtime is stored per episode for a series; `totalRuntimeMinutes` multiplies it by the total episode count so the list can answer "what fits in this evening".
+Runtime is stored per episode for a series. `totalRuntimeMinutes` multiplies it by the total episode count, and `remainingRuntimeMinutes` counts only the unwatched seasons (WISH-0103) — the rows show the remaining figure with a "left" suffix while a series is part-watched, falling back to the total once it is finished, since "0m left" says nothing. `runtimeForDisplay` is the single source for that choice, and the Runtime sort reads it too, so the order can never disagree with the numbers on the rows.
 
 Entries carry a manual `sortOrder` — the priority queue — maintained by drag-to-reorder on the list page. New entries are appended to the bottom so they never jump the queue.
 

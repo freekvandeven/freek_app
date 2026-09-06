@@ -6,6 +6,7 @@ import '../../auth/providers/auth_providers.dart';
 import '../models/watch_item.dart';
 import '../services/firestore_watchlist_service.dart';
 import '../services/watchlist_service.dart';
+import '../utils/runtime_display.dart';
 import '../utils/watchlist_order.dart';
 
 final watchlistServiceProvider = Provider<WatchlistService>((ref) {
@@ -141,10 +142,11 @@ int compareWatchItems(WatchItem a, WatchItem b, WatchSort sort) {
       b.externalRating,
       (x, y) => y.compareTo(x),
     ),
-    // Shortest first, for "what fits before bed".
+    // Shortest first, for "what fits before bed" — on the same figure the
+    // rows show, which for a partly watched series is what is left.
     WatchSort.runtime => nullsLast(
-      a.totalRuntimeMinutes,
-      b.totalRuntimeMinutes,
+      runtimeForDisplay(a).minutes,
+      runtimeForDisplay(b).minutes,
       (x, y) => x.compareTo(y),
     ),
   };

@@ -12,6 +12,7 @@ import '../../../presentation/widgets/star_rating.dart';
 import '../../../utils/duration_format.dart';
 import '../models/watch_item.dart';
 import '../providers/watchlist_providers.dart';
+import '../utils/runtime_display.dart';
 import '../widgets/external_rating_badge.dart';
 import '../widgets/platform_selector.dart';
 import '../widgets/watch_status_chip.dart';
@@ -46,7 +47,7 @@ class WatchItemDetailPage extends ConsumerWidget {
 
   Widget _buildDetail(BuildContext context, WidgetRef ref, WatchItem item) {
     final theme = Theme.of(context);
-    final runtime = item.totalRuntimeMinutes;
+    final runtime = runtimeForDisplay(item);
 
     return Scaffold(
       appBar: AppBar(
@@ -111,10 +112,14 @@ class WatchItemDetailPage extends ConsumerWidget {
                     ),
                   ),
                   if (item.year != null) Chip(label: Text('${item.year}')),
-                  if (runtime != null)
+                  if (runtime.minutes != null)
                     Chip(
                       avatar: const Icon(Icons.timer_outlined, size: 18),
-                      label: Text(formatDuration(runtime)),
+                      label: Text(
+                        runtime.isRemaining
+                            ? '${formatDuration(runtime.minutes!)} left'
+                            : formatDuration(runtime.minutes!),
+                      ),
                     ),
                   WatchStatusChip(status: item.status),
                 ],

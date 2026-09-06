@@ -178,6 +178,22 @@ class WatchItem {
     return runtimeMinutes! * episodes;
   }
 
+  /// Time still to watch, for deciding what to fit into an evening
+  /// (WISH-0103): the unwatched seasons only, rather than the whole show.
+  /// Zero once everything has been watched, and null on the same terms as
+  /// [totalRuntimeMinutes] — an unknown runtime or episode count makes the
+  /// sum meaningless rather than zero.
+  int? get remainingRuntimeMinutes {
+    if (runtimeMinutes == null) return null;
+    if (type == WatchItemType.movie || seasons.isEmpty) {
+      return watched ? 0 : runtimeMinutes;
+    }
+    final unwatched = seasons.where((s) => !s.watched);
+    if (unwatched.any((s) => s.episodeCount == null)) return null;
+    final episodes = unwatched.fold<int>(0, (sum, s) => sum + s.episodeCount!);
+    return runtimeMinutes! * episodes;
+  }
+
   String? get imdbUrl =>
       imdbId == null ? null : 'https://www.imdb.com/title/$imdbId/';
 

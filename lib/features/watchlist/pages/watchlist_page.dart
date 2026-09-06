@@ -13,6 +13,7 @@ import '../../../utils/duration_format.dart';
 import '../models/watch_item.dart';
 import '../providers/streaming_platform_providers.dart';
 import '../providers/watchlist_providers.dart';
+import '../utils/runtime_display.dart';
 import '../widgets/external_rating_badge.dart';
 import '../widgets/platform_selector.dart';
 import '../widgets/watch_status_chip.dart';
@@ -191,10 +192,13 @@ class _WatchItemTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final runtime = item.totalRuntimeMinutes;
+    final runtime = runtimeForDisplay(item);
     final subtitleParts = [
       if (item.year != null) '${item.year}',
-      if (runtime != null) formatDuration(runtime),
+      if (runtime.minutes != null)
+        runtime.isRemaining
+            ? '${formatDuration(runtime.minutes!)} left'
+            : formatDuration(runtime.minutes!),
     ];
 
     if (reordering) return _buildTile(context, ref, theme, subtitleParts);
