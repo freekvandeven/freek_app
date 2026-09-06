@@ -29,6 +29,9 @@ class UserSettings {
   // (WISH-0106). Empty means the default order; unknown or missing keys
   // are healed on read, so this never has to be migrated.
   final List<String> navOrder;
+  // Order of the home screen tiles, by tile key (WISH-0106). Healed on
+  // read the same way navOrder is.
+  final List<String> dashboardOrder;
 
   const UserSettings({
     this.themeMode = 'system',
@@ -46,6 +49,7 @@ class UserSettings {
     this.dateFormatLocale,
     this.defaultInventoryLocation,
     this.navOrder = const [],
+    this.dashboardOrder = const [],
   });
 
   UserSettings copyWith({
@@ -67,6 +71,7 @@ class UserSettings {
     bool clearDateFormatLocale = false,
     String? defaultInventoryLocation,
     List<String>? navOrder,
+    List<String>? dashboardOrder,
     bool clearDefaultInventoryLocation = false,
   }) {
     return UserSettings(
@@ -92,6 +97,7 @@ class UserSettings {
           ? null
           : (defaultInventoryLocation ?? this.defaultInventoryLocation),
       navOrder: navOrder ?? this.navOrder,
+      dashboardOrder: dashboardOrder ?? this.dashboardOrder,
     );
   }
 
@@ -111,6 +117,7 @@ class UserSettings {
     'dateFormatLocale': dateFormatLocale,
     'defaultInventoryLocation': defaultInventoryLocation,
     'navOrder': navOrder,
+    'dashboardOrder': dashboardOrder,
   };
 
   factory UserSettings.fromMap(Map<String, dynamic> map) {
@@ -135,6 +142,11 @@ class UserSettings {
       defaultInventoryLocation: map['defaultInventoryLocation'] as String?,
       navOrder:
           (map['navOrder'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
+      dashboardOrder:
+          (map['dashboardOrder'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           const [],

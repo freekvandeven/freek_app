@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../services/version_check_service.dart';
 import '../../calendar/models/calendar_event.dart';
 import '../../calendar/providers/calendar_providers.dart';
+import '../dashboard_tiles.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -138,7 +139,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 const SizedBox(height: 24),
                 _buildThisWeek(context, ref),
                 const SizedBox(height: 24),
-                _buildFeatureGrid(context, colorScheme),
+                _buildFeatureGrid(context, ref, colorScheme),
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -254,90 +255,14 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     };
   }
 
-  Widget _buildFeatureGrid(BuildContext context, ColorScheme colorScheme) {
-    final features = [
-      const _FeatureTile(
-        icon: Icons.check_circle_rounded,
-        label: 'Tasks',
-        color: Colors.blue,
-        route: '/tasks',
-        isShellBranch: true,
-      ),
-      const _FeatureTile(
-        icon: Icons.calendar_month_rounded,
-        label: 'Calendar',
-        color: Colors.purple,
-        route: '/calendar',
-        isShellBranch: true,
-      ),
-      const _FeatureTile(
-        icon: Icons.account_balance_wallet_rounded,
-        label: 'Finance',
-        color: Colors.green,
-        route: '/finance',
-        isShellBranch: true,
-      ),
-      const _FeatureTile(
-        icon: Icons.restaurant_menu_rounded,
-        label: 'Recipes',
-        color: Colors.orange,
-        route: '/recipes',
-      ),
-      const _FeatureTile(
-        icon: Icons.lock_rounded,
-        label: 'Passwords',
-        color: Colors.red,
-        route: '/passwords',
-      ),
-      const _FeatureTile(
-        icon: Icons.inventory_2_rounded,
-        label: 'Inventory',
-        color: Colors.teal,
-        route: '/inventory',
-      ),
-      const _FeatureTile(
-        icon: Icons.movie_rounded,
-        label: 'Watchlist',
-        color: Colors.indigo,
-        route: '/watchlist',
-      ),
-      const _FeatureTile(
-        icon: Icons.menu_book_rounded,
-        label: 'Knowledge',
-        color: Colors.indigo,
-        route: '/knowledge',
-      ),
-      const _FeatureTile(
-        icon: Icons.feedback_rounded,
-        label: 'Feedback',
-        color: Colors.amber,
-        route: '/feedback',
-      ),
-      const _FeatureTile(
-        icon: Icons.link_rounded,
-        label: 'Connections',
-        color: Colors.cyan,
-        route: '/connections',
-      ),
-      const _FeatureTile(
-        icon: Icons.auto_awesome_rounded,
-        label: 'Gemini AI',
-        color: Colors.deepPurple,
-        route: '/gemini',
-      ),
-      const _FeatureTile(
-        icon: Icons.forum_rounded,
-        label: 'Conversations',
-        color: Colors.pink,
-        route: '/conversations',
-      ),
-      const _FeatureTile(
-        icon: Icons.people_rounded,
-        label: 'People',
-        color: Colors.brown,
-        route: '/people',
-      ),
-    ];
+  Widget _buildFeatureGrid(
+    BuildContext context,
+    WidgetRef ref,
+    ColorScheme colorScheme,
+  ) {
+    final tiles = resolveDashboardOrder(
+      ref.watch(currentUserProvider)?.settings.dashboardOrder ?? const [],
+    );
 
     return GridView.builder(
       shrinkWrap: true,
@@ -348,17 +273,15 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         mainAxisSpacing: 12,
         childAspectRatio: 1.4,
       ),
-      itemCount: features.length,
-      itemBuilder: (context, index) {
-        final feature = features[index];
-        return _buildTile(context, feature, colorScheme);
-      },
+      itemCount: tiles.length,
+      itemBuilder: (context, index) =>
+          _buildTile(context, tiles[index], colorScheme),
     );
   }
 
   Widget _buildTile(
     BuildContext context,
-    _FeatureTile feature,
+    DashboardTile feature,
     ColorScheme colorScheme,
   ) {
     return Card(
@@ -385,20 +308,4 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       ),
     );
   }
-}
-
-class _FeatureTile {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final String route;
-  final bool isShellBranch;
-
-  const _FeatureTile({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.route,
-    this.isShellBranch = false,
-  });
 }

@@ -29,6 +29,12 @@ class AppearanceSection extends ConsumerWidget {
           onTap: () => context.push('/settings/navigation'),
         ),
         ListTile(
+          leading: const Icon(Icons.grid_view_rounded),
+          title: const Text('Home screen order'),
+          subtitle: const Text('Arrange the tiles on your home screen'),
+          onTap: () => context.push('/settings/home-screen'),
+        ),
+        ListTile(
           leading: const Icon(Icons.palette),
           title: const Text('Theme'),
           subtitle: Text(

@@ -51,6 +51,7 @@ class MorePage extends ConsumerWidget {
                 icon: Icons.movie_rounded,
                 label: 'Watchlist',
                 route: '/watchlist',
+                useGo: true,
               ),
               const _MenuItem(
                 icon: Icons.menu_book_rounded,
