@@ -163,7 +163,7 @@ void main() {
         'Reading list',
       );
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Route *'),
+        find.widgetWithText(TextFormField, 'Destination *'),
         '/knowledge/abc',
       );
       await tester.tap(find.widgetWithText(FilledButton, 'Add'));
@@ -186,7 +186,7 @@ void main() {
         'Bad',
       );
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Route *'),
+        find.widgetWithText(TextFormField, 'Destination *'),
         'knowledge',
       );
       await tester.tap(find.widgetWithText(FilledButton, 'Add'));

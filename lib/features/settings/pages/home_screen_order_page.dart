@@ -6,6 +6,7 @@ import 'package:personal_app/presentation/widgets/responsive_center.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../dashboard/custom_shortcut.dart';
 import '../../dashboard/dashboard_tiles.dart';
+import '../../dashboard/destination_picker.dart';
 
 /// Drag the home screen tiles into the order you want, and add shortcuts
 /// that jump straight to a page (WISH-0106, WISH-0107).
@@ -186,6 +187,18 @@ class _ShortcutDialogState extends State<_ShortcutDialog> {
     super.dispose();
   }
 
+  /// Pick a destination by browsing rather than knowing its route
+  /// (WISH-0108). The label is filled in too, but only when empty, so
+  /// browsing never overwrites a name already chosen.
+  Future<void> _browse() async {
+    final picked = await showDestinationPicker(context);
+    if (picked == null) return;
+    setState(() {
+      _route.text = picked.route;
+      if (_label.text.trim().isEmpty) _label.text = picked.label;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -210,12 +223,17 @@ class _ShortcutDialogState extends State<_ShortcutDialog> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _route,
-                decoration: const InputDecoration(
-                  labelText: 'Route *',
+                decoration: InputDecoration(
+                  labelText: 'Destination *',
                   hintText: '/knowledge/abc123',
-                  border: OutlineInputBorder(),
-                  helperText: 'Where it opens, e.g. /people or a page URL',
+                  border: const OutlineInputBorder(),
+                  helperText: 'Browse to pick a page, or type a route',
                   helperMaxLines: 2,
+                  suffixIcon: IconButton(
+                    tooltip: 'Browse',
+                    icon: const Icon(Icons.search),
+                    onPressed: _browse,
+                  ),
                 ),
                 validator: validateShortcutRoute,
               ),
