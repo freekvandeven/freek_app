@@ -72,6 +72,28 @@ class WatchlistNotifier extends StreamNotifier<List<WatchItem>> {
     await updateItem(item.withSeasonWatched(seasonNumber, watched));
   }
 
+  /// Marks one episode of one season watched or unwatched (WISH-0104).
+  /// Season and show status both follow from the episodes, so nothing
+  /// else needs updating.
+  Future<void> setEpisodeWatched(
+    WatchItem item,
+    int seasonNumber,
+    int episode,
+    bool watched,
+  ) async {
+    await updateItem(
+      item.copyWith(
+        seasons: [
+          for (final season in item.seasons)
+            if (season.number == seasonNumber)
+              season.withEpisodeWatched(episode, watched)
+            else
+              season,
+        ],
+      ),
+    );
+  }
+
   /// Ticks an entry off (or back on) from the list, stamping [watchedAt]
   /// so "when did I see this" survives the toggle.
   Future<void> toggleWatched(WatchItem item) async {

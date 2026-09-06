@@ -15,6 +15,7 @@ import '../providers/watchlist_providers.dart';
 import '../utils/runtime_display.dart';
 import '../widgets/external_rating_badge.dart';
 import '../widgets/platform_selector.dart';
+import '../widgets/season_progress_tile.dart';
 import '../widgets/watch_status_chip.dart';
 
 class WatchItemDetailPage extends ConsumerWidget {
@@ -172,18 +173,19 @@ class WatchItemDetailPage extends ConsumerWidget {
                 const SizedBox(height: 8),
                 Text('Seasons', style: theme.textTheme.titleMedium),
                 for (final season in item.seasons)
-                  CheckboxListTile(
-                    value: season.watched,
-                    onChanged: (value) => ref
+                  SeasonProgressTile(
+                    season: season,
+                    onSeasonChanged: (watched) => ref
                         .read(watchlistProvider.notifier)
-                        .setSeasonWatched(item, season.number, value ?? false),
-                    title: Text(season.title ?? 'Season ${season.number}'),
-                    subtitle: season.episodeCount == null
-                        ? null
-                        : Text('${season.episodeCount} episodes'),
-                    contentPadding: EdgeInsets.zero,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    dense: true,
+                        .setSeasonWatched(item, season.number, watched),
+                    onEpisodeChanged: (episode, watched) => ref
+                        .read(watchlistProvider.notifier)
+                        .setEpisodeWatched(
+                          item,
+                          season.number,
+                          episode,
+                          watched,
+                        ),
                   ),
               ],
 

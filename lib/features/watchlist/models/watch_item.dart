@@ -16,8 +16,18 @@ class Season {
   final int number;
   final String? title;
   final int? episodeCount;
+
+  /// Whole-season watched flag. Authoritative until individual episodes
+  /// are ticked, after which [watchedEpisodes] wins — see [status].
   final bool watched;
+
   final DateTime? watchedAt;
+
+  /// Episode numbers watched within this season (WISH-0104). Empty means
+  /// the season is not tracked episode by episode, so [watched] decides;
+  /// that is what keeps per-episode tracking optional and lets seasons
+  /// recorded before it existed carry on unchanged.
+  final List<int> watchedEpisodes;
 
   const Season({
     required this.number,
@@ -25,7 +35,84 @@ class Season {
     this.episodeCount,
     this.watched = false,
     this.watchedAt,
+    this.watchedEpisodes = const [],
   });
+
+  /// Whether this season is tracked episode by episode rather than by its
+  /// single [watched] flag.
+  bool get tracksEpisodes => watchedEpisodes.isNotEmpty;
+
+  /// How many episodes are watched. Ticks outside the known run are
+  /// ignored — a TMDB refresh can shrink a season, and a stale tick
+  /// should not read as "11 of 10 watched".
+  int get watchedEpisodeCount {
+    final count = episodeCount;
+    if (!tracksEpisodes) return watched ? (count ?? 0) : 0;
+    final ticked = watchedEpisodes.toSet();
+    if (count == null) return ticked.length;
+    return ticked.where((e) => e >= 1 && e <= count).length;
+  }
+
+  /// Whether episode [number] counts as watched. A season ticked off as a
+  /// whole reads as all-episodes-watched, so expanding it for the first
+  /// time shows what you would expect rather than an empty list.
+  bool isEpisodeWatched(int number) =>
+      tracksEpisodes ? watchedEpisodes.contains(number) : watched;
+
+  /// Progress through the season, derived the same way [WatchItem.status]
+  /// is derived from its seasons: the finer-grained record wins when there
+  /// is one, and the flag is the fallback.
+  WatchStatus get status {
+    final count = episodeCount;
+    if (!tracksEpisodes || count == null) {
+      return watched ? WatchStatus.watched : WatchStatus.unwatched;
+    }
+    final done = watchedEpisodeCount;
+    if (done == 0) return WatchStatus.unwatched;
+    if (done >= count) return WatchStatus.watched;
+    return WatchStatus.partiallyWatched;
+  }
+
+  bool get isFullyWatched => status == WatchStatus.watched;
+
+  /// Episodes still to watch, or null when the season's length is unknown
+  /// and it has not simply been ticked off.
+  int? get remainingEpisodes {
+    if (isFullyWatched) return 0;
+    final count = episodeCount;
+    if (count == null) return null;
+    return (count - watchedEpisodeCount).clamp(0, count);
+  }
+
+  /// Returns a copy with episode [number] marked as [isWatched].
+  ///
+  /// A season that was ticked off as a whole starts from "every episode
+  /// watched", so unticking one leaves the rest ticked instead of wiping
+  /// the record. The [watched] flag is kept in step with the episodes so
+  /// the two can never disagree.
+  Season withEpisodeWatched(int number, bool isWatched) {
+    final count = episodeCount;
+    final ticked = tracksEpisodes
+        ? watchedEpisodes.toSet()
+        : (watched && count != null
+              ? {for (var e = 1; e <= count; e++) e}
+              : <int>{});
+
+    if (isWatched) {
+      ticked.add(number);
+    } else {
+      ticked.remove(number);
+    }
+
+    final sorted = ticked.toList()..sort();
+    final nowComplete = count != null && sorted.length >= count;
+    return copyWith(
+      watchedEpisodes: sorted,
+      watched: nowComplete,
+      watchedAt: nowComplete ? (watchedAt ?? DateTime.now()) : null,
+      clearWatchedAt: !nowComplete,
+    );
+  }
 
   Season copyWith({
     int? number,
@@ -33,6 +120,7 @@ class Season {
     int? episodeCount,
     bool? watched,
     DateTime? watchedAt,
+    List<int>? watchedEpisodes,
     bool clearTitle = false,
     bool clearEpisodeCount = false,
     bool clearWatchedAt = false,
@@ -45,6 +133,7 @@ class Season {
           : (episodeCount ?? this.episodeCount),
       watched: watched ?? this.watched,
       watchedAt: clearWatchedAt ? null : (watchedAt ?? this.watchedAt),
+      watchedEpisodes: watchedEpisodes ?? this.watchedEpisodes,
     );
   }
 
@@ -54,6 +143,7 @@ class Season {
     'episodeCount': episodeCount,
     'watched': watched,
     'watchedAt': watchedAt?.toIso8601String(),
+    'watchedEpisodes': watchedEpisodes,
   };
 
   factory Season.fromMap(Map<String, dynamic> map) {
@@ -65,6 +155,11 @@ class Season {
       watchedAt: map['watchedAt'] == null
           ? null
           : DateTime.parse(map['watchedAt'] as String),
+      watchedEpisodes:
+          (map['watchedEpisodes'] as List<dynamic>?)
+              ?.map((e) => (e as num).toInt())
+              .toList() ??
+          const [],
     );
   }
 }
@@ -159,9 +254,14 @@ class WatchItem {
     if (seasons.isEmpty) {
       return watched ? WatchStatus.watched : WatchStatus.unwatched;
     }
-    final watchedCount = seasons.where((s) => s.watched).length;
-    if (watchedCount == 0) return WatchStatus.unwatched;
-    if (watchedCount == seasons.length) return WatchStatus.watched;
+    // Reads each season's own derived status, so a season that is only
+    // part-watched at episode level counts as progress (WISH-0104).
+    if (seasons.every((s) => s.status == WatchStatus.watched)) {
+      return WatchStatus.watched;
+    }
+    if (seasons.every((s) => s.status == WatchStatus.unwatched)) {
+      return WatchStatus.unwatched;
+    }
     return WatchStatus.partiallyWatched;
   }
 
@@ -188,9 +288,12 @@ class WatchItem {
     if (type == WatchItemType.movie || seasons.isEmpty) {
       return watched ? 0 : runtimeMinutes;
     }
-    final unwatched = seasons.where((s) => !s.watched);
-    if (unwatched.any((s) => s.episodeCount == null)) return null;
-    final episodes = unwatched.fold<int>(0, (sum, s) => sum + s.episodeCount!);
+    var episodes = 0;
+    for (final season in seasons) {
+      final remaining = season.remainingEpisodes;
+      if (remaining == null) return null;
+      episodes += remaining;
+    }
     return runtimeMinutes! * episodes;
   }
 
@@ -209,6 +312,9 @@ class WatchItem {
               watched: watched,
               watchedAt: watched ? DateTime.now() : null,
               clearWatchedAt: !watched,
+              // Ticking the season as a whole replaces any episode-level
+              // record rather than leaving a contradictory one behind.
+              watchedEpisodes: const [],
             )
           else
             season,

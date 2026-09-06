@@ -24,6 +24,9 @@ List<Season> mergeSeasons(List<Season> existing, List<Season> fetched) {
           watched: previous.watched,
           watchedAt: previous.watchedAt,
           clearWatchedAt: previous.watchedAt == null,
+          // Episode ticks are watch history too — a metadata refresh
+          // must not wipe them (WISH-0104).
+          watchedEpisodes: previous.watchedEpisodes,
         )
       else
         season,

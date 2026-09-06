@@ -31,6 +31,7 @@ Entries carry a manual `sortOrder` — the priority queue — maintained by drag
 - [x] Link entries to streaming platforms and filter by them (WISH-0099)
 - [x] Reorder entries by dragging to set watch priority
 - [x] Track watched state per season, reopening a series when a season is added
+- [x] Optionally tick individual episodes within a season (WISH-0104)
 - [x] Filter and sort by watched state, rating, runtime and priority
 - [x] Show a public rating alongside the personal one, both sortable (WISH-0101)
 - [x] Fetch details from an IMDb code and search by title (WISH-0100)
@@ -42,6 +43,14 @@ Platforms are managed separately at `/watchlist/platforms`: name, URL, streaming
 **Credentials are never stored on the platform.** It keeps only `vaultEntryId`, the id of an entry in the encrypted password vault. The picker needs the vault unlocked to browse entries and otherwise shows an Unlock prompt; an already-linked entry stays linked either way, and a link to a deleted vault entry falls back to "None" rather than dangling.
 
 Entries hold `platformIds` and show the matching icons on the list and detail pages; a filter chip row narrows the list to one platform. Ids whose platform has been deleted are skipped silently.
+
+## Episode tracking (WISH-0104)
+
+A season can optionally be tracked episode by episode: `Season.watchedEpisodes` holds the watched episode numbers, and the detail page expands a season into a numbered chip per episode. Episode *titles* are deliberately not fetched — that would cost a TMDB request per season and inflate every watchlist read for something a numbered grid already conveys.
+
+Progress derives the same way the show's does: when any episode is ticked the episodes decide, otherwise the season's own `watched` flag does. That is what keeps the feature optional and means seasons recorded before it existed need no migration. A season already marked watched reads as all-episodes-watched, so unticking one leaves the rest ticked rather than wiping the record; conversely, ticking a season as a whole clears its episode list so the two can never disagree. Ticks outside the known run (after a TMDB refresh shrinks a season) are ignored rather than counted.
+
+`remainingRuntimeMinutes` counts unwatched *episodes*, so being halfway through a season shortens the time left, and `mergeSeasons` carries episode ticks across a metadata refresh.
 
 ## Ratings (WISH-0101)
 
